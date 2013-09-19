@@ -1,0 +1,7 @@
+
+
+builds/
+logs/
+*.pdf
+*.csv
+*.pyc
