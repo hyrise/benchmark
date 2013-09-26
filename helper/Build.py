@@ -110,7 +110,7 @@ class Build(object):
 		os.chdir(cwd)
 		logfile.close()
 		print ""
-		if not self.check_build_results():
+		if proc.returncode != 0 or not self.check_build_results():
 			raise Exception("Something went wrong building Hyrise. Settings: " + self.settingsfile)
 
 	def check_build_results(self):

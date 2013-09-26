@@ -76,7 +76,8 @@ class RegressionExperiment(object):
 		os.chdir(self.hyrise_dir)
 		exp_env = os.environ.copy()
 		exp_env["HYRISE_DB_PATH"] = "." + self.bin_dir
-		exp_env["LD_LIBRARY_PATH"] = "." + self.bin_dir
+		exp_env["LD_LIBRARY_PATH"] = "." + self.bin_dir+":/usr/local/lib64/"
+
 		proc = subprocess.Popen([".%sperf_regression --gtest_filter=%s" % (self.bin_dir, self.testname)], env=exp_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 		(out, err) = proc.communicate()
 		print out

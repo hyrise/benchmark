@@ -103,7 +103,9 @@ def start_server(settingsfile):
 	exp_env["HYRISE_MYSQL_PASS"] = "hyrise"
 
 	devnull = open('/dev/null', 'w')
-	proc = subprocess.Popen(["."+bin_dir+"hyrise_server"], stdout=devnull, stderr=devnull, env=exp_env) #stdout=subprocess.PIPE, stderr=subprocess.PIPE,   |     
+	server = "."+bin_dir+"hyrise_server"
+	print "Starting server: " + server
+	proc = subprocess.Popen([server], stdout=devnull, stderr=devnull, env=exp_env) #stdout=subprocess.PIPE, stderr=subprocess.PIPE,   |     
 	os.chdir(cwd)
 	time.sleep(1)
 	return proc
@@ -120,14 +122,15 @@ if os.path.exists(result_dir):
 else:
 	os.mkdir(result_dir)
 
-settingsfiles = ["bufferedlogger.mk", "nvram.mk", "nologger.mk"]
+# settingsfiles = ["bufferedlogger.mk", "nvram.mk", "nologger.mk"]
+settingsfiles = ["nvram.mk"]
 
 for s in settingsfiles:
 	build = Build(s)
 	print ""
 	p = start_server(s)
 	try:
-		run_benchmark(max_users=30, resultfilename=result_dir+"/result_"+s+".csv", settingsfile=s)
+		run_benchmark(max_users=1, resultfilename=result_dir+"/result_"+s+".csv", settingsfile=s)
 	finally:
 		kill_server(p)
 

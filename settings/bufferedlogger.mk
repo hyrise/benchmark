@@ -17,7 +17,7 @@ PERSISTENCY := BUFFEREDLOGGER
 # HYRISE_ALLOCATOR:= jemalloc
 
 # COMPILER - Use a flag to customize your compiler
-# COMPILER:= g++experimentalfilter
+COMPILER:= g++48
 
 # If V8 is used you have to set the path where to find the
 # snapshot build

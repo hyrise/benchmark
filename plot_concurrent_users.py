@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 from helper.RegressionExperiment import *
-
+import os
 
 
 
@@ -18,16 +18,24 @@ resultfiles = [ os.path.join(result_dir,f) for f in os.listdir(result_dir) if os
 fig=plt.figure()
 
 for resultfile in resultfiles:
-	print resultfile
 	columns = columns_from_csv(resultfile, delimiter=",")
-	print columns
-	plt.plot(columns["num_users"], columns["end_throughput"])
-	print columns["num_users"]
+	minimum = [i-20 for i in columns["end_throughput"]]
+	maximum = [i+20 for i in columns["end_throughput"]]
+	x_min = min(columns["num_users"])
+	x_max = max(columns["num_users"])
+	plt.fill_between(columns["num_users"], minimum, maximum, color='gray', edgecolor='none', alpha=0.5)
+	plt.plot(columns["num_users"], columns["end_throughput"], label=os.path.basename(resultfile))
 
-# plt.bar(columns["_exp"], columns["RUNTIME_MEAN"], width=0.5,  color='r', align='center', alpha=0.4)
-# plt.xticks(columns["_exp"], columns["_settingsfile"])
-# plt.ylabel('uSecs')
+
+plt.legend(loc='upper right', prop={'size':10})
+
+# plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.ylim(ymin=0)
+plt.xlim(x_min, x_max)
+plt.ylabel('Total Query Throughput')
+plt.xlabel('# parallel Users')
 
 pp = PdfPages('result_concurrent_users.pdf')
 pp.savefig(fig)
 pp.close()
+
