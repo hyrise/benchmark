@@ -1,8 +1,10 @@
 import os
 import subprocess
 import shutil
+import select
 from os.path import isfile, join
 import sys
+import multiprocessing
 
 # class BuildManager(object):
 # 	def __init__(self):
@@ -27,8 +29,14 @@ class Build(object):
 
 		if not isfile("./settings/"+self.settingsfile):
 			raise Exception("Settings file not existing:" + self.settingsfile)
+		if not os.path.exists(self.log_dir):
+			os.mkdir(self.log_dir)
 
 		self.setup_build()
+
+		# uncommit to create clean build
+		# self.make_clean()
+		
 		self.make_all()
 
 	def setup_build(self):
@@ -75,19 +83,33 @@ class Build(object):
 		cwd = os.getcwd()
 		os.chdir(self.source_dir)
 		self.print_status("Building system")
-		proc = subprocess.Popen(["make -j8"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-		for line in proc.stdout:
-		    if self.verbose:
-		    	print line
-		    else:
-		    	sys.stdout.write(".")
-		    	sys.stdout.flush()
-		    logfile.write(line)
-		    logfile.flush()
-		print "."
-		(out, err) = proc.communicate()
+		proc = subprocess.Popen(["make -j%s" % multiprocessing.cpu_count()], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+		
+		while True:
+			reads = [proc.stdout.fileno(), proc.stderr.fileno()]
+			ret = select.select(reads, [], [])
+			for fd in ret[0]:
+				if fd == proc.stdout.fileno():
+					read = proc.stdout.readline()
+					short = "."
+				if fd == proc.stderr.fileno():
+					read = "ERROR: " + proc.stderr.readline()
+					short = "|"
+
+				if self.verbose:
+					sys.stdout.write(read)
+				else:
+					sys.stdout.write(short)
+					sys.stdout.flush()
+				logfile.write(read)
+				logfile.flush()
+
+			if proc.poll() != None:
+				break
+		# proc.wait()
 		os.chdir(cwd)
 		logfile.close()
+		print ""
 		if not self.check_build_results():
 			raise Exception("Something went wrong building Hyrise. Settings: " + self.settingsfile)
 
@@ -111,4 +133,4 @@ class Build(object):
 			f.write("\n")
 
 
-		 	
+			
