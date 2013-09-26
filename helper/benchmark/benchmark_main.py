@@ -74,7 +74,7 @@ def script(num_users = 1, time_factor = 30):
         user.stop()
 
     print 'waiting for users to finish...'
-    
+
     for user in users:
         user.join()
 

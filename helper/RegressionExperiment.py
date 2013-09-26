@@ -9,10 +9,10 @@ from collections import defaultdict
 from Build import *
 
 
-def columns_from_csv(filename):
+def columns_from_csv(filename, delimiter=";"):
 	columns = defaultdict(list)
 	with open(filename) as f:
-		reader = csv.DictReader(f, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+		reader = csv.DictReader(f, delimiter=delimiter, quotechar='|', quoting=csv.QUOTE_MINIMAL)
 		for row in reader:
 			for (k,v) in row.items():
 				try:
