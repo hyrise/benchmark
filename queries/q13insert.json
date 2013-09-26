@@ -1,0 +1,23 @@
+{
+    "papi": "%(papi)s",
+    "operators": {
+        "get_KNVP" : {
+            "type" : "GetTable",
+            "name" : "KNVP"
+            },
+        "insert" : {
+            "type" : "InsertScan",
+            "data" : [
+                [800, "0000000224", "1020", "20", "00", "RG", 0, "0000000224", "", 0, 0, "", ""]
+            ]
+        },
+        "commit" : {
+            "type" : "Commit"
+        }
+
+    },
+    "edges": [
+        ["get_KNVP", "insert"],
+        ["insert", "commit"]
+    ]
+}

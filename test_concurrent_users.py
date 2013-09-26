@@ -127,7 +127,7 @@ for s in settingsfiles:
 	print ""
 	p = start_server(s)
 	try:
-		run_benchmark(max_users=3, resultfilename=result_dir+"/result_"+s+".csv", settingsfile=s)
+		run_benchmark(max_users=30, resultfilename=result_dir+"/result_"+s+".csv", settingsfile=s)
 	finally:
 		kill_server(p)
 

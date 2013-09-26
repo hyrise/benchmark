@@ -27,8 +27,8 @@ def script(num_users = 1, time_factor = 30):
     port = 5000
     # time_factor = 30
     prefix = tools.getlastprefix("queued_1k_idx")
-    queries = ("q6a", "q6b", "q7", "q8", "q10", "q11", "q12") # "q7idx", "q8idx"
-
+    # queries = ("q6a", "q6b", "q7", "q8", "q10", "q11", "q12") # "q7idx", "q8idx"
+    queries = ["q13insert"]
 
     users = []
     for i in range(num_users):

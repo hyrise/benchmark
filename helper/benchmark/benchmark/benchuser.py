@@ -32,7 +32,7 @@ class User(threading.Thread):
 
     def __init__(self, userid, address, port, oltppercentage, thinktime, papi='NO_PAPI', queries=queries.ALL_QUERIES, prefix="", db="cbtr2"):
         threading.Thread.__init__(self)
- 
+        
         self._benchmarkQueries = queries
 
         self._stop = False
@@ -176,13 +176,14 @@ class User(threading.Thread):
             query = ''
             current_query = self._totalQueryCount % len(self._benchmarkQueries)
             element = self._benchmarkQueries[current_query]
-
+            
             # Execute all queries in order
             exec_time = 0
-            if reduce(lambda i,q: True if q[0] == element or i == True else False, OLTP_WEIGHTS, False):
-                exec_time = self.oltp(element)
-            else:
-                exec_time = self.olap(element)
+            # if reduce(lambda i,q: True if q[0] == element or i == True else False, OLTP_WEIGHTS, False):
+            
+            exec_time = self.oltp(element)
+            # else:
+                # exec_time = self.olap(element)
 
             self._accuResultFile.write("%f %d\n" % (time.time(), self._totalQueryCount))
 
@@ -235,7 +236,7 @@ class User(threading.Thread):
         result = self.fireQuery(query, queryid)
         
         self._queries[queryid] += 1
-        self._queryRowsFile.write("%s %d\n" % (queryid,  len(result[0]["rows"])))
+        # self._queryRowsFile.write("%s %d\n" % (queryid,  len(result[0]["rows"])))
 
         return result[1]
 

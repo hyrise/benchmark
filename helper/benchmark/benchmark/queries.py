@@ -3,6 +3,7 @@ PREPARE_QUERIES = {
     "distinct_kunnr_kna1" : "queries/distinct_kunnr_kna1.json",
     "distinct_matnr_mara" : "queries/vbap_mara_group.json",
     "distinct_vbeln_vbak" : "queries/distinct_vbeln_vbak.json",
+    "distinct_kunnr_knvp" : "queries/distinct_kunnr_knvp.json"
 #    "indices": "queries/create_indices.json"
 }
 
@@ -23,6 +24,7 @@ OLTP_QUERY_FILES ={
     "q8" : "queries/q8.json",
     "q7idx" : "queries/q7idx.json",
     "q8idx" : "queries/q8idx.json",
+    "q13insert" : "queries/q13insert.json"
     #"q9" : "queries/q9.json",
 }
 
@@ -44,6 +46,7 @@ OLTP_WEIGHTS = (
     ("q8", 1),
     ("q7idx", 1),
     ("q8idx", 1),
+    ("q13insert", 1)
     #("q9", 1),
     )
 
