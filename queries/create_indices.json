@@ -1,0 +1,33 @@
+{
+  "operators": {
+    "load_vbap" : {
+      "type" : "MySQLTableLoad",
+      "core" : 0,
+      "database": "%(db)s",
+      "table": "VBAP",
+      "limit" : 100000000
+    },
+    "idx_vbap" : {
+      "core": 0,
+      "type": "CreateIndex",
+      "table_name" : "vbap_idx_vbeln",
+      "fields" : ["VBELN"]
+    },
+    "load_vbak" : {
+      "type" : "MySQLTableLoad",
+      "core" : 0,
+      "database": "%(db)s",
+      "table": "VBAK",
+      "limit" : 100000000
+    },
+    "idx_vbak" : {
+      "core" : 0,
+      "type": "CreateIndex",
+      "table_name" : "vbak_idx_vbeln",
+      "fields" : ["VBELN"]
+    }
+  },
+  "edges": [["load_vbap", "idx_vbap"], ["idx_vbap", "load_vbak"], ["load_vbak", "idx_vbak"]]
+}
+
+  

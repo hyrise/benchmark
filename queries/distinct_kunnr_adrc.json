@@ -1,0 +1,24 @@
+{
+    "operators": {
+        "load" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "core" : 0,
+            "table": "ADRC"
+            },
+        "distinct": {
+            "type": "Distinct",
+            "core" : 0,
+            "fields": ["ADDRNUMBER"]
+        },
+        "project": {
+            "type" : "ProjectionScan",
+            "core" : 0,
+            "fields" : ["ADDRNUMBER"]
+        }
+    },
+    "edges": [
+    ["load", "distinct"],
+    ["distinct", "project"]
+    ]
+}

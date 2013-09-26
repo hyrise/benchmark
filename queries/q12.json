@@ -1,0 +1,40 @@
+{
+    "papi": "%(papi)s",
+    "operators": {
+        "load_vbap" : {
+            "type" : "MySQLTableLoad",
+            "core" : %(core)s,
+            "database": "%(db)s",
+            "table": "VBAP"
+            },
+        "filter_aedat": {
+            "type": "SimpleTableScan",
+            "core" : 1,
+            "predicates" : [
+                { "type" : "AND" },
+                { "type": "GT", "in": 0, "f": "AEDAT", "value": 20050101},
+                { "type": "EQ", "in": 0, "f": "MATNR", "value": "%(matnr)s", "vtype": 2}
+            ]
+        },
+        "hash_aedat" : {
+            "type": "HashBuild",
+            "core" : %(core)s,
+            "fields": ["AEDAT"], 
+            "key": "groupby"
+        },
+        "groupby" : {
+            "type" : "GroupByScan",
+            "core" : %(core)s,
+            "fields": ["AEDAT"],
+            "functions": [
+            {"type": "SUM", "field": "NETWR"}
+            ]
+        }
+    },
+    "edges": [
+    ["load_vbap", "filter_aedat"], 
+    ["filter_aedat", "hash_aedat"], 
+    ["filter_aedat", "groupby"], 
+    ["hash_aedat", "groupby"]
+    ]
+}
