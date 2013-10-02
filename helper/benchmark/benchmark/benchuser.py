@@ -8,6 +8,7 @@ import urllib2
 import collections
 import numpy
 
+
 from queries import *
 import queries
 
@@ -63,7 +64,11 @@ class User(threading.Thread):
         # For result file writing
         self._startTime = time.time()
         
-        self._prefix = "results" if len(prefix) == 0 else prefix
+        self._prefix = prefix
+        if not os.path.isdir(self._prefix):
+            os.makedirs(self._prefix)
+        
+        print "Starting Benchmark, writing to " + self._prefix
 
         if not os.path.exists(self.basePath()):
             os.makedirs("%s" % self._prefix)
@@ -71,8 +76,8 @@ class User(threading.Thread):
         self.initResultFiles()
         self.initDistinctValues()
 
-        self._accuResultFile = open( os.path.join(self.basePath(), "accumulated.txt"), "a+")
-        self._queryRowsFile = open( os.path.join(self.basePath(), "queryrows.txt"), "a+")
+        # self._accuResultFile = open( os.path.join(self.basePath(), "accumulated.txt"), "a+")
+        # self._queryRowsFile = open( os.path.join(self.basePath(), "queryrows.txt"), "a+")
 
         self._oltpQC = {}
         for q in OLTP_QUERY_FILES:
@@ -134,7 +139,7 @@ class User(threading.Thread):
         for queryid in (OLTP_QUERY_FILES.keys() + OLAP_QUERY_FILES.keys()):
             queryresultfilename = os.path.join(self.basePath(), str(self._userid), "%s.json" % queryid)
             with open(queryresultfilename, "a+") as f:
-                f.write('# endtime \n')
+                f.write('endtime;exec_time\n')
                 
 
 
@@ -185,7 +190,7 @@ class User(threading.Thread):
             # else:
                 # exec_time = self.olap(element)
 
-            self._accuResultFile.write("%f %d\n" % (time.time(), self._totalQueryCount))
+            # self._accuResultFile.write("%f %d\n" % (time.time(), self._totalQueryCount))
 
             # Sleep and increment count
             self._queryCount += 1
@@ -205,12 +210,12 @@ class User(threading.Thread):
         query_ids = map(lambda k: k[0], OLTP_WEIGHTS) + map(lambda k: k[0], OLAP_WEIGHTS)
 
 
-        with open(os.path.join( self.basePath(),"tp_%f_user_%d.csv" %(self._startTime, self._userid)), "a+") as f:
+        # with open(os.path.join( self.basePath(),"tp_%f_user_%d.csv" %(self._startTime, self._userid)), "a+") as f:
             # Build the timestamped througput list
-            for index in range(len(self._tpTimes)):
-                t = self._tpTimes[index]
-                queries = [str(t)] + [str(t) for t in map(lambda k: self._throughput[index][k], query_ids)]
-                f.write(" ".join(queries) + "\n")
+            # for index in range(len(self._tpTimes)):
+                # t = self._tpTimes[index]
+                # queries = [str(t)] + [str(t) for t in map(lambda k: self._throughput[index][k], query_ids)]
+                # f.write(" ".join(queries) + "\n")
 
 
     def oltp(self, predefined=None):
@@ -256,7 +261,7 @@ class User(threading.Thread):
 
         result = self.fireQuery(query, queryid)
         self._queries[queryid] += 1
-        self._queryRowsFile.write("%s %d\n" % (queryid, len(result[0]["rows"])))
+        # self._queryRowsFile.write("%s %d\n" % (queryid, len(result[0]["rows"])))
         return result[1]
 
 
@@ -271,7 +276,7 @@ class User(threading.Thread):
         response = urllib2.urlopen(req)
 
         result = response.read()
-
+        print result
         # Check for warmup phase
         timer = 0
         if self._counter > self._counter_threshold:
@@ -300,7 +305,7 @@ class User(threading.Thread):
                 if operator["id"] == "respond":
                     timer = float(operator["startTime"])
                     break
-            f.write( "%f %s\n" %(req_begin,str(timer)))
+            f.write( "%f;%s\n" %(req_begin,str(timer)))
 
 
         folderpath = os.path.join(self.basePath(), str(self._userid), "%s" % queryid)
@@ -309,13 +314,12 @@ class User(threading.Thread):
         
         for operator in jsonresult["performanceData"]:
             operatorfilename = os.path.join(self.basePath(), str(self._userid), "%s" % queryid, "%s.json" % operator["id"])
+            if not os.path.isfile(operatorfilename):
+                with open(operatorfilename, "a+") as f:
+                    f.write("start_time;duration\n")
             with open(operatorfilename, "a+") as f:
-                #f.write(json.dumps(operator, sort_keys=True, indent=8))
-                try:
-                    w_data = "%f %f %d %d\n" % (operator["startTime"], operator["endTime"] - operator["startTime"], operator["duration"], operator["data"])
-                except KeyError:
-                    w_data = "%f\n" % (operator["endTime"] - operator["startTime"])
-                f.write(w_data) 
+                w_data = "%f;%f\n" % (operator["startTime"], operator["endTime"] - operator["startTime"])
+                f.write(w_data)
 
         return timer
 
