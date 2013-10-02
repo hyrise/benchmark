@@ -7,3 +7,4 @@ logs/
 *.pyc
 .DS_Store
 *.DS_Store
+results/

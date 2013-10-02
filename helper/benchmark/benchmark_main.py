@@ -19,17 +19,16 @@ class Test(object):
 #-----------------------------------------------------------------------------
 # SCRIPT 
 #-----------------------------------------------------------------------------
-def script(num_users = 1, time_factor = 30):
+def script(num_users = 1, time_factor = 30, prefix="result", port="5000"):
     ''' example of how to use the User class to do benchmarking 
     '''
 
     server = "http://127.0.0.1"
-    port = 5000
     # time_factor = 30
-    prefix = tools.getlastprefix("queued_1k_idx")
+    # prefix = tools.getlastprefix("./tmp/bencmark")
     # queries = ("q6a", "q6b", "q7", "q8", "q10", "q11", "q12") # "q7idx", "q8idx"
     queries = ["q13insert"]
-
+    port = int(port)
     users = []
     for i in range(num_users):
          users.append(User(i, server, port, 100, 0, "NO_PAPI", queries, prefix=prefix, db="cbtr"))

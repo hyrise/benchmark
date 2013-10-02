@@ -39,12 +39,7 @@ class Build(object):
 		
 		self.make_all()
 
-	def setup_build(self):
-		# copy settings file
-		if os.path.isfile(self.source_dir+"settings.mk"):
-			os.remove(self.source_dir+"settings.mk")
-		shutil.copy2("./settings/"+self.settingsfile, self.source_dir+"settings.mk")
-		
+	def cleanup(self):
 		# cleanup leftover from old runs
 		if os.path.exists(self.build_dir_org):
 			# remove symlink
@@ -52,6 +47,15 @@ class Build(object):
 				os.unlink(self.build_dir[:-1])
 			# move build dir_org to build
 			os.rename(self.build_dir_org, self.build_dir)
+
+	def setup_build(self):
+		# copy settings file
+		if os.path.isfile(self.source_dir+"settings.mk"):
+			os.remove(self.source_dir+"settings.mk")
+		shutil.copy2("./settings/"+self.settingsfile, self.source_dir+"settings.mk")
+		
+		#cleanup
+		self.cleanup()
 
 		# create build folder if necessary
 		if not os.path.exists(self.result_dir):
