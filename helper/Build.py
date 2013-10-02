@@ -6,13 +6,6 @@ from os.path import isfile, join
 import sys
 import multiprocessing
 
-# class BuildManager(object):
-# 	def __init__(self):
-# 		self.builds = []
-
-# 	def detectBuildSettings(self):
-# 		path = "./settings/"
-# 		self.builds = [ Build(f) for f in os.listdir(path) if isfile(join(path,f)) and f.endswith(".mk") ]
 
 class Build(object):
 		
@@ -33,11 +26,6 @@ class Build(object):
 			os.mkdir(self.log_dir)
 
 		self.setup_build()
-
-		# uncommit to create clean build
-		# self.make_clean()
-		
-		self.make_all()
 
 	def cleanup(self):
 		# cleanup leftover from old runs

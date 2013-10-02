@@ -276,7 +276,7 @@ class User(threading.Thread):
         response = urllib2.urlopen(req)
 
         result = response.read()
-        print result
+        
         # Check for warmup phase
         timer = 0
         if self._counter > self._counter_threshold:

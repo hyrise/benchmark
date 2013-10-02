@@ -44,10 +44,10 @@ def start_server(settingsfile, port, verbose):
 	devnull = open('/dev/null', 'w')
 	server = "."+bin_dir+"hyrise_server"
 	print "Starting server: " + server, port
-	if verbose == None:
-		proc = subprocess.Popen([server, "--port="+port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=exp_env)
-	else:
+	if verbose:
 		proc = subprocess.Popen([server, "--port="+port], env=exp_env)
+	else:
+		proc = subprocess.Popen([server, "--port="+port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=exp_env)
 	os.chdir(cwd)
 	time.sleep(1)
 	return proc
@@ -59,9 +59,11 @@ def kill_server(pid):
 
 
 parser = optparse.OptionParser()
-parser.add_option("-m", "--manual", metavar="MANUAL",
+parser.add_option("-m", "--manual", dest="manual", default=False, action="store_true",
     help="Start server manually")
-parser.add_option("-p", "--port", metavar="PORT", default="5000",
+parser.add_option("-c", "--clean", dest="clean", default=False, action="store_true",
+    help="Execute clean before build")
+parser.add_option("-p", "--port", dest="port", metavar="PORT", default="5000",
     help="Server port")
 parser.add_option("-v", "--verbose",
 	action="store_true", dest="verbose", default=False, 
@@ -79,13 +81,18 @@ settingsfiles = ["nvram.mk", "nologger.mk", "bufferedlogger.mk"]
 
 for s in settingsfiles:
 	build = Build(s)
+	if opts.clean:
+		build.make_clean()
+	build.make_all()
 	print ""
-	if opts.manual is None:
+	if not opts.manual:
 		p = start_server(s, port=opts.port, verbose=opts.verbose)
+	else:
+		print "Not starting server, manual mode..."
 	try:
-		run_benchmark(max_users=3, resultdir=result_dir, settingsfile=s, port=opts.port)
+		run_benchmark(max_users=1, resultdir=result_dir, settingsfile=s, port=opts.port)
 	finally:
-		if opts.manual is None:
+		if not opts.manual:
 			kill_server(p)
 		build.cleanup()
 
