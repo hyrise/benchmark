@@ -3,12 +3,13 @@ PREPARE_QUERIES = {
     "distinct_kunnr_kna1" : "queries/distinct_kunnr_kna1.json",
     "distinct_matnr_mara" : "queries/vbap_mara_group.json",
     "distinct_vbeln_vbak" : "queries/distinct_vbeln_vbak.json",
-    "distinct_kunnr_knvp" : "queries/distinct_kunnr_knvp.json"
+    "distinct_kunnr_knvp" : "queries/distinct_kunnr_knvp.json",
+    "distinct_kunnr_knvp_mini" : "queries/distinct_kunnr_knvp_mini.json"
 #    "indices": "queries/create_indices.json"
 }
 
 # locations for json query files sorted by OLTP (TPCC) and OLAP (TPC-H).
-OLAP_QUERY_FILES = { 
+OLAP_QUERY_FILES = {
     "q10"                    : "queries/q10.json",
     "q11"                    : "queries/q11.json",
     "q12"                    : "queries/q12.json",
