@@ -4,7 +4,7 @@ import random
 import threading
 import time
 import urllib
-import urllib2
+import httplib
 import collections
 import numpy
 
@@ -34,6 +34,9 @@ class User(threading.Thread):
     def __init__(self, userid, address, port, oltppercentage, thinktime, papi='NO_PAPI', queries=queries.ALL_QUERIES, prefix="", db="cbtr2"):
         threading.Thread.__init__(self)
         
+        # self.http = urllib3.HTTPConnectionPool("127.0.0.1", port, maxsize=1)
+        host = "%s:%s" % (address, port)
+        self.conn = httplib.HTTPConnection(host)
         self._benchmarkQueries = queries
 
         self._stop = False
@@ -87,6 +90,9 @@ class User(threading.Thread):
         for q in OLAP_QUERY_FILES:
             self._olapQC[q] = open(OLAP_QUERY_FILES[q], "r").read()
 
+    def __del__(self):
+        print "close conn"
+        self.conn.close()
 
     def basePath(self):
         return self._prefix
@@ -158,65 +164,22 @@ class User(threading.Thread):
         """
         delta = time.time()
         while(not self._stop):
-
-            # Check for throughput intervals
-            diff = time.time() - delta
-            if round(diff) > self._interval:
-                if round(diff) > 2 * self._interval:
-                    for x in range(int(round(diff) / self._interval)):
-                        self._throughput.append(collections.defaultdict(int))
-                        self._throughputAll.append(0)
-                        self._tpTimes.append(0)
-
-                # Cut a single time frame
-                self._throughput.append(self._queries)
-                self._throughputAll.append(self._queryCount)
-                self._tpTimes.append(time.time())
-
-                self._queryCount = 0
-                self.resetThroughput()
-                delta = time.time()
-                
-
             query = ''
             current_query = self._totalQueryCount % len(self._benchmarkQueries)
             element = self._benchmarkQueries[current_query]
-            
             # Execute all queries in order
             exec_time = 0
             # if reduce(lambda i,q: True if q[0] == element or i == True else False, OLTP_WEIGHTS, False):
-            
             exec_time = self.oltp(element)
             # else:
                 # exec_time = self.olap(element)
-
             # self._accuResultFile.write("%f %d\n" % (time.time(), self._totalQueryCount))
-
             # Sleep and increment count
-            self._queryCount += 1
             self._totalQueryCount += 1
             time.sleep(self._thinktime)
 
     def stats(self):
-        """ Print some execution statistics about the User """
-        print "Overall tp/%ds (mean): %f" % (self._interval, numpy.array(self._throughputAll).mean())
-        print "Overall tp/%ds (median): %f" % (self._interval, numpy.median(numpy.array(self._throughputAll)))
-
-        # Mean over all queries
-        all_mean = numpy.array(self._throughputAll).mean()
-        all_median = numpy.median(numpy.array(self._throughputAll))
-
-        # Build the ordered list of all queryids 
-        query_ids = map(lambda k: k[0], OLTP_WEIGHTS) + map(lambda k: k[0], OLAP_WEIGHTS)
-
-
-        # with open(os.path.join( self.basePath(),"tp_%f_user_%d.csv" %(self._startTime, self._userid)), "a+") as f:
-            # Build the timestamped througput list
-            # for index in range(len(self._tpTimes)):
-                # t = self._tpTimes[index]
-                # queries = [str(t)] + [str(t) for t in map(lambda k: self._throughput[index][k], query_ids)]
-                # f.write(" ".join(queries) + "\n")
-
+        print "Query count: ", self._totalQueryCount
 
     def oltp(self, predefined=None):
 
@@ -266,24 +229,32 @@ class User(threading.Thread):
 
 
     def fireQuery(self, query, queryid):
-        url = "%s:%d" % (self._address, self._port)
+        
+        # Capture the time the request started
+        req_begin = time.time()      
+
         values = { 'query': query }
         data = urllib.urlencode(values)
-
-        # Capture the time the request started
-        req_begin = time.time()
-        req = urllib2.Request(url, data)
-        response = urllib2.urlopen(req)
-
+        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+        self.conn.request("POST", "/", data, headers)
+        response = self.conn.getresponse()
+        response.status, response.reason
         result = response.read()
         
         # Check for warmup phase
-        timer = 0
-        if self._counter > self._counter_threshold:
+        try:
             timer = self.logResults(result, queryid, req_begin)
-            pass
+            return (json.loads(result, encoding='latin-1'), timer)
+        except:
+            print ""
+            print "Query:"
+            print query
+            print ""
+            print "Server Response:"
+            print result
+            raise Exception("Log Result failed.")
 
-        return (json.loads(result, encoding='latin-1'), timer)
+        
 
 
     def logResults(self, result, queryid, req_begin):

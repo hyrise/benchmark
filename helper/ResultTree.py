@@ -20,7 +20,7 @@ class ResultTree(object):
 		self.file_types = file_types
 		self.level = level
 		self.is_leaf = False
-		self.values = None
+		self.result_dict = None
 		self.delimiter = delimiter
 
 	def __iter__(self):
@@ -46,7 +46,8 @@ class ResultTree(object):
 
 	# Parses result CSV file, assumes header line as first line of file
 	def parse_result_csv(self, filename):
-		result_dict = collections.defaultdict(list)
+		self.result_dict = collections.defaultdict(list)
+		self.is_leaf = True
 		with open(filename) as f:
 			reader = csv.DictReader(f, delimiter=self.delimiter, quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			for row in reader:
@@ -58,14 +59,14 @@ class ResultTree(object):
 							value = float(v)
 						except Exception, e:
 							value = v
-					result_dict[k].append(value)
-		for key in result_dict:
-			path = os.path.join(filename, key)
-			r = ResultTree(path, file_types=self.file_types, level=self.level+1)
-			r.parent = self
-			r.values = result_dict[key]
-			r.is_leaf = True
-			self.children.append(r)
+					self.result_dict[k].append(value)
+		# for key in result_dict:
+		# 	path = os.path.join(filename, key)
+		# 	r = ResultTree(path, file_types=self.file_types, level=self.level+1)
+		# 	r.parent = self
+		# 	r.values = result_dict[key]
+		# 	r.is_leaf = True
+		# 	self.children.append(r)
 
 	# filters result hierarchy and only keeps levels from levels
 	# leafs specifies levels that have to be leaves
@@ -120,10 +121,23 @@ class ResultTree(object):
 			return None
 		merged_node = copy.copy(node_list[0])
 		merged_node.children = []
-		merged_node.values = []
+		merged_node.result_dict = collections.defaultdict(list)
+
+		# check keys and counts
+		reference_node = node_list[0]
+		for node in node_list:
+			if sorted(reference_node.result_dict.keys()) != sorted(node.result_dict.keys()):
+				raise Exception("Cannot merge nodes, keys do not match: " + node.name)
+			count = -1
+			for key in node.result_dict.keys():
+				if count > 0 and count != len(node.result_dict[key]):
+					raise Exception("Cannot merge nodes, row counts are not the same: " + node.name)
+
 		for node in node_list:
 			merged_node.children.extend(node.children)
-			merged_node.values.extend(node.values)
+			for key in node.result_dict.keys():
+				values = node.result_dict[key]
+				merged_node.result_dict[key].extend(values)
 		return merged_node
 
 	def get_key_value(self, filter, x, y):
@@ -143,29 +157,29 @@ class ResultTree(object):
 				result.append(y_val)
 		return result
 
-	@property
-	def average(self):
-		return numpy.average(self.values)
+	# @property
+	# def average(self):
+	# 	return numpy.average(self.values)
 
-	@property
-	def median(self):
-		return numpy.median(self.values)
+	# @property
+	# def median(self):
+	# 	return numpy.median(self.values)
 
-	@property
-	def min(self):
-		return numpy.min(self.values)
+	# @property
+	# def min(self):
+	# 	return numpy.min(self.values)
 
-	@property
-	def max(self):
-		return numpy.max(self.values)
+	# @property
+	# def max(self):
+	# 	return numpy.max(self.values)
 
-	@property
-	def std(self):
-		return numpy.std(self.values)
+	# @property
+	# def std(self):
+	# 	return numpy.std(self.values)
 	
-	@property
-	def count(self):
-		return len(self.values)
+	# @property
+	# def count(self):
+	# 	return len(self.values)
 		
 
 
@@ -176,14 +190,22 @@ class ResultTree(object):
 			sys.stdout.write(str(node.name))
 			sys.stdout.write("\n")
 			if with_values and node.is_leaf:
-				node.print_attribute("values")
+			 	# node.print_attribute("values")
+			 	print node.result_dict
 			if with_stats and node.is_leaf:
-				node.print_attribute("average")
-				node.print_attribute("median")
-				node.print_attribute("min")
-				node.print_attribute("max")
-				node.print_attribute("std")
-				node.print_attribute("count")
+				keys = node.result_dict.keys()
+				node.print_indentation("|__ Keys: ")
+				sys.stdout.write(str(keys))
+				if len(keys) > 0:
+					sys.stdout.write(", Count: " + str(len(node.result_dict[keys[0]])))
+				sys.stdout.write("\n")
+
+				# node.print_attribute("average")
+				# node.print_attribute("median")
+				# node.print_attribute("min")
+				# node.print_attribute("max")
+				# node.print_attribute("std")
+				# node.print_attribute("count")
 
 	def print_indentation(self, s):
 		for x in range(self.calc_level()):

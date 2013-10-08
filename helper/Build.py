@@ -5,6 +5,7 @@ import select
 from os.path import isfile, join
 import sys
 import multiprocessing
+import Queue
 
 
 class Build(object):
@@ -72,6 +73,7 @@ class Build(object):
 
 	def make_all(self):
 		logfile = open(self.logfilename,"w")
+		last_logfile_lines = Queue.Queue(maxsize=20)
 		cwd = os.getcwd()
 		os.chdir(self.source_dir)
 		self.print_status("Building system")
@@ -93,6 +95,11 @@ class Build(object):
 				else:
 					sys.stdout.write(short)
 					sys.stdout.flush()
+				
+				if last_logfile_lines.full():
+					last_logfile_lines.get()
+				last_logfile_lines.put(read)
+
 				logfile.write(read)
 				logfile.flush()
 
@@ -103,6 +110,11 @@ class Build(object):
 		logfile.close()
 		print ""
 		if proc.returncode != 0 or not self.check_build_results():
+			print "######################"
+			print "Last lines from " + self.logfilename
+			print "######################"
+			while not last_logfile_lines.empty():
+				sys.stdout.write(last_logfile_lines.get())
 			raise Exception("Something went wrong building Hyrise. Settings: " + self.settingsfile)
 
 	def check_build_results(self):

@@ -13,19 +13,11 @@ import optparse
 import helper.benchmark.benchmark_main as b 
 from helper.Build import *
 
+DEVNULL = open(os.devnull, 'wb')
+PMFS_FILE = "/mnt/pmfs/hyrise_david"
 
 def id_generator(size=10, chars=string.ascii_uppercase + string.digits):
 	return ''.join(random.choice(chars) for x in range(size))
-
-def run_benchmark(max_users, resultdir, settingsfile, port):
-	run_resultdir = resultdir+settingsfile+"/"
-	os.makedirs(run_resultdir)
-	for num_users in xrange(1, max_users+1):
-		print ""
-		print "Executing with " + str(num_users) + " Users..."
-		print "######################################"
-		b.script(num_users = num_users, time_factor = 2, prefix=run_resultdir+"users_"+str(num_users), port=port)
-	print "Finished."
 
 def start_server(settingsfile, port, verbose):
 	hyrise_dir = "./hyrise/"
@@ -47,15 +39,54 @@ def start_server(settingsfile, port, verbose):
 	if verbose:
 		proc = subprocess.Popen([server, "--port="+port], env=exp_env)
 	else:
-		proc = subprocess.Popen([server, "--port="+port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=exp_env)
+		proc = subprocess.Popen([server, "--port="+port], stdout=DEVNULL, env=exp_env)
 	os.chdir(cwd)
 	time.sleep(1)
 	return proc
 
+def kill_server(proc):
+	print "Shutting down server..."
+	proc.terminate()
+	time.sleep(0.5)
 
-def kill_server(pid):
-	subprocess.call(["kill", "-SIGINT", "%d" % p.pid]) 
-	p.communicate()
+	if proc.poll() is None:
+		print "Server still running. Waiting 2 sec and forcing shutdown..."
+		time.sleep(2)
+		proc.kill()
+
+	if proc.poll() is None:
+		raise Exception("Something went wrong shutting down the server...")
+	else:
+		print "Server shut down..."
+
+
+
+def run_benchmark(resultdir, settingsfile, opts):
+	run_resultdir = resultdir+settingsfile+"/"
+	os.makedirs(run_resultdir)
+	for num_users in xrange(int(opts.lower), int(opts.upper)+1, int(opts.step)):
+		# if os.path.exists(PMFS_FILE):
+		# 	print "Deleting " + PMFS_FILE
+		# 	os.remove(PMFS_FILE)
+
+		# start server
+		if not opts.manual:
+			p = start_server(s, port=opts.port, verbose=opts.verbose)
+		else:
+			print "Not starting server, manual mode..."
+
+		print ""
+		print "Executing with " + str(num_users) + " Users..."
+		print "######################################"
+		
+		try:
+			b.script(num_users=num_users, time_factor=float(opts.runtime), prefix=run_resultdir+"users_"+str(num_users), port=opts.port, thinktime=float(opts.thinktime))
+		finally:
+			# kill server
+			if not opts.manual:
+				kill_server(p)		
+
+	print "Finished."
 
 
 parser = optparse.OptionParser()
@@ -68,6 +99,23 @@ parser.add_option("-p", "--port", dest="port", metavar="PORT", default="5000",
 parser.add_option("-v", "--verbose",
 	action="store_true", dest="verbose", default=False, 
     help='Verbose server output')
+
+parser.add_option("-l", "--lower",
+	dest="lower", default=1, 
+    help='Lower bound for number of users')
+parser.add_option("-u", "--upper",
+	dest="upper", default=10, 
+    help='Upper bound for number of users')
+parser.add_option("-s", "--step",
+	dest="step", default=1,
+    help='Stepsize number of users')
+parser.add_option("-t", "--thinktime",
+	dest="thinktime", default=0, 
+    help='Thinktime for users')
+parser.add_option("-r", "--runtime",
+	dest="runtime", default=5, 
+    help='Runtime for benchmark')
+
 opts, args = parser.parse_args()
 
 identifier = id_generator()
@@ -77,23 +125,18 @@ os.makedirs(result_dir)
 print "Starting benchmark, writing to " + result_dir
 
 settingsfiles = ["nvram.mk", "nologger.mk", "bufferedlogger.mk"]
-# settingsfiles = ["nvram.mk"]
+# settingsfiles = ["nologger.mk"]
 
 for s in settingsfiles:
-	build = Build(s)
-	if opts.clean:
-		build.make_clean()
-	build.make_all()
-	print ""
-	if not opts.manual:
-		p = start_server(s, port=opts.port, verbose=opts.verbose)
-	else:
-		print "Not starting server, manual mode..."
+
 	try:
-		run_benchmark(max_users=1, resultdir=result_dir, settingsfile=s, port=opts.port)
+		build = Build(s)
+		if opts.clean:
+			build.make_clean()
+		build.make_all()
+		print ""
+		run_benchmark(resultdir=result_dir, settingsfile=s, opts=opts)
 	finally:
-		if not opts.manual:
-			kill_server(p)
 		build.cleanup()
 
 print "Finished benchmark, results in " + result_dir
