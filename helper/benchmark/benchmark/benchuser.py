@@ -46,6 +46,7 @@ class User(threading.Thread):
         self._thinktime = thinktime
         self._userid = userid
         self._papi = papi
+        self._doLogging = False
 
         # Counter threashold defines a warmup phase
         self._counter = 0
@@ -66,6 +67,7 @@ class User(threading.Thread):
     
         # For result file writing
         self._startTime = time.time()
+        self._queryTime = 0
         
         self._prefix = prefix
         if not os.path.isdir(self._prefix):
@@ -177,9 +179,12 @@ class User(threading.Thread):
             # Sleep and increment count
             self._totalQueryCount += 1
             time.sleep(self._thinktime)
+        self._endTime = time.time()
+
 
     def stats(self):
-        print "Query count: ", self._totalQueryCount
+        print "Query count: %s | Runtime: %s | Logtime: %s | Querytime: %s" % (self._totalQueryCount, self._endTime-self._startTime, self._loggingEndTime-self._loggingStartTime, self._queryTime)
+
 
     def oltp(self, predefined=None):
 
@@ -241,18 +246,20 @@ class User(threading.Thread):
         response.status, response.reason
         result = response.read()
         
-        # Check for warmup phase
         try:
-            timer = self.logResults(result, queryid, req_begin)
-            return (json.loads(result, encoding='latin-1'), timer)
-        except:
+            if self._doLogging == True:
+                req_end = time.time();
+                self._queryTime += req_end - req_begin
+                self.logResults(result, queryid, req_begin)
+            return (json.loads(result, encoding='latin-1'), 0)
+        except Exception as e:
             print ""
             print "Query:"
             print query
             print ""
             print "Server Response:"
             print result
-            raise Exception("Log Result failed.")
+            raise e
 
         
 
@@ -295,7 +302,14 @@ class User(threading.Thread):
         return timer
 
     def startLogging(self):
-        self._counter = self._counter_threshold + 1
+        # self._counter = self._counter_threshold + 1
+        self._doLogging = True
+        self._loggingStartTime = time.time()
+
+    def stopLogging(self):
+        # self._counter = self._counter_threshold + 1
+        self._doLogging = False
+        self._loggingEndTime = time.time()
 
     def updateOltpPercentage(self, oltppercentage):
         self._oltppercentage = oltppercentage

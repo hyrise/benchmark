@@ -33,54 +33,34 @@ def script(num_users = 1, time_factor = 30, prefix="result", port="5000", thinkt
     for i in range(num_users):
          users.append(User(i, server, port, 100, thinktime, "NO_PAPI", queries, prefix=prefix, db="cbtr"))
 
-
-    # lu = LayoutUser(99, "VBAP", "layouts/VBAP_ROW.tbl", prefix=prefix, port=port)
-    # lu.start()
-    # lu.join()
-
-    # lu = LayoutUser(99, "VBAK", "layouts/VBAK_ROW.tbl", prefix=prefix, port=port)
-    # lu.start()
-    # lu.join()
-
-    print 'starting users for %s seconds ...' % time_factor
+    print 'Starting users for %s seconds ...' % time_factor
     for user in users:
         user.start()
-        # user.startLogging()
-    print 'users started'
-
-    # print "warming up 1 sec..."
-    # time.sleep(1)
+        
+    print "Users started. Warming up 1 sec..."
+    time.sleep(1)
     
-    # for user in users:
-        # user.startLogging()
+    print "Start logging..."
+    for user in users:
+        user.startLogging()
 
-    print 'waiting...'
+    print 'Waiting for %s seconds...' % time_factor
     time.sleep(time_factor)
 
-    # print "now"
-    # #####################################################
-    # lu = LayoutUser(99, "VBAP", "layouts/VBAP_COL.tbl", 1, prefix=prefix, port=port)
-    # lu.start()
-    # lu.join()
+    print "End logging..."
+    for user in users:
+        user.stopLogging()
 
-    # lu = LayoutUser(99, "VBAK", "layouts/VBAK_COL.tbl", 1, prefix=prefix, port=port)
-    # lu.start()
-    # lu.join()
-    # #####################################################
-
-    # time.sleep(time_factor)
-    print 'waiting finished'
-
-    print 'stopping users...'
+    print 'Stopping users...'
     for user in users:
         user.stop()
 
-    print 'waiting for users to finish...'
+    print 'Waiting for users to finish...'
 
     for user in users:
-        print user.join()
+        user.join()
 
-    print 'script finished'
+    print 'Script finished'
     for user in users:
         user.stats()
 

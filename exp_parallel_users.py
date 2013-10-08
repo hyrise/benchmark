@@ -23,6 +23,10 @@ def start_server(settingsfile, port, verbose):
 	hyrise_dir = "./hyrise/"
 	bin_dir = "./builds/"+settingsfile+"/"
 
+	if os.path.exists(PMFS_FILE):
+		print "Deleting " + PMFS_FILE
+		os.remove(PMFS_FILE)
+
 	cwd = os.getcwd()
 	os.chdir(hyrise_dir)
 	exp_env = os.environ.copy()
@@ -65,9 +69,6 @@ def run_benchmark(resultdir, settingsfile, opts):
 	run_resultdir = resultdir+settingsfile+"/"
 	os.makedirs(run_resultdir)
 	for num_users in xrange(int(opts.lower), int(opts.upper)+1, int(opts.step)):
-		# if os.path.exists(PMFS_FILE):
-		# 	print "Deleting " + PMFS_FILE
-		# 	os.remove(PMFS_FILE)
 
 		# start server
 		if not opts.manual:
