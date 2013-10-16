@@ -1,10 +1,9 @@
-import httplib
 import json
 import os
 import queries
+import requests
 import threading
 import time
-import urllib
 
 class User(threading.Thread):
 
@@ -12,7 +11,9 @@ class User(threading.Thread):
         threading.Thread.__init__(self)
 
         self._userId        = userId
-        self._connection    = httplib.HTTPConnection("%s:%s" % (host, port))
+        self._host          = host
+        self._port          = port
+        self._session       = requests.Session()
         self._dirOutput     = os.path.join(dirOutput, str(userId))
         self._queryDict     = queryDict
         self._queries       = kwargs["queries"] if kwargs.has_key("queries") else queries.QUERIES_ALL
@@ -28,7 +29,6 @@ class User(threading.Thread):
         self._prepare()
 
     def __del__(self):
-        self._connection.close()
         for _, f in self._logfiles.iteritems():
             f.close()
 
@@ -64,16 +64,14 @@ class User(threading.Thread):
 
     def _fireQuery(self, queryString):
         query = queryString % {"papi": self._papi}
-        data = urllib.urlencode({"query": query})
         headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
-        self._connection.request("POST", "/", data, headers)
-        response = self._connection.getresponse()
-        return response.read()
+        return self._session.post("http://%s:%s/" % (self._host, self._port), data={"query": query}, headers=headers)
 
     def _logResult(self, query, result):
         if self._logging:
             try:
-                jsonresult = json.loads(result, encoding='latin-1')
+                #jsonresult = json.loads(result, encoding='latin-1')
+                jsonresult = result.json()
             except ValueError:
                 print "***ValueError!!!"
                 return

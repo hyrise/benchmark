@@ -1,13 +1,12 @@
 import build
-import httplib
 import os
 import queries
+import requests
 import settings
 import signal
 import subprocess
 import sys
 import time
-import urllib
 import user
 
 class Benchmark:
@@ -30,6 +29,7 @@ class Benchmark:
         self._runtime       = kwargs["runtime"] if kwargs.has_key("runtime") else 5
         self._thinktime     = kwargs["thinktime"] if kwargs.has_key("thinktime") else 0
         self._manual        = kwargs["manual"] if kwargs.has_key("manual") else False
+        self._userClass     = kwargs["userClass"] if kwargs.has_key("userClass") else user.User
         self._dirBinary     = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
         self._dirResults    = os.path.join(os.getcwd(), "results/%s/%s" % (self._id, buildSettings.getName()))
         self._queryDict     = self._readDefaultQueryFiles()
@@ -140,22 +140,16 @@ class Benchmark:
         if self._prepQueries == None or len(self._prepQueries) == 0:
             return
         numQueries = len(self._prepQueries)
-        connection = httplib.HTTPConnection("%s:%s" % (self._host, self._port))
         for i, q in enumerate(self._prepQueries):
             sys.stdout.write("Running prepare queries... %i%%      \r" % ((i+1.0) / numQueries * 100))
             sys.stdout.flush()
             queryString = self._queryDict[q] % {"db": self._mysqlDB}
-            data = urllib.urlencode({"query": queryString})
             headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
             try:
-                connection.request("POST", "/", data, headers)
-                response = connection.getresponse()
-                response.status, response.reason
-                response.read()
+                requests.post("http://%s:%s/" % (self._host, self._port), data={"query": queryString}, headers=headers)
             except Exception:
                 print "Running prepare queries... %i%% --> Error" % ((i+1.0) / numQueries * 100)
         print "Running prepare queries... done"
-        connection.close()
 
     def _createUsers(self):
         for i in range(self._numUsers):
