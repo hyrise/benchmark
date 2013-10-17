@@ -47,6 +47,7 @@ class User(threading.Thread):
         self._userid = userid
         self._papi = papi
         self._doLogging = False
+        self._results = []
 
         # Counter threashold defines a warmup phase
         self._counter = 0
@@ -93,7 +94,6 @@ class User(threading.Thread):
             self._olapQC[q] = open(OLAP_QUERY_FILES[q], "r").read()
 
     def __del__(self):
-        print "close conn"
         self.conn.close()
 
     def basePath(self):
@@ -113,10 +113,10 @@ class User(threading.Thread):
             data = self.fireQuery(query, q)
             #print data[0]["rows"]
             
-            if "rows" in data[0]:
-                self.distincts[q] = data[0]["rows"]
-            else:
-                print "error, no rows"
+            # if "rows" in data[0]:
+            #     self.distincts[q] = data[0]["rows"]
+            # else:
+            #     print "error, no rows"
 
 
         print "... finished prepare ..."
@@ -170,20 +170,25 @@ class User(threading.Thread):
             current_query = self._totalQueryCount % len(self._benchmarkQueries)
             element = self._benchmarkQueries[current_query]
             # Execute all queries in order
-            exec_time = 0
+            # exec_time = 0
             # if reduce(lambda i,q: True if q[0] == element or i == True else False, OLTP_WEIGHTS, False):
-            exec_time = self.oltp(element)
+            self.oltp(element)
             # else:
                 # exec_time = self.olap(element)
             # self._accuResultFile.write("%f %d\n" % (time.time(), self._totalQueryCount))
             # Sleep and increment count
             self._totalQueryCount += 1
-            time.sleep(self._thinktime)
+            if self._thinktime > 0:
+                time.sleep(self._thinktime)
         self._endTime = time.time()
 
 
     def stats(self):
-        print "Query count: %s | Runtime: %s | Logtime: %s | Querytime: %s" % (self._totalQueryCount, self._endTime-self._startTime, self._loggingEndTime-self._loggingStartTime, self._queryTime)
+        runtime = self._endTime-self._startTime
+        loggingtime =  self._loggingEndTime-self._loggingStartTime
+        queries_per_sec = self._queryCount/loggingtime
+        optimal_queries_per_sec = self._queryCount/self._queryTime
+        print "Queries/s: %.2f | Optimal Queries/s: %.2f | Total Query Cout: %.0f | Runtime: %.2f | Logtime: %.2f | Querytime: %.2f" % (queries_per_sec, optimal_queries_per_sec, self._queryCount, runtime , loggingtime, self._queryTime)
 
 
     def oltp(self, predefined=None):
@@ -194,24 +199,26 @@ class User(threading.Thread):
             queryid = predefined
 
 
-        vbeln = random.choice(self.distincts["distinct_vbeln_vbak"])[0]
-        matnr = random.choice(self.distincts["distinct_matnr_mara"])[0]
-        addrnumber = random.choice(self.distincts["distinct_kunnr_adrc"])[0]
-        kunnr = random.choice(self.distincts["distinct_kunnr_kna1"])[0]
+        # vbeln = random.choice(self.distincts["distinct_vbeln_vbak"])[0]
+        # matnr = random.choice(self.distincts["distinct_matnr_mara"])[0]
+        # addrnumber = random.choice(self.distincts["distinct_kunnr_adrc"])[0]
+        # kunnr = random.choice(self.distincts["distinct_kunnr_kna1"])[0]
 
-        query = self._oltpQC[queryid] % {'papi': self._papi,
-            "vbeln": vbeln,
-            "matnr": matnr,
-            "addrnumber": addrnumber,
-            "kunnr": kunnr,
-            "core": str(self._core), "db": self._db}
-            
-        result = self.fireQuery(query, queryid)
+        # query = self._oltpQC[queryid] % {'papi': self._papi,
+        #     "vbeln": vbeln,
+        #     "matnr": matnr,
+        #     "addrnumber": addrnumber,
+        #     "kunnr": kunnr,
+        #     "core": str(self._core), "db": self._db}
+        
+        query = self._oltpQC[queryid] 
+
+        self.fireQuery(query, queryid)
         
         self._queries[queryid] += 1
         # self._queryRowsFile.write("%s %d\n" % (queryid,  len(result[0]["rows"])))
 
-        return result[1]
+        # return result[1]
 
 
     def olap(self, predefined=None):
@@ -234,35 +241,38 @@ class User(threading.Thread):
 
 
     def fireQuery(self, query, queryid):
-        
-        # Capture the time the request started
-        req_begin = time.time()      
-
         values = { 'query': query }
         data = urllib.urlencode(values)
         headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+        
+        # Capture the time the request started
+        req_begin = time.time()      
         self.conn.request("POST", "/", data, headers)
         response = self.conn.getresponse()
         response.status, response.reason
         result = response.read()
         
-        try:
-            if self._doLogging == True:
-                req_end = time.time();
-                self._queryTime += req_end - req_begin
-                self.logResults(result, queryid, req_begin)
-            return (json.loads(result, encoding='latin-1'), 0)
-        except Exception as e:
-            print ""
-            print "Query:"
-            print query
-            print ""
-            print "Server Response:"
-            print result
-            raise e
+        if self._doLogging == True:
+            req_end = time.time()
+            self._queryTime += req_end - req_begin
+            self._results.append((result, queryid, req_begin))
+            self._queryCount = self._queryCount + 1
+            # self.logResults(result, queryid, req_begin)
+        #     return (json.loads(result, encoding='latin-1'), 0)
+        # except Exception as e:
+        #     print ""
+        #     print "Query:"
+        #     print query
+        #     print ""
+        #     print "Server Response:"
+        #     print result
+        #     raise e
 
-        
-
+    def write_log(self):
+        # assert(len(self._results) == self._queryCount)
+        print "\nWriting log with count ", len(self._results)
+        for (result, queryid, req_begin) in self._results:
+            self.logResults(result, queryid, req_begin)
 
     def logResults(self, result, queryid, req_begin):
         try:

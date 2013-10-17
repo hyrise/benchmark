@@ -10,6 +10,14 @@ WITH_MYSQL := 1
 VERBOSE_BUILD := 1
 PERSISTENCY := NVRAM
 
+# [NVRAM_FILESIZE is specified in MB]
+NVRAM_MOUNTPOINT := /mnt/pmfs
+NVRAM_FILENAME := hyrise_david
+NVRAM_FILESIZE := 1024
+NVSIMULATOR_FLUSH_NS := 0
+NVSIMULATOR_READ_NS := 0
+NVSIMULATOR_WRITE_NS := 0
+
 
 # Following Option can be set optional
 

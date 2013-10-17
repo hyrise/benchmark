@@ -5,6 +5,7 @@ import re
 import numpy
 import collections
 import matplotlib as mpl
+from itertools import izip
 from helper.ResultTree import ResultTree
 
 
@@ -15,6 +16,19 @@ def show_or_save(plt, fig, use_x11, filename):
 		pp = PdfPages(filename)
 		pp.savefig(fig)
 		pp.close()
+
+def throuput_per_sec(result_node):
+	# cluster 1 second blocks
+	endtimes = result_node.result_dict["endtime"]
+	durations = result_node.result_dict["exec_time"]
+	endtime_min = min(endtimes)
+	clustered_dict = collections.defaultdict(list)	
+	for endtime, duration in izip(endtimes, durations):
+		clustered_dict[round(endtime-endtime_min, 0)].append(duration)
+	throughputs = [len(clustered_dict[x]) for x in clustered_dict]
+	m = numpy.median(throughputs)
+	return (m, m-numpy.std(throughputs), m+numpy.std(throughputs))
+
 
 # Prepare Results
 #####################################
@@ -41,7 +55,7 @@ builds = exec_times.get_values(filter = lambda node: node.level==1, y = lambda n
 
 
 # Plot Throughput for #users
-######################################
+#####################################
 
 fig=plt.figure()
 for buildname in builds:
@@ -49,21 +63,21 @@ for buildname in builds:
 		filter = lambda node: node.level==4 and buildname in node.name,
 		x = lambda node: int(re.sub("\D", "", node.name.split("/")[3])),
 		y = lambda node: node)
-	# plt.fill_between(result_dict.keys(), [max(x.median-x.std,0) for x in result_dict.values()], [max(x.median+x.std,0) for x in result_dict.values()], color='gray', edgecolor='none', alpha=0.3)
-	plt.plot(result_dict.keys(), [len(x.result_dict["exec_time"]) for x in result_dict.values()] , label=buildname)
+	plt.fill_between(result_dict.keys(), [throuput_per_sec(x)[1] for x in result_dict.values()], [throuput_per_sec(x)[2] for x in result_dict.values()], color='gray', edgecolor='none', alpha=0.3)
+	plt.plot(result_dict.keys(), [throuput_per_sec(x)[0] for x in result_dict.values()] , label=buildname)
 
 plt.legend(loc='upper right', prop={'size':10})
 plt.ylim(ymin=0)
-plt.xlim(1)
-plt.ylabel('Total Query Throughput')
+plt.xlim(xmin=min(result_dict.keys()), xmax=max(result_dict.keys()))
+plt.ylabel('Median Throughput per Second')
 plt.xlabel('# parallel Users')
 plt.title("Throughput for #users")
 show_or_save(plt, fig, use_x11, os.path.join(result_dir,"throuput.pdf"))
 
 
 
-# # Plot Latencies for #users
-# #####################################
+# Plot Latencies for #users
+#####################################
 
 fig=plt.figure()
 for buildname in builds:
@@ -79,7 +93,7 @@ for buildname in builds:
 plt.legend(loc='upper right', prop={'size':10})
 plt.ylim(ymin=0)
 plt.xlim(1)
-plt.ylabel('Median Query Latency in ns')
+plt.ylabel('Median Query Latency in ms')
 plt.xlabel('# parallel Users')
 plt.title("Latency for #users")
 show_or_save(plt, fig, use_x11, os.path.join(result_dir,"latencies_users.pdf"))
@@ -87,39 +101,39 @@ show_or_save(plt, fig, use_x11, os.path.join(result_dir,"latencies_users.pdf"))
 
 
 # Plot Latencies over time
-#####################################
+####################################
 
 fig=plt.figure()
+# for num_users in [1]:
+for buildname in builds:
+	num_users = 1
+	result_dict = exec_times.get_key_value(
+		filter = lambda node: node.level==4 and buildname in node.name,
+		x = lambda node: int(re.sub("\D", "", node.name.split("/")[3])),
+		y = lambda node: node)
 
-result_dict = exec_times.get_key_value(
-	filter = lambda node: node.level==4 and "nvram.mk" in node.name,
-	x = lambda node: int(re.sub("\D", "", node.name.split("/")[3])),
-	y = lambda node: node)
-
-for num_users in [1,2,4,8]:
 	endtimes = result_dict[num_users].result_dict["endtime"]
 	durations = result_dict[num_users].result_dict["exec_time"]
-	endtime_min = int(min(endtimes))
+	endtime_min = min(endtimes)
 	clustered_dict = collections.defaultdict(list)
 	i=0
 	for endtime in endtimes:
-		clustered_dict[int(endtime)-endtime_min].append(durations[i])
+		clustered_dict[round(endtime-endtime_min, 1)].append(durations[i])
+		# clustered_dict[endtime-endtime_min].append(durations[i])
 		i = i + 1
+	clustered_dict = collections.OrderedDict(sorted(clustered_dict.items(), key=lambda t: t[0]))
 	lower = [numpy.median(x)-numpy.std(x) for x in clustered_dict.values()]
 	upper = [numpy.median(x)+numpy.std(x) for x in clustered_dict.values()]
 
 	plt.fill_between(clustered_dict.keys(), lower, upper, color='gray', edgecolor='none', alpha=0.3)
-	plt.plot(clustered_dict.keys(), [numpy.median(x) for x in clustered_dict.values()] , label=str(num_users) + " user")
+	plt.plot(clustered_dict.keys(), [numpy.median(x) for x in clustered_dict.values()] , label=buildname)
 
 plt.legend(loc='upper right', prop={'size':10})
 plt.ylim(ymin=0)
-plt.xlim(1)
-plt.ylabel('Median Query Latency in ns')
+# plt.xlim(1)
+plt.ylabel('Query Latency in ms')
 plt.xlabel('Time in seconds')
 plt.title("Latency over time")
 show_or_save(plt, fig, use_x11, os.path.join(result_dir,"latencies_time.pdf"))
-
-
-
 
 

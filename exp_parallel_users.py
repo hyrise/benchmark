@@ -15,6 +15,7 @@ from helper.Build import *
 
 DEVNULL = open(os.devnull, 'wb')
 PMFS_FILE = "/mnt/pmfs/hyrise_david"
+LOG_FILE = "/home/David.Schwalb/benchmark/hyrise/logfile"
 
 def id_generator(size=10, chars=string.ascii_uppercase + string.digits):
 	return ''.join(random.choice(chars) for x in range(size))
@@ -26,6 +27,9 @@ def start_server(settingsfile, port, verbose):
 	if os.path.exists(PMFS_FILE):
 		print "Deleting " + PMFS_FILE
 		os.remove(PMFS_FILE)
+	if os.path.exists(LOG_FILE):
+		print "Deleting " + LOG_FILE
+		os.remove(LOG_FILE)
 
 	cwd = os.getcwd()
 	os.chdir(hyrise_dir)
@@ -81,7 +85,7 @@ def run_benchmark(resultdir, settingsfile, opts):
 		print "######################################"
 		
 		try:
-			b.script(num_users=num_users, time_factor=float(opts.runtime), prefix=run_resultdir+"users_"+str(num_users), port=opts.port, thinktime=float(opts.thinktime))
+			b.script(num_users=num_users, time_factor=float(opts.runtime), prefix=run_resultdir+"users_"+str(num_users), port=opts.port, thinktime=float(opts.thinktime), warmup=float(opts.warmup))
 		finally:
 			# kill server
 			if not opts.manual:
@@ -116,6 +120,9 @@ parser.add_option("-t", "--thinktime",
 parser.add_option("-r", "--runtime",
 	dest="runtime", default=5, 
     help='Runtime for benchmark')
+parser.add_option("-w", "--warmup",
+	dest="warmup", default=1, 
+    help='Warmup time')
 
 opts, args = parser.parse_args()
 
@@ -131,14 +138,16 @@ settingsfiles = ["nvram.mk", "nologger.mk", "bufferedlogger.mk"]
 for s in settingsfiles:
 
 	try:
-		build = Build(s)
-		if opts.clean:
-			build.make_clean()
-		build.make_all()
-		print ""
+		if not opts.manual:
+			build = Build(s)
+			if opts.clean:
+				build.make_clean()
+			build.make_all()
+			print ""
 		run_benchmark(resultdir=result_dir, settingsfile=s, opts=opts)
 	finally:
-		build.cleanup()
+		if not opts.manual:
+			build.cleanup()
 
 print "Finished benchmark, results in " + result_dir
 

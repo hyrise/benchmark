@@ -7,7 +7,7 @@ from benchmark.queries import *
 from benchmark.benchuser import User as User
 from benchmark.layoutuser import LayoutUser as LayoutUser
 import benchmark.tools as tools
-
+import sys
 
 
 class Test(object):
@@ -19,7 +19,7 @@ class Test(object):
 #-----------------------------------------------------------------------------
 # SCRIPT 
 #-----------------------------------------------------------------------------
-def script(num_users = 1, time_factor = 30, prefix="result", port="5000", thinktime=0):
+def script(num_users = 1, time_factor = 30, prefix="result", port="5000", thinktime=0, warmup=0):
     ''' example of how to use the User class to do benchmarking 
     '''
 
@@ -37,8 +37,9 @@ def script(num_users = 1, time_factor = 30, prefix="result", port="5000", thinkt
     for user in users:
         user.start()
         
-    print "Users started. Warming up 1 sec..."
-    time.sleep(1)
+    print "Users started. Warming up %s sec..." % warmup
+    if warmup > 0:
+        time.sleep(warmup)
     
     print "Start logging..."
     for user in users:
@@ -59,6 +60,13 @@ def script(num_users = 1, time_factor = 30, prefix="result", port="5000", thinkt
 
     for user in users:
         user.join()
+
+    sys.stdout.write('Writing logfiles')
+
+    for user in users:
+        user.write_log()
+        sys.stdout.write('.')
+    sys.stdout.write("/n")
 
     print 'Script finished'
     for user in users:
