@@ -14,6 +14,7 @@ class Benchmark:
     def __init__(self, benchmarkGroupId, buildSettings, **kwargs):
         self._id            = benchmarkGroupId
         self._buildSettings = buildSettings
+        self._userClass     = kwargs["userClass"] if kwargs.has_key("userClass") else user.User
         self._numUsers      = kwargs["numUsers"] if kwargs.has_key("numUsers") else 1
         self._mysqlDB       = kwargs["mysqlDB"] if kwargs.has_key("mysqlDB") else "cbtr"
         self._mysqlHost     = kwargs["mysqlHost"] if kwargs.has_key("mysqlHost") else "vm-hyrise-jenkins.eaalab.hpi.uni-potsdam.de"
@@ -22,6 +23,7 @@ class Benchmark:
         self._mysqlPass     = kwargs["mysqlPass"] if kwargs.has_key("mysqlPass") else "hyrise"
         self._papi          = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
         self._prepQueries   = kwargs["prepareQueries"] if kwargs.has_key("prepareQueries") else queries.QUERIES_PREPARE
+        self._prepArgs      = kwargs["prepareArgs"] if kwargs.has_key("prepareArgs") else {"db": "cbtr"}
         self._queries       = kwargs["benchmarkQueries"] if kwargs.has_key("benchmarkQueries") else queries.QUERIES_ALL
         self._host          = kwargs["host"] if kwargs.has_key("host") else "127.0.0.1"
         self._port          = kwargs["port"] if kwargs.has_key("port") else 5000
@@ -29,17 +31,22 @@ class Benchmark:
         self._runtime       = kwargs["runtime"] if kwargs.has_key("runtime") else 5
         self._thinktime     = kwargs["thinktime"] if kwargs.has_key("thinktime") else 0
         self._manual        = kwargs["manual"] if kwargs.has_key("manual") else False
-        self._userClass     = kwargs["userClass"] if kwargs.has_key("userClass") else user.User
+        self._userArgs      = kwargs["userArgs"] if kwargs.has_key("userArgs") else {"queries": self._queries}
         self._dirBinary     = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
         self._dirResults    = os.path.join(os.getcwd(), "results/%s/%s" % (self._id, buildSettings.getName()))
         self._queryDict     = self._readDefaultQueryFiles()
+        self._session       = requests.Session()
         self._build         = None
         self._serverProc    = None
         self._users         = []
-        self._connection    = None
 
+        self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirResults):
             os.makedirs(self._dirResults)
+
+    def benchPrepare(self):
+        """ implement this in subclasses """
+        pass
 
     def run(self):
         signal.signal(signal.SIGINT, self._signalHandler)
@@ -56,6 +63,7 @@ class Benchmark:
             print "---\nManual mode, expecting HYRISE server running on port %s\n---" % self._port
 
         self._runPrepareQueries()
+        self.benchPrepare()
 
         self._createUsers()
         sys.stdout.write("Starting %s user(s)...\r" % self._numUsers)
@@ -98,12 +106,15 @@ class Benchmark:
             avg += self._users[i].getThroughput()
         print "\nThroughput: %f transactions per second (%i total)\n================\n" % (avg, total)
 
-
     def addQueryFile(self, queryId, filename):
         if self._queryDict.has_key(queryId):
             raise Exception("a query with id '%s' is already registered" % queryId)
         else:
             self._queryDict[queryId] = open(filename).read()
+
+    def fireQuery(self, queryString, queryArgs):
+        query = queryString % queryArgs
+        return self._session.post("http://%s:%s/" % (self._host, self._port), data={"query": query}).json()
 
     def _readDefaultQueryFiles(self):
         cwd = os.getcwd()
@@ -143,17 +154,16 @@ class Benchmark:
         for i, q in enumerate(self._prepQueries):
             sys.stdout.write("Running prepare queries... %i%%      \r" % ((i+1.0) / numQueries * 100))
             sys.stdout.flush()
-            queryString = self._queryDict[q] % {"db": self._mysqlDB}
-            headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
             try:
-                requests.post("http://%s:%s/" % (self._host, self._port), data={"query": queryString}, headers=headers)
+                self.fireQuery(self._queryDict[q], self._prepArgs)
+                self._session.post("http://%s:%s/" % (self._host, self._port), data={"query": queryString})
             except Exception:
                 print "Running prepare queries... %i%% --> Error" % ((i+1.0) / numQueries * 100)
         print "Running prepare queries... done"
 
     def _createUsers(self):
         for i in range(self._numUsers):
-            self._users.append(user.User(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, queries=self._queries, thinktime=self._thinktime))
+            self._users.append(user.User(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, **self._userArgs))
 
     def _stopServer(self):
         if not self._manual and self._serverProc:
