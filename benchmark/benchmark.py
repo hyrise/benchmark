@@ -102,15 +102,21 @@ class Benchmark:
 
         avg, total = 0, 0
         for i in range(self._numUsers):
-            total += self._users[i]._totalQueries
+            total += self._users[i]._totalRuns
             avg += self._users[i].getThroughput()
-        print "\nThroughput: %f transactions per second (%i total)\n================\n" % (avg, total)
+        print "\nThroughput: %f runs per second (%i total)\n================\n" % (avg, total)
 
     def addQueryFile(self, queryId, filename):
         if self._queryDict.has_key(queryId):
             raise Exception("a query with id '%s' is already registered" % queryId)
         else:
             self._queryDict[queryId] = open(filename).read()
+
+    def setUserClass(self, userClass):
+        self._userClass = userClass
+
+    def setUserArgs(self, args):
+        self._userArgs = args
 
     def fireQuery(self, queryString, queryArgs={}, sessionContext=None, autocommit=False):
         query = queryString % queryArgs

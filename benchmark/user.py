@@ -25,15 +25,10 @@ class User(threading.Thread):
         self._papi          = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
         self._stop          = threading.Event()
         self._logging       = False
-        self._logfiles      = {}
+        self._log           = {}
 
-        self._totalQueries  = 0
+        self._totalRuns     = 0
         self._totalTime     = 0
-
-    def __del__(self):
-        #for _, f in self._logfiles.iteritems():
-        #    f.close()
-        pass
 
     def prepareUser(self):
         """ implement this in subclasses """
@@ -47,16 +42,20 @@ class User(threading.Thread):
         """ implement this in subclasses """
         pass
 
+    def formatLog(self, key, value):
+        """ implement this in subclasses """
+        return "%s\n" % str(value)
+
     def run(self):
         self._prepare()
         self.prepareUser()
         while not self._stop.isSet():
-            #tStart = time.time()
+            tStart = time.time()
             self.runUser()
-            self._totalQueries += 1
-            self._totalTime += 1
-            #tEnd = time.time()
+            self._totalTime += time.time() - tStart
+            self._totalRuns += 1
         self.stopUser()
+        self._writeLogs()
 
     def stop(self):
         self._stop.set()
@@ -77,26 +76,22 @@ class User(threading.Thread):
     def log(self, key, value):
         if not self._logging:
             return
+        if not self._log.has_key(key):
+            self._log[key] = [value]
+        else:
+            self._log[key].append(value)
 
     def getThroughput(self):
-        return self._totalQueries / self._totalTime
+        return self._totalRuns / self._totalTime
 
     def _prepare(self):
         self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirOutput):
             os.makedirs(self._dirOutput)
-        for q in self._queries:
-            fn = os.path.join(self._dirOutput, "%s.csv" % q)
-            #self._logfiles[q] = open(fn, "w")
-            #self._logfiles[q].write("operator,duration\n")
 
-    def _logResult(self, query, result):
-        if self._logging:
-            #try:
-            #    jsonresult = result.json()
-            #except ValueError:
-            #    print "***ValueError!!!"
-            #    return
-            #for operator in jsonresult["performanceData"]:
-            #    self._logfiles[query].write("%s,%f\n" % (operator["name"], operator["endTime"] - operator["startTime"]))
-            pass
+    def _writeLogs(self):
+        for k, vals in self._log.iteritems():
+            logfile = open(os.path.join(self._dirOutput, "%s.log" % str(k)), "w")
+            for v in vals:
+                logfile.write(self.formatLog(k,v))
+            logfile.close()
