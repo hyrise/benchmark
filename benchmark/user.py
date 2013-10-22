@@ -30,11 +30,10 @@ class User(threading.Thread):
         self._totalQueries  = 0
         self._totalTime     = 0
 
-        self._prepare()
-
     def __del__(self):
-        for _, f in self._logfiles.iteritems():
-            f.close()
+        #for _, f in self._logfiles.iteritems():
+        #    f.close()
+        pass
 
     def prepareUser(self):
         """ implement this in subclasses """
@@ -49,6 +48,7 @@ class User(threading.Thread):
         pass
 
     def run(self):
+        self._prepare()
         self.prepareUser()
         while not self._stop.isSet():
             #tStart = time.time()
@@ -87,15 +87,16 @@ class User(threading.Thread):
             os.makedirs(self._dirOutput)
         for q in self._queries:
             fn = os.path.join(self._dirOutput, "%s.csv" % q)
-            self._logfiles[q] = open(fn, "w")
-            self._logfiles[q].write("operator,duration\n")
+            #self._logfiles[q] = open(fn, "w")
+            #self._logfiles[q].write("operator,duration\n")
 
     def _logResult(self, query, result):
         if self._logging:
-            try:
-                jsonresult = result.json()
-            except ValueError:
-                print "***ValueError!!!"
-                return
-            for operator in jsonresult["performanceData"]:
-                self._logfiles[query].write("%s,%f\n" % (operator["name"], operator["endTime"] - operator["startTime"]))
+            #try:
+            #    jsonresult = result.json()
+            #except ValueError:
+            #    print "***ValueError!!!"
+            #    return
+            #for operator in jsonresult["performanceData"]:
+            #    self._logfiles[query].write("%s,%f\n" % (operator["name"], operator["endTime"] - operator["startTime"]))
+            pass

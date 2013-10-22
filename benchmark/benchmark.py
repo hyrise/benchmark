@@ -112,9 +112,12 @@ class Benchmark:
         else:
             self._queryDict[queryId] = open(filename).read()
 
-    def fireQuery(self, queryString, queryArgs):
+    def fireQuery(self, queryString, queryArgs={}, sessionContext=None, autocommit=False):
         query = queryString % queryArgs
-        return self._session.post("http://%s:%s/" % (self._host, self._port), data={"query": query}).json()
+        data = {"query": query}
+        if sessionContext: data["sessionContext"] = sessionContext
+        if autocommit: data["autocommit"] = "true"
+        return self._session.post("http://%s:%s/" % (self._host, self._port), data=data)
 
     def _readDefaultQueryFiles(self):
         cwd = os.getcwd()
@@ -163,7 +166,7 @@ class Benchmark:
 
     def _createUsers(self):
         for i in range(self._numUsers):
-            self._users.append(user.User(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, **self._userArgs))
+            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, **self._userArgs))
 
     def _stopServer(self):
         if not self._manual and self._serverProc:
