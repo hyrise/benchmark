@@ -117,14 +117,13 @@ class TPCCBenchmark(benchmark.Benchmark):
     def benchPrepare(self):
         """ executed once after benchmark was started and HYRISE server is running """
         rand.setNURand(nurand.makeForLoad())
-
         dirTPCC = os.path.join(self._dirBinary, "tpcc")
         if not os.path.isdir(dirTPCC):
             os.makedirs(dirTPCC)
         dirTPCCTables = os.path.join(dirTPCC, "tables")
-        dirTPCCQUeries = os.path.join(dirTPCC, "queries")
-        if not os.path.islink(dirTPCCQUeries):
-            os.symlink(os.path.join(os.getcwd(), "pytpcc", "queries"), dirTPCCQUeries)
+        dirTPCCQueries = os.path.join(dirTPCC, "queries")
+        if not os.path.islink(dirTPCCQueries):
+            os.symlink(os.path.join(os.getcwd(), "pytpcc", "queries"), dirTPCCQueries)
         if not os.path.islink(dirTPCCTables):
             os.symlink(os.path.join(os.getcwd(), "pytpcc", "tables"), dirTPCCTables)
 
@@ -135,6 +134,8 @@ class TPCCBenchmark(benchmark.Benchmark):
         config["reset"] = False
         config["port"] = self._port
         config["database"] = "tpcc/tables"#"/home/Tim.Berning/test/benchmark/builds/none/tpcc/tables"
+        #config["database"] = dirTPCCTables
+        config["queries"] = dirTPCCQueries
         self.driver.loadConfig(config)
 
         self.driver.executeStart()
