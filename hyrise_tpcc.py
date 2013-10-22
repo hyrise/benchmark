@@ -15,6 +15,7 @@ class TPCCUser(benchmark.User):
 
     def __init__(self, userId, host, port, dirOutput, queryDict, **kwargs):
         benchmark.User.__init__(self, userId, host, port, dirOutput, queryDict, **kwargs)
+
         self.scaleParameters = kwargs["scaleParameters"]
         self.config = kwargs["config"]
         self.config["reset"] = False
@@ -22,6 +23,7 @@ class TPCCUser(benchmark.User):
         self.config["querylog"] = None
         self.config["print_load"] = False
         self.config["port"] = self._port
+        self.config["database"] = self._port
         self.driver = drivers.hyrisedriver.HyriseDriver("")
         self.driver.loadConfig(self.config)
         self.driver.conn = self
@@ -32,13 +34,12 @@ class TPCCUser(benchmark.User):
     def prepareUser(self):
         """ executed once when user starts """
         self.e = executor.Executor(self.driver, self.scaleParameters)
-        self.r = results.Results()
 
     def runUser(self):
         """ main user activity """
         txn, params = self.e.doOne()
-        #txn_id = self.r.startTransaction(txn)
         self.driver.executeTransaction(txn, params)
+        self.log("transactions", txn)
 
     def stopUser(self):
         """ executed once after stop request was sent to user """
@@ -50,13 +51,11 @@ class TPCCUser(benchmark.User):
         for k,v in paramlist.iteritems():
             if v == True:    v = 1;
             elif v == False: v = 0;
-        #print "=== fire query:", querystr
         result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
-        #print "=== response:", result
         self.context = result.get("session_context", None)
         self.lastResult = result.get("rows", None)
         self.lastHeader = result.get("header", None)
-        #print "=== self.lastResult is now", self.lastResult
+        self.lastPerf   = result.get("performanceData", None)
 
     def commit(self):
         if not self.context:
@@ -102,18 +101,18 @@ class TPCCUser(benchmark.User):
 class TPCCBenchmark(benchmark.Benchmark):
 
     def __init__(self, benchmarkGroupId, buildSettings, **kwargs):
-        os.environ['HYRISE_DB_PATH'] = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
-        kwargs["userClass"] = TPCCUser
+        os.environ['HYRISE_DB_PATH'] = os.path.join(os.getcwd(), "builds", buildSettings.getName())
         benchmark.Benchmark.__init__(self, benchmarkGroupId, buildSettings, **kwargs)
 
         self.scalefactor     = kwargs["scalefactor"] if kwargs.has_key("scalefactor") else 1
         self.warehouses      = kwargs["warehouses"] if kwargs.has_key("warehouses") else 4
         self.driverClass     = createDriverClass("hyrise")
-        self.driver          = self.driverClass(os.path.join(os.getcwd(), "pytpcc/tpcc.sql"))
+        self.driver          = self.driverClass(os.path.join(os.getcwd(), "pytpcc", "tpcc.sql"))
         self.driver.confirm  = False
-        #self.driver.conn     = self
         self.driver.tables   = ["CUSTOMER", "DISTRICT", "HISTORY", "ITEM", "NEW_ORDER", "ORDER_LINE", "ORDERS", "STOCK", "WAREHOUSE"]
         self.scaleParameters = scaleparameters.makeWithScaleFactor(self.warehouses, self.scalefactor)
+
+        self.setUserClass(TPCCUser)
 
     def benchPrepare(self):
         """ executed once after benchmark was started and HYRISE server is running """
@@ -126,8 +125,8 @@ class TPCCBenchmark(benchmark.Benchmark):
         dirTPCCQUeries = os.path.join(dirTPCC, "queries")
         if not os.path.islink(dirTPCCQUeries):
             os.symlink(os.path.join(os.getcwd(), "pytpcc", "queries"), dirTPCCQUeries)
-        if not os.path.isdir(dirTPCCTables):
-            os.makedirs(dirTPCCTables)
+        if not os.path.islink(dirTPCCTables):
+            os.symlink(os.path.join(os.getcwd(), "pytpcc", "tables"), dirTPCCTables)
 
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
@@ -135,16 +134,15 @@ class TPCCBenchmark(benchmark.Benchmark):
         config["print_load"] = False
         config["reset"] = False
         config["port"] = self._port
+        config["database"] = "tpcc/tables"#"/home/Tim.Berning/test/benchmark/builds/none/tpcc/tables"
         self.driver.loadConfig(config)
 
-        #l = loader.Loader(self.driver, self.scaleParameters, range(self.scaleParameters.starting_warehouse, self.scaleParameters.ending_warehouse+1), True)
         self.driver.executeStart()
-        #l.execute()
 
-        self._userArgs = {
+        self.setUserArgs({
             "scaleParameters": self.scaleParameters,
             "config": config
-        }
+        })
 
 if __name__ == "__main__":
     aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')
@@ -152,7 +150,7 @@ if __name__ == "__main__":
                          help='Benchmark scale factor')
     aparser.add_argument('--warehouses', default=1, type=int, metavar='W',
                          help='Number of Warehouses')
-    aparser.add_argument('--duration', default=60, type=int, metavar='D',
+    aparser.add_argument('--duration', default=20, type=int, metavar='D',
                          help='How long to run the benchmark in seconds')
     aparser.add_argument('--clients', default=1, type=int, metavar='N',
                          help='The number of blocking clients to fork')
@@ -167,15 +165,37 @@ if __name__ == "__main__":
     args = vars(aparser.parse_args())
 
     s1 = benchmark.Settings("none", PERSISTENCY="NONE")
+    s2 = benchmark.Settings("logger", PERSISTENCY="SIMPLELOGGER")
+    s3 = benchmark.Settings("nvram", PERSISTENCY="NVRAM")
 
     b1 = TPCCBenchmark("testrun", s1,
                        port=args["port"],
                        manual=args["manual"],
-                       warmuptime=10,
+                       warmuptime=0,
+                       runtime=args["duration"],
+                       numUsers=args["clients"],
+                       warehouses=args["warehouses"],
+                       benchmarkQueries=[],
+                       prepareQueries=[])
+    b2 = TPCCBenchmark("testrun", s2,
+                       port=args["port"],
+                       manual=args["manual"],
+                       warmuptime=0,
+                       runtime=args["duration"],
+                       numUsers=args["clients"],
+                       warehouses=args["warehouses"],
+                       benchmarkQueries=[],
+                       prepareQueries=[])
+    b3 = TPCCBenchmark("testrun", s3,
+                       port=args["port"],
+                       manual=args["manual"],
+                       warmuptime=0,
                        runtime=args["duration"],
                        numUsers=args["clients"],
                        warehouses=args["warehouses"],
                        benchmarkQueries=[],
                        prepareQueries=[])
 
-    b1.run()
+    #b1.run()
+    b2.run()
+    b3.run()
