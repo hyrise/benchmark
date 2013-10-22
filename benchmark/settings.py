@@ -5,14 +5,12 @@ class Settings:
     def __init__(self, name, **kwargs):
         self._name = str(name)
         self._dict = {
-            "PRODUCTION"           : 1,
-            "USE_PROFILER"         : 0,
-            "USE_V8"               : 0,
-            "COVERAGE_TESTING"     : 0,
-            "VAMPIR_TRACE"         : 0,
-            "PAPI_TRACE"           : 1,
-            "WITH_MYSQL"           : 1,
-            "VERBOSE_BUILD"        : 1,
+            "BLD"                  : "release",
+            "WITH_PROFILER"        : None,
+            "WITH_V8"              : None,
+            "WITH_PAPI"            : None,
+            "WITH_MYSQL"           : None,
+            "VERBOSE_BUILD"        : None,
             "PERSISTENCY"          : "NONE",
             "NVRAM_MOUNTPOINT"     : None,
             "NVRAM_FILENAME"       : None,
@@ -20,9 +18,7 @@ class Settings:
             "NVSIMULATOR_FLUSH_NS" : None,
             "NVSIMULATOR_READ_NS"  : None,
             "NVSIMULATOR_WRITE_NS" : None,
-            "HYRISE_ALLOCATOR"     : None,
-            "COMPILER"             : "g++48",
-            "V8_BASE_DIRECTORY"    : None
+            "COMPILER"             : None,
         }
         for k, v in kwargs.iteritems():
             self.__setitem__(k, v)
