@@ -1,15 +1,30 @@
 import argparse
 import benchmark
+import logging
 import os
+import requests
 import shutil
+import subprocess
 import sys
 
+# make sure there ARE py-tpcc files
+dirPYTPCC_repo = os.path.join(os.getcwd(), "pytpcc_checkout")
+dirPYTPCC = os.path.join(os.getcwd(), "pytpcc")
+if not os.path.islink(dirPYTPCC):
+    if not os.path.isdir(dirPYTPCC_repo):
+        print "*** no py-tpcc checkout found, cloning from githuhb"
+        subprocess.Popen("git clone git@github.com:ollixy/hyrise.git %s" % dirPYTPCC_repo, shell=True, stdout=open("/dev/null"))
+    print "*** linking py-tpcc repository"
+    os.symlink(os.path.join(dirPYTPCC_repo, "pytpcc"), dirPYTPCC)
+
 # include py-tpcc files
-sys.path.insert(0, os.path.join(os.getcwd(), "pytpcc"))
+sys.path.insert(0, dirPYTPCC)
 from util import *
 from runtime import *
 import drivers
 from tpcc import *
+
+logging.getLogger("requests").setLevel(logging.WARNING)
 
 class TPCCUser(benchmark.User):
 
@@ -38,8 +53,10 @@ class TPCCUser(benchmark.User):
     def runUser(self):
         """ main user activity """
         txn, params = self.e.doOne()
+        tStart = time.time()
         self.driver.executeTransaction(txn, params)
-        self.log("transactions", txn)
+        tEnd = time.time()
+        self.log("transactions", "%s,%f" % (txn, tEnd - tStart))
 
     def stopUser(self):
         """ executed once after stop request was sent to user """
@@ -130,11 +147,11 @@ class TPCCBenchmark(benchmark.Benchmark):
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
         config["querylog"] = None
+        config["debug"] = False
         config["print_load"] = False
         config["reset"] = False
         config["port"] = self._port
-        config["database"] = "tpcc/tables"#"/home/Tim.Berning/test/benchmark/builds/none/tpcc/tables"
-        #config["database"] = dirTPCCTables
+        config["database"] = "tpcc/tables"
         config["queries"] = dirTPCCQueries
         self.driver.loadConfig(config)
 
@@ -197,6 +214,6 @@ if __name__ == "__main__":
                        benchmarkQueries=[],
                        prepareQueries=[])
 
-    #b1.run()
+    b1.run()
     b2.run()
     b3.run()
