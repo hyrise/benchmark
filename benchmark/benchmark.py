@@ -153,7 +153,7 @@ class Benchmark:
         }
         server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
         logdef = os.path.join(self._dirBinary, "log.properties")
-        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef], cwd=self._dirBinary, env=env)#, stdout=open("/dev/null"), stderr=open("/dev/null"))
+        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef], cwd=self._dirBinary, env=env, stdout=open("/dev/null"), stderr=open("/dev/null"))
         time.sleep(1)
         print "done"
 
@@ -187,8 +187,8 @@ class Benchmark:
         for u in self._users:
             u.stopLogging()
             u.stop()
+        self._stopServer()
         for u in self._users:
             u.join()
-        self._stopServer()
         exit()
 
