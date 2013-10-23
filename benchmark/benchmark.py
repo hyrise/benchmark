@@ -151,9 +151,12 @@ class Benchmark:
             "HYRISE_MYSQL_USER" : self._mysqlUser,
             "HYRISE_MYSQL_PASS" : self._mysqlPass
         }
-        server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
+        if self._buildSettings.oldMode():
+            server = os.path.join(self._dirBinary, "hyrise_server")
+        else:
+            server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
         logdef = os.path.join(self._dirBinary, "log.properties")
-        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef], cwd=self._dirBinary, env=env, stdout=open("/dev/null"), stderr=open("/dev/null"))
+        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef], cwd=self._dirBinary, env=env, stdout=open("/dev/null"))#, stderr=open("/dev/null"))
         time.sleep(1)
         print "done"
 
