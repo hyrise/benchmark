@@ -7,23 +7,14 @@ import shutil
 import subprocess
 import sys
 
-# make sure there ARE py-tpcc files
-dirPYTPCC_repo = os.path.join(os.getcwd(), "pytpcc_checkout")
-dirPYTPCC = os.path.join(os.getcwd(), "pytpcc")
-if not os.path.islink(dirPYTPCC):
-    if not os.path.isdir(dirPYTPCC_repo):
-        print "*** no py-tpcc checkout found, cloning from githuhb"
-        subprocess.Popen("git clone git@github.com:ollixy/hyrise.git %s" % dirPYTPCC_repo, shell=True, stdout=open("/dev/null"))
-    print "*** linking py-tpcc repository"
-    os.symlink(os.path.join(dirPYTPCC_repo, "pytpcc"), dirPYTPCC)
-
 # include py-tpcc files
-sys.path.insert(0, dirPYTPCC)
+sys.path.insert(0, os.path.join(os.getcwd(), "olli_pytpcc", "pytpcc"))
 from util import *
 from runtime import *
 import drivers
 from tpcc import *
 
+# disable py-tpcc internal logging
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 class TPCCUser(benchmark.User):
@@ -140,9 +131,9 @@ class TPCCBenchmark(benchmark.Benchmark):
         dirTPCCTables = os.path.join(dirTPCC, "tables")
         dirTPCCQueries = os.path.join(dirTPCC, "queries")
         if not os.path.islink(dirTPCCQueries):
-            os.symlink(os.path.join(os.getcwd(), "pytpcc", "queries"), dirTPCCQueries)
+            os.symlink(os.path.join(os.getcwd(), "olli_pytpcc", "pytpcc", "queries"), dirTPCCQueries)
         if not os.path.islink(dirTPCCTables):
-            os.symlink(os.path.join(os.getcwd(), "pytpcc", "tables"), dirTPCCTables)
+            os.symlink(os.path.join(os.getcwd(), "olli_pytpcc", "pytpcc", "tables"), dirTPCCTables)
 
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
@@ -155,7 +146,10 @@ class TPCCBenchmark(benchmark.Benchmark):
         config["queries"] = dirTPCCQueries
         self.driver.loadConfig(config)
 
-        self.driver.executeStart()
+        try:
+            self.driver.executeStart()
+        except Exception:
+            print "Hat nicht geklappt :("
 
         self.setUserArgs({
             "scaleParameters": self.scaleParameters,
@@ -182,9 +176,9 @@ if __name__ == "__main__":
                          help='Do not build and start a HYRISE instance (note: a HYRISE server must be running on the specified port)')
     args = vars(aparser.parse_args())
 
-    s1 = benchmark.Settings("none", PERSISTENCY="NONE")
-    s2 = benchmark.Settings("logger", PERSISTENCY="SIMPLELOGGER")
-    s3 = benchmark.Settings("nvram", PERSISTENCY="NVRAM")
+    s1 = benchmark.Settings("none", oldMode=False)#, PRODUCTION=0, PERSISTENCY="NONE", COMPILER="g++48")
+    s2 = benchmark.Settings("logger", oldMode=True, PERSISTENCY="SIMPLELOGGER")
+    s3 = benchmark.Settings("nvram", oldMode=True, PERSISTENCY="NVRAM")
 
     b1 = TPCCBenchmark("testrun", s1,
                        port=args["port"],
@@ -215,5 +209,5 @@ if __name__ == "__main__":
                        prepareQueries=[])
 
     b1.run()
-    b2.run()
-    b3.run()
+    #b2.run()
+    #b3.run()
