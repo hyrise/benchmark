@@ -155,7 +155,7 @@ class Benchmark:
             "HYRISE_MYSQL_PASS" : self._mysqlPass
         }
         if self._buildSettings.oldMode():
-            server = os.path.join(self._dirBinary, "hyrise_server_allin")
+            server = os.path.join(self._dirBinary, "hyrise_server")
         else:
             server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
         logdef = os.path.join(self._dirBinary, "log.properties")
