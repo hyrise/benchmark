@@ -3,16 +3,16 @@ import os
 import queries
 import random
 import requests
-import threading
+import multiprocessing
 import time
 
-class User(threading.Thread):
+class User(multiprocessing.Process):
     """
     Benchmark User base class
     """
 
     def __init__(self, userId, host, port, dirOutput, queryDict, **kwargs):
-        threading.Thread.__init__(self)
+        multiprocessing.Process.__init__(self)
 
         self._userId        = userId
         self._host          = host
@@ -23,7 +23,8 @@ class User(threading.Thread):
         self._queries       = kwargs["queries"] if kwargs.has_key("queries") else queries.QUERIES_ALL
         self._thinkTime     = kwargs["thinkTime"] if kwargs.has_key("thinkTime") else 0
         self._papi          = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
-        self._stop          = threading.Event()
+        self._stopevent     = multiprocessing.Event()
+        self._logevent      = multiprocessing.Event()
         self._logging       = False
         self._log           = {}
 
@@ -49,7 +50,7 @@ class User(threading.Thread):
     def run(self):
         self._prepare()
         self.prepareUser()
-        while not self._stop.isSet():
+        while not self._stopevent.is_set():
             tStart = time.time()
             self.runUser()
             self._totalTime += time.time() - tStart
@@ -57,8 +58,12 @@ class User(threading.Thread):
         self.stopUser()
         self._writeLogs()
 
+        print "\nThroughput: %f runs per second (%i total)\n================\n" % ( self.getThroughput(), self._totalRuns)
+
+
     def stop(self):
-        self._stop.set()
+        self._stopevent.set()
+
 
     def fireQuery(self, queryString, queryArgs={}, sessionContext=None, autocommit=False):
         query = queryString % queryArgs
@@ -68,13 +73,13 @@ class User(threading.Thread):
         return self._session.post("http://%s:%s/" % (self._host, self._port), data=data)
 
     def startLogging(self):
-        self._logging = True
+        self._logevent.set()
 
     def stopLogging(self):
-        self._logging = False
+        self._logevent.clear()
 
     def log(self, key, value):
-        if not self._logging:
+        if not self._logevent.is_set():
             return
         if not self._log.has_key(key):
             self._log[key] = [value]

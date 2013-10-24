@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 import user
+import multiprocessing
 
 class Benchmark:
 
@@ -63,6 +64,8 @@ class Benchmark:
             print "---\nManual mode, expecting HYRISE server running on port %s\n---" % self._port
 
         self._runPrepareQueries()
+
+        print "Preparing benchmark..."
         self.benchPrepare()
 
         self._createUsers()
@@ -100,11 +103,11 @@ class Benchmark:
         print "Stopping %s user(s)... done     " % self._numUsers
         self._stopServer()
 
-        avg, total = 0, 0
-        for i in range(self._numUsers):
-            total += self._users[i]._totalRuns
-            avg += self._users[i].getThroughput()
-        print "\nThroughput: %f runs per second (%i total)\n================\n" % (avg, total)
+        # avg, total = 0, 0
+        # for i in range(self._numUsers):
+            # total += self._users[i]._totalRuns
+            # avg += self._users[i].getThroughput()
+        # print "\nThroughput: %f runs per second (%i total)\n================\n" % (avg, total)
 
     def addQueryFile(self, queryId, filename):
         if self._queryDict.has_key(queryId):
@@ -152,11 +155,11 @@ class Benchmark:
             "HYRISE_MYSQL_PASS" : self._mysqlPass
         }
         if self._buildSettings.oldMode():
-            server = os.path.join(self._dirBinary, "hyrise_server")
+            server = os.path.join(self._dirBinary, "hyrise_server_allin")
         else:
             server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
         logdef = os.path.join(self._dirBinary, "log.properties")
-        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef], cwd=self._dirBinary, env=env, stdout=open("/dev/null"))#, stderr=open("/dev/null"))
+        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=CoreBoundQueuesScheduler"], cwd=self._dirBinary, env=env) #, stdout=open("/dev/null"))#, stderr=open("/dev/null"))
         time.sleep(1)
         print "done"
 
