@@ -98,9 +98,9 @@ INTEGER|STRING|STRING|STRING|STRING|STRING|STRING|FLOAT|FLOAT
 
 
 class HyriseDriver(AbstractDriver):
-    assert os.environ.has_key('HYRISE_DB_PATH'), "Environment variable HYRISE_DB_PATH is not set. Set this variable to the location of the HYRISE table directory"
+    #assert os.environ.has_key('HYRISE_DB_PATH'), "Environment variable HYRISE_DB_PATH is not set. Set this variable to the location of the HYRISE table directory"
     DEFAULT_CONFIG = {
-        "hyrise_builddir": ("The HYRISE build directory", os.path.join('~', 'hyrise', 'build'),
+        "hyrise_builddir": ("The HYRISE build directory", (os.path.join(os.environ['HOME'], 'hyrise', 'build'))),
         "table_location": ("The path to .tbl files relative to the HYRISE table directory", os.path.join('tpcc', 'tables')),
         "query_location": ("The path to the JSON queries", os.path.join(os.getcwd(), 'queries')),
         "server_url" : ("The url the JSON queries are sent to (using http requests)", "localhost"),
@@ -112,7 +112,7 @@ class HyriseDriver(AbstractDriver):
         self.hyrise_builddir = None
         self.table_location = None
         self.tables = constants.ALL_TABLES
-        self.queries = self.loadQueryfiles(QUERY_FILES)
+        self.queries = {}
         self.conn = None
 
     def makeDefaultConfig(self):
@@ -120,7 +120,7 @@ class HyriseDriver(AbstractDriver):
 
     def createFilesWithHeader(self, tblpath):
         for tblname, headerinfo in HEADERS.iteritems():
-            filename = os.path.join(tblpath, tblname, '.tbl')
+            filename = os.path.join(tblpath, tblname + '.tbl')
             with open(filename, 'w') as tblfile:
                 tblfile.write(headerinfo)
 
@@ -137,8 +137,8 @@ class HyriseDriver(AbstractDriver):
             assert key in config, "Missing parameter '%s' in %s configuration" % (key, self.name)
 
         self.hyrise_builddir = str(config['hyrise_builddir'])
-        self.table_location = str(config['table_location'])
-        self.queries = self.loadQueryfiles(str(config['query_location']))
+        self.table_location = os.path.join(self.hyrise_builddir, str(config['table_location']))
+        self.queries = self.loadQueryfiles(str(config['query_location']), QUERY_FILES)
 
         #Print the JSON used for loading the table files into HYRISE and exit
         if config["print_load"]:
@@ -149,10 +149,10 @@ class HyriseDriver(AbstractDriver):
         if config.has_key('port'):
             port = str(config['port'])
         else:
-            with open(os.path.join(self.hyrise_builddir, '..', 'hyrise_server.port','r') as portfile:
+            with open(os.path.join(self.hyrise_builddir, 'hyrise_server.port'),'r') as portfile:
                 port = portfile.read()
 
-        querylog = config['querylog'] if config['querylog'] != ""
+        querylog = config['querylog'] if config['querylog'] != "" else None
         self.conn = HyriseConnection(host=str(config["server_url"]), port=port, querylog=querylog)
 
     def loadQueryfiles(self, querydir, mapping):
@@ -173,7 +173,7 @@ class HyriseDriver(AbstractDriver):
     def loadTuples(self, tableName, tuples):
         if len(tuples) == 0: return
 
-        filename = os.path.join(self.tablelocation, tableName, '.tbl')
+        filename = os.path.join(self.table_location, tableName + '.tbl')
         with open(filename, 'a') as tblfile:
             for t in tuples:
                 tblfile.write('|'.join([str(i) for i in t]))

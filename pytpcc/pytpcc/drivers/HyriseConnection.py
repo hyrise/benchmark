@@ -15,7 +15,7 @@ class HyriseConnection(object):
         self._result = None
         self._log = "{}_{}.log".format(querylog, datetime.now().strftime('%m_%d_%H_%M')) if querylog else None
         self.counter = 0
-        if self.log:
+        if self._log:
             with open(self._log,'w') as logfile:
                 logfile.write('[')
 
@@ -54,8 +54,8 @@ class HyriseConnection(object):
         if json_response.has_key('error'):
             data['error'] = json_response['error']
         else:
-            data['time'] = json_response['performanceData'][-1]['endTime'],
-            data['performancedata']:json_response['performanceData']
+            data['time'] = json_response['performanceData'][-1]['endTime']
+            data['performancedata']= json_response['performanceData']
 
         with open(self._log,'a') as logfile:
             logfile.write(json.dumps(data) + '\n')
