@@ -1,0 +1,24 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "STOCK"
+    },
+    "select": {
+       "type": "SimpleTableScan",
+       "predicates": [
+         {"type": "AND"},
+         {"type": "EQ", "in": 0, "f": "S_I_ID", "vtype": 0 /*Int*/, "value": %(ol_i_id)d},
+         {"type": "EQ", "in": 0, "f": "S_W_ID", "vtype": 0 /*Int*/, "value": %(ol_supply_w_id)d}
+       ]
+    },
+    "validate" : {
+      "type" : "ValidatePositions"
+    },
+    "project": {
+       "type": "ProjectionScan",
+       "fields": ["S_QUANTITY", "S_DATA", "S_YTD", "S_ORDER_CNT", "S_REMOTE_CNT", "S_DIST_%(2d_id)02d"]
+    }
+  },
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "project"]]
+}

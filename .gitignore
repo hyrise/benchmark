@@ -9,3 +9,4 @@ logs/
 *.DS_Store
 results/
 saved/
+pytpcc/pytpcc/tables

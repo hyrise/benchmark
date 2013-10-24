@@ -1,0 +1,16 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "HISTORY"
+    },
+    "insert": {
+       "type": "InsertScan",
+       "data" : [[%(c_id)d, %(c_d_id)d, %(c_w_id)d, %(d_id)d, %(w_id)d, "%(h_date)s", %(h_amount)f, "%(h_data)s"]]
+    },
+    "NoOp": {
+      "type": "NoOp"
+    }
+  },
+  "edges": [["load", "insert"], ["insert","NoOp"]]
+}

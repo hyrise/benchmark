@@ -1,0 +1,54 @@
+{
+  "operators": {
+    "load_orderline": {
+       "type": "TableLoad",
+       "table": "ORDER_LINE"
+    },
+    "load_stock": {
+       "type": "TableLoad",
+       "table": "STOCK"
+    },
+    "select_orderlines" : {
+        "type": "SimpleTableScan",
+        "predicates" : [
+         {"type": "AND"},
+         {"type": "EQ", "in": 0, "f": "OL_W_ID", "vtype": 0, "value": %(w_id)d},
+         {"type": "AND"},
+         {"type": "EQ", "in": 0, "f": "OL_D_ID", "vtype": 0, "value": %(d_id)d},
+         {"type": "AND"},
+         {"type": "GT", "in": 0, "f": "OL_O_ID", "vtype": 0, "value": %(o_id2)d},
+         {"type": "LT", "in": 0, "f": "OL_O_ID", "vtype": 0, "value": %(o_id1)d}
+        ]
+    },
+    "validate_orderline" : {
+      "type" : "ValidatePositions"
+    },
+    "validate_stock" : {
+      "type" : "ValidatePositions"
+    },
+    "select_stock": {
+        "type" : "SimpleTableScan",
+        "predicates" : [
+         {"type": "AND"},
+         {"type": "EQ", "in": 0, "f": "S_W_ID", "vtype": 0, "value": %(w_id)d},
+         {"type": "LT", "in": 0, "f": "S_QUANTITY", "vtype": 0, "value": %(threshold)d}
+         ]
+    },
+    "join": {
+       "type":"JoinScan",
+       "predicates": [
+         {"type": 3, "input_left": 0, "field_left": "OL_I_ID", "input_right": 1, "field_right": "S_I_ID"}
+       ]
+    },
+    "groupby": {
+       "type": "GroupByScan",
+       "fields": [],
+       "functions": [
+         {"type": "COUNT", "field": "OL_I_ID", "distinct": true, "as": "distinct_count"}
+       ]
+    }
+  },
+  "edges": [["load_orderline", "select_orderlines"], ["select_orderlines", "validate_orderline"],
+            ["load_stock", "select_stock"], ["select_stock", "validate_stock"],
+            ["validate_orderline", "join"], ["validate_stock", "join"], ["join", "groupby"]]
+}

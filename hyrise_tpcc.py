@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 # include py-tpcc files
-sys.path.insert(0, os.path.join(os.getcwd(), "olli_pytpcc", "pytpcc"))
+sys.path.insert(0, os.path.join(os.getcwd(), "pytpcc", "pytpcc"))
 from util import *
 from runtime import *
 import drivers
@@ -132,9 +132,9 @@ class TPCCBenchmark(benchmark.Benchmark):
         dirTPCCQueries = os.path.join(dirTPCC, "queries")
         
         if not os.path.islink(dirTPCCQueries):
-            os.symlink(os.path.join(os.getcwd(), "olli_pytpcc", "pytpcc", "queries"), dirTPCCQueries)
+            os.symlink(os.path.join(os.getcwd(), "pytpcc", "pytpcc", "queries"), dirTPCCQueries)
         if not os.path.islink(dirTPCCTables):
-            os.symlink(os.path.join(os.getcwd(), "olli_pytpcc", "pytpcc", "tables"), dirTPCCTables)
+            os.symlink(os.path.join(os.getcwd(), "pytpcc", "pytpcc", "tables"), dirTPCCTables)
 
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))

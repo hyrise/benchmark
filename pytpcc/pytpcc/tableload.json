@@ -1,0 +1,70 @@
+{
+    "operators" : {
+
+        "0": {
+            "type": "TableLoad",
+            "table": "CUSTOMER",
+            "filename" : "tpcc/tables/CUSTOMER.tbl"
+            }
+            ,
+
+        "1": {
+            "type": "TableLoad",
+            "table": "HISTORY",
+            "filename" : "tpcc/tables/HISTORY.tbl"
+            }
+            ,
+
+        "2": {
+            "type": "TableLoad",
+            "table": "ORDER_LINE",
+            "filename" : "tpcc/tables/ORDER_LINE.tbl"
+            }
+            ,
+
+        "3": {
+            "type": "TableLoad",
+            "table": "ITEM",
+            "filename" : "tpcc/tables/ITEM.tbl"
+            }
+            ,
+
+        "4": {
+            "type": "TableLoad",
+            "table": "STOCK",
+            "filename" : "tpcc/tables/STOCK.tbl"
+            }
+            ,
+
+        "5": {
+            "type": "TableLoad",
+            "table": "ORDERS",
+            "filename" : "tpcc/tables/ORDERS.tbl"
+            }
+            ,
+
+        "6": {
+            "type": "TableLoad",
+            "table": "WAREHOUSE",
+            "filename" : "tpcc/tables/WAREHOUSE.tbl"
+            }
+            ,
+
+        "7": {
+            "type": "TableLoad",
+            "table": "DISTRICT",
+            "filename" : "tpcc/tables/DISTRICT.tbl"
+            }
+            ,
+
+        "8": {
+            "type": "TableLoad",
+            "table": "NEW_ORDER",
+            "filename" : "tpcc/tables/NEW_ORDER.tbl"
+            },
+	"commit": {
+            "type":"Commit"
+	    }
+        },
+    "edges": [["0","1"],["1","2"],["2","3"],["3","4"],["4","5"],["5","6"],["6","7"],["7","8"], ["8","commit"]]
+    }
