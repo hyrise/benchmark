@@ -130,6 +130,7 @@ class TPCCBenchmark(benchmark.Benchmark):
             os.makedirs(dirTPCC)
         dirTPCCTables = os.path.join(dirTPCC, "tables")
         dirTPCCQueries = os.path.join(dirTPCC, "queries")
+        
         if not os.path.islink(dirTPCCQueries):
             os.symlink(os.path.join(os.getcwd(), "olli_pytpcc", "pytpcc", "queries"), dirTPCCQueries)
         if not os.path.islink(dirTPCCTables):
@@ -148,8 +149,9 @@ class TPCCBenchmark(benchmark.Benchmark):
 
         try:
             self.driver.executeStart()
-        except Exception:
+        except Exception as e:
             print "Hat nicht geklappt :("
+            print e
 
         self.setUserArgs({
             "scaleParameters": self.scaleParameters,
@@ -172,42 +174,38 @@ if __name__ == "__main__":
                          help='Disable executing the workload')
     aparser.add_argument('--port', default=5001, type=int, metavar="P",
                          help='Port on which HYRISE should be run')
+    aparser.add_argument('--warmup', default=5, type=int,
+                         help='Warmuptime before logging is activated')
     aparser.add_argument('--manual', action='store_true',
                          help='Do not build and start a HYRISE instance (note: a HYRISE server must be running on the specified port)')
     args = vars(aparser.parse_args())
 
-    s1 = benchmark.Settings("none", oldMode=False)#, PRODUCTION=0, PERSISTENCY="NONE", COMPILER="g++48")
-    s2 = benchmark.Settings("logger", oldMode=True, PERSISTENCY="SIMPLELOGGER")
-    s3 = benchmark.Settings("nvram", oldMode=True, PERSISTENCY="NVRAM")
+    s1 = benchmark.Settings("none", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NONE",)
+    s2 = benchmark.Settings("logger", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="BUFFEREDLOGGER")
+    s3 = benchmark.Settings("nvram", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NVRAM")
 
-    b1 = TPCCBenchmark("testrun", s1,
-                       port=args["port"],
-                       manual=args["manual"],
-                       warmuptime=0,
-                       runtime=args["duration"],
-                       numUsers=args["clients"],
-                       warehouses=args["warehouses"],
-                       benchmarkQueries=[],
-                       prepareQueries=[])
-    b2 = TPCCBenchmark("testrun", s2,
-                       port=args["port"],
-                       manual=args["manual"],
-                       warmuptime=0,
-                       runtime=args["duration"],
-                       numUsers=args["clients"],
-                       warehouses=args["warehouses"],
-                       benchmarkQueries=[],
-                       prepareQueries=[])
-    b3 = TPCCBenchmark("testrun", s3,
-                       port=args["port"],
-                       manual=args["manual"],
-                       warmuptime=0,
-                       runtime=args["duration"],
-                       numUsers=args["clients"],
-                       warehouses=args["warehouses"],
-                       benchmarkQueries=[],
-                       prepareQueries=[])
+    kwargs = {
+        "port"              : args["port"],
+        "manual"            : args["manual"],
+        "warmuptime"        : args["warmup"],
+        "runtime"           : args["duration"],
+        "numUsers"          : args["clients"],
+        "warehouses"        : args["warehouses"],
+        "benchmarkQueries"  : [],
+        "prepareQueries"    : []
+    }
 
-    b1.run()
-    #b2.run()
-    #b3.run()
+    for num_clients in xrange(11, 31):
+        name = "tpcc_users_%s"%num_clients
+        kwargs["numUsers"] = num_clients
+        
+        print "Executing number of users: " + str(num_clients)
+        print "+---------------------------------+\n"
+
+        b1 = TPCCBenchmark(name, s1, **kwargs)
+        b2 = TPCCBenchmark(name, s2, **kwargs)
+        # b3 = TPCCBenchmark(name, s3, **kwargs)
+
+        b1.run()
+        b2.run()
+        #b3.run()
