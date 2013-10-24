@@ -44,13 +44,13 @@ class Settings:
 
     def __getitem__(self, key):
         if not self._dict.has_key(key):
-            raise Exception("'%s' is not a valid setting" % k)
+            raise Exception("'%s' is not a valid setting" % key)
         else:
             return self._dict[key]
 
     def __setitem__(self, key, value):
         if not self._dict.has_key(key):
-            raise Exception("'%s' is not a valid setting" % k)
+            raise Exception("'%s' is not a valid setting" % key)
         else:
             self._dict[key] = value
 
