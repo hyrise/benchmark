@@ -35,6 +35,7 @@ class Benchmark:
         self._rebuild       = kwargs["rebuild"] if kwargs.has_key("rebuild") else False
         self._userArgs      = kwargs["userArgs"] if kwargs.has_key("userArgs") else {"queries": self._queries}
         self._dirBinary     = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
+        self._dirHyriseDB   = kwargs["hyriseDBPath"] if kwargs.has_key("hyriseDBPath") else self._dirBinary
         self._dirResults    = os.path.join(os.getcwd(), "results/%s/%s" % (self._id, buildSettings.getName()))
         self._queryDict     = self._readDefaultQueryFiles()
         self._session       = requests.Session()
@@ -147,7 +148,7 @@ class Benchmark:
         sys.stdout.write("Starting server for build '%s'... " % self._buildSettings.getName())
         sys.stdout.flush()
         env = {
-            "HYRISE_DB_PATH"    : self._dirBinary,
+            "HYRISE_DB_PATH"    : self._dirHyriseDB,
             "LD_LIBRARY_PATH"   : self._dirBinary+":/usr/local/lib64/",
             "HYRISE_MYSQL_PORT" : str(self._mysqlPort),
             "HYRISE_MYSQL_HOST" : self._mysqlHost,

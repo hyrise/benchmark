@@ -52,9 +52,10 @@ class Build:
         settingsFile = os.path.join(self._dirSource, "settings.mk")
         if os.path.islink(self._dirBuild):
             os.remove(self._dirBuild)
-        os.rename(self._dirBuildBak, self._dirBuild)
-        os.remove(settingsFile)
+        if os.path.isdir(self._dirBuildBak)
+            os.rename(self._dirBuildBak, self._dirBuild)
         if os.path.isfile(settingsFile+".bak"):
+            os.remove(settingsFile)
             os.rename(settingsFile+".bak", settingsFile)
 
     def _prepare(self):
