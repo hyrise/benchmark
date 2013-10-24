@@ -100,68 +100,66 @@ INTEGER|STRING|STRING|STRING|STRING|STRING|STRING|FLOAT|FLOAT
 class HyriseDriver(AbstractDriver):
     assert os.environ.has_key('HYRISE_DB_PATH'), "Environment variable HYRISE_DB_PATH is not set. Set this variable to the location of the HYRISE table directory"
     DEFAULT_CONFIG = {
-        #"database": ("The path to .tbl files relative to the HYRISE table directory", os.path.join(os.environ['HYRISE_DB_PATH'], 'tpcc', 'tables')),
-        "database": ("The path to .tbl files relative to the HYRISE table directory", os.path.join('tpcc', 'tables')),
-        "queries": ("The path to the JSON queries", os.path.join(os.getcwd(), 'queries')),
+        "hyrise_builddir": ("The HYRISE build directory", os.path.join('~', 'hyrise', 'build'),
+        "table_location": ("The path to .tbl files relative to the HYRISE table directory", os.path.join('tpcc', 'tables')),
+        "query_location": ("The path to the JSON queries", os.path.join(os.getcwd(), 'queries')),
         "server_url" : ("The url the JSON queries are sent to (using http requests)", "localhost"),
-        "querylog": ("Dump all query performance data into this file.", os.path.join("querydata","querylog") ),
-        "portfile": ("File that outputs the portnumber", os.path.join(os.environ['HYRISE_DB_PATH'], '..', 'hyrise_server.port'))
+        "querylog": ("Dump all query performance data into this file.", ""),
     }
 
     def __init__(self, ddl):
         super(HyriseDriver, self).__init__('hyrise', ddl)
-        self.basepath = os.environ['HYRISE_DB_PATH']
-        self.database = None
+        self.hyrise_builddir = None
+        self.table_location = None
         self.tables = constants.ALL_TABLES
-        self.query_location = None
-        self.queries = {}
+        self.queries = self.loadQueryfiles(QUERY_FILES)
         self.conn = None
-        self.confirm = None
-        self.debug = False
 
     def makeDefaultConfig(self):
         return HyriseDriver.DEFAULT_CONFIG
+
+    def createFilesWithHeader(self, tblpath):
+        for tblname, headerinfo in HEADERS.iteritems():
+            filename = os.path.join(tblpath, tblname, '.tbl')
+            with open(filename, 'w') as tblfile:
+                tblfile.write(headerinfo)
+
+    def deleteExistingTablefiles(self, tblpath):
+        for tblname in ['%s.tbl' % tbl for tbl in self.tables]:
+            try:
+                os.unlink(os.path.join(tblpath, tablename))
+            except OSError as e:
+                if e.errno == 2: #FileNotFound
+                    print '{} not found in {}. Skipping.'.format(tablename, os.path.join(self.basepath, self.database))
 
     def loadConfig(self, config):
         for key in HyriseDriver.DEFAULT_CONFIG.keys():
             assert key in config, "Missing parameter '%s' in %s configuration" % (key, self.name)
 
-        self.database = str(config["database"])
-        self.query_location = str(config["queries"])
-        port = None
-        if config.has_key('port'):
-            port = str(config['port'])
-        else:
-            with open(str(config['portfile']),'r') as portfile:
-                port = portfile.read()
+        self.hyrise_builddir = str(config['hyrise_builddir'])
+        self.table_location = str(config['table_location'])
+        self.queries = self.loadQueryfiles(str(config['query_location']))
 
-        if config.has_key('querylog'):
-            debuglog = config['querylog']
-            # self.debug = True
-        self.conn = HyriseConnection(host=str(config["server_url"]), port=port, debuglog=debuglog)
-
+        #Print the JSON used for loading the table files into HYRISE and exit
         if config["print_load"]:
             print self.generateTableloadJson()
             sys.exit(-1)
 
-        for query_type, query_dict in QUERY_FILES.iteritems():
+        port = None
+        if config.has_key('port'):
+            port = str(config['port'])
+        else:
+            with open(os.path.join(self.hyrise_builddir, '..', 'hyrise_server.port','r') as portfile:
+                port = portfile.read()
+
+        querylog = config['querylog'] if config['querylog'] != ""
+        self.conn = HyriseConnection(host=str(config["server_url"]), port=port, querylog=querylog)
+
+    def loadQueryfiles(self, querydir, mapping):
+        for query_type, query_dict in mapping.iteritems():
             for query_name, filename in query_dict.iteritems():
-                with open(os.path.abspath(os.path.join(self.query_location, filename)), 'r') as jsonfile:
+                with open(os.path.abspath(os.path.join(querydir, filename)), 'r') as jsonfile:
                     self.queries.setdefault(query_type,{})[query_name] = jsonfile.read()
-
-        if config["reset"] and os.path.exists(os.path.join(self.basepath, self.database)):
-            logging.debug("Deleting database '%s'" % self.database)
-            for tablename in ['WAREHOUSE.tbl','DISTRICT.tbl','CUSTOMER.tbl','HISTORY.tbl','ORDER.tbl','ORDER_LINE.tbl','ITEM.tbl','STOCK.tbl']:
-                try:
-                    os.unlink(os.path.join(self.basepath, self.database, tablename))
-                except OSError as e:
-                    if e.errno == 2: #FileNotFound
-                        print '{} not found in {}. Skipping.'.format(tablename, os.path.join(self.basepath, self.database))
-            for k,v in HEADERS.iteritems():
-                filename = os.path.join(self.basepath, self.database, k +'.tbl')
-                with open(filename, 'w') as tblfile:
-                    tblfile.write(v)
-
 
     def loadFinishItem(self):
         print """"ITEM data has been passed to the driver."""
@@ -174,24 +172,12 @@ class HyriseDriver(AbstractDriver):
 
     def loadTuples(self, tableName, tuples):
         if len(tuples) == 0: return
-        assert len(tuples[0]) == len(HEADERS[tableName].split('\n')[1].split('|')), "Headerinfo for {} is wrong".format(tableName)
 
-        filename = os.path.join(self.basepath, self.database, tableName +'.tbl')
-
-        if self.confirm == None:
-            print 'This will generate new data and append it to your data files. Are you sure? Y|[N]'
-            if (raw_input() in ['Y','y']): self.confirm = True
-            else:
-                self.confirm = False
-                print 'Skipping Data Generation'
-
-        if self.confirm == True:
-            with open(filename, 'a') as tblfile:
-                print 'Generating data for {}...'.format(tableName)
-                for t in tuples:
-                    tblfile.write('|'.join([str(i) for i in t]))
-                    tblfile.write('\n')
-
+        filename = os.path.join(self.tablelocation, tableName, '.tbl')
+        with open(filename, 'a') as tblfile:
+            for t in tuples:
+                tblfile.write('|'.join([str(i) for i in t]))
+                tblfile.write('\n')
         logging.debug("Generated %d tuples for tableName %s" % (len(tuples), tableName))
         sys.stdout.write('.')
         sys.stdout.flush()
@@ -211,10 +197,6 @@ class HyriseDriver(AbstractDriver):
             o_carrier_id
             ol_delivery_d
         """
-        if self.debug:
-            sys.stdout.write('D')
-            sys.stdout.flush()
-
         q = self.queries["DELIVERY"]
 
         w_id = params["w_id"]
@@ -267,10 +249,6 @@ class HyriseDriver(AbstractDriver):
             i_w_ids
             i_qtys
         """
-        if self.debug:
-            sys.stdout.write('N')
-            sys.stdout.flush()
-
         q = self.queries["NEW_ORDER"]
 
         w_id = params["w_id"]
@@ -404,10 +382,6 @@ class HyriseDriver(AbstractDriver):
             c_id
             c_last
         """
-        if self.debug:
-            sys.stdout.write('O')
-            sys.stdout.flush()
-
         q = self.queries["ORDER_STATUS"]
 
         w_id = params["w_id"]
@@ -456,10 +430,6 @@ class HyriseDriver(AbstractDriver):
             c_lasr()t
             h_date
         """
-        if self.debug:
-            sys.stdout.write('P')
-            sys.stdout.flush()
-
         q = self.queries["PAYMENT"]
 
         w_id = params["w_id"]
@@ -533,10 +503,6 @@ class HyriseDriver(AbstractDriver):
             d_id
             threshold
         """
-        if self.debug:
-            sys.stdout.write('S')
-            sys.stdout.flush()
-
         q = self.queries["STOCK_LEVEL"]
 
         w_id = params["w_id"]

@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, os.path.join(os.getcwd(), "pytpcc", "pytpcc"))
 from util import *
 from runtime import *
+import constants
 import drivers
 from tpcc import *
 
@@ -116,10 +117,7 @@ class TPCCBenchmark(benchmark.Benchmark):
         self.warehouses      = kwargs["warehouses"] if kwargs.has_key("warehouses") else 4
         self.driverClass     = createDriverClass("hyrise")
         self.driver          = self.driverClass(os.path.join(os.getcwd(), "pytpcc", "tpcc.sql"))
-        self.driver.confirm  = False
-        self.driver.tables   = ["CUSTOMER", "DISTRICT", "HISTORY", "ITEM", "NEW_ORDER", "ORDER_LINE", "ORDERS", "STOCK", "WAREHOUSE"]
         self.scaleParameters = scaleparameters.makeWithScaleFactor(self.warehouses, self.scalefactor)
-
         self.setUserClass(TPCCUser)
 
     def benchPrepare(self):
@@ -130,7 +128,7 @@ class TPCCBenchmark(benchmark.Benchmark):
             os.makedirs(dirTPCC)
         dirTPCCTables = os.path.join(dirTPCC, "tables")
         dirTPCCQueries = os.path.join(dirTPCC, "queries")
-        
+
         if not os.path.islink(dirTPCCQueries):
             os.symlink(os.path.join(os.getcwd(), "pytpcc", "pytpcc", "queries"), dirTPCCQueries)
         if not os.path.islink(dirTPCCTables):
@@ -139,13 +137,15 @@ class TPCCBenchmark(benchmark.Benchmark):
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
         config["querylog"] = None
-        config["debug"] = False
         config["print_load"] = False
-        config["reset"] = False
         config["port"] = self._port
-        config["database"] = "tpcc/tables"
-        config["queries"] = dirTPCCQueries
+        config["table_location"] = "tpcc/tables"
+        config["query_location"] = dirTPCCQueries
         self.driver.loadConfig(config)
+
+        import pdb; pdb.set_trace()
+        generator = loader.Loader(self.driver, self.scaleParameters, range(1,self.warehouses+1), True)
+        generator.execute()
 
         try:
             self.driver.executeStart()
@@ -198,7 +198,7 @@ if __name__ == "__main__":
     for num_clients in xrange(11, 31):
         name = "tpcc_users_%s"%num_clients
         kwargs["numUsers"] = num_clients
-        
+
         print "Executing number of users: " + str(num_clients)
         print "+---------------------------------+\n"
 
