@@ -105,8 +105,8 @@ class TPCCUser(benchmark.User):
 
 class TPCCBenchmark(benchmark.Benchmark):
 
-    def __init__(self, benchmarkGroupId, buildSettings, **kwargs):
-        benchmark.Benchmark.__init__(self, benchmarkGroupId, buildSettings, **kwargs)
+    def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
+        benchmark.Benchmark.__init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs)
 
         self._dirHyriseDB = os.path.join(os.getcwd(), "hyrise")
         os.environ['HYRISE_DB_PATH'] = self._dirHyriseDB
@@ -210,16 +210,17 @@ if __name__ == "__main__":
         "showStderr"        : True
     }
 
-    for num_clients in xrange(11, 31):
-        name = "tpcc_users_%s"%num_clients
+    groupId = "tpcc"
+    for num_clients in xrange(1,3):#xrange(11, 31):
+        runId = "tpcc_users_%s"%num_clients
         kwargs["numUsers"] = num_clients
 
         print "Executing number of users: " + str(num_clients)
         print "+---------------------------------+\n"
 
-        b1 = TPCCBenchmark(name, s1, **kwargs)
-        b2 = TPCCBenchmark(name, s2, **kwargs)
-        # b3 = TPCCBenchmark(name, s3, **kwargs)
+        b1 = TPCCBenchmark(groupId, runId, s1, **kwargs)
+        b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
+        # b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
 
         b1.run()
         b2.run()

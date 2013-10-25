@@ -12,8 +12,9 @@ import multiprocessing
 
 class Benchmark:
 
-    def __init__(self, benchmarkGroupId, buildSettings, **kwargs):
+    def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
         self._id            = benchmarkGroupId
+        self._runId         = benchmarkRunId
         self._buildSettings = buildSettings
         self._userClass     = kwargs["userClass"] if kwargs.has_key("userClass") else user.User
         self._numUsers      = kwargs["numUsers"] if kwargs.has_key("numUsers") else 1
@@ -38,7 +39,7 @@ class Benchmark:
         self._stderr        = kwargs["showStderr"] if kwargs.has_key("showStderr") else True
         self._dirBinary     = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
         self._dirHyriseDB   = kwargs["hyriseDBPath"] if kwargs.has_key("hyriseDBPath") else self._dirBinary
-        self._dirResults    = os.path.join(os.getcwd(), "results/%s/%s" % (self._id, buildSettings.getName()))
+        self._dirResults    = os.path.join(os.getcwd(), "results", self._id, self._runId, buildSettings.getName())
         self._queryDict     = self._readDefaultQueryFiles()
         self._session       = requests.Session()
         self._build         = None
