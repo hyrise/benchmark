@@ -34,6 +34,8 @@ class Benchmark:
         self._manual        = kwargs["manual"] if kwargs.has_key("manual") else False
         self._rebuild       = kwargs["rebuild"] if kwargs.has_key("rebuild") else False
         self._userArgs      = kwargs["userArgs"] if kwargs.has_key("userArgs") else {"queries": self._queries}
+        self._stdout        = kwargs["showStdout"] if kwargs.has_key("showStdout") else False
+        self._stderr        = kwargs["showStderr"] if kwargs.has_key("showStderr") else True
         self._dirBinary     = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
         self._dirHyriseDB   = kwargs["hyriseDBPath"] if kwargs.has_key("hyriseDBPath") else self._dirBinary
         self._dirResults    = os.path.join(os.getcwd(), "results/%s/%s" % (self._id, buildSettings.getName()))
@@ -160,7 +162,11 @@ class Benchmark:
         else:
             server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
         logdef = os.path.join(self._dirBinary, "log.properties")
-        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=CoreBoundQueuesScheduler"], cwd=self._dirBinary, env=env) #, stdout=open("/dev/null"))#, stderr=open("/dev/null"))
+        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=CoreBoundQueuesScheduler"],
+                                            cwd=self._dirBinary,
+                                            env=env,
+                                            stdout=open("/dev/null") if not self._stdout else None,
+                                            stderr=open("/dev/null") if not self._stderr else None)
         time.sleep(1)
         print "done"
 
