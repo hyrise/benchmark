@@ -27,19 +27,15 @@ class TPCCUser(benchmark.User):
         self.config = kwargs["config"]
         self.config["reset"] = False
         self.config["execute"] = True
-        self.config["querylog"] = None
-        self.config["print_load"] = False
-        self.config["port"] = self._port
-        self.config["database"] = self._port
+
+    def prepareUser(self):
+        """ executed once when user starts """
         self.driver = drivers.hyrisedriver.HyriseDriver("")
         self.driver.loadConfig(self.config)
         self.driver.conn = self
         self.context = None
         self.lastResult = None
         self.lastHeader = None
-
-    def prepareUser(self):
-        """ executed once when user starts """
         self.e = executor.Executor(self.driver, self.scaleParameters)
 
     def runUser(self):
@@ -112,7 +108,7 @@ class TPCCBenchmark(benchmark.Benchmark):
     def __init__(self, benchmarkGroupId, buildSettings, **kwargs):
         benchmark.Benchmark.__init__(self, benchmarkGroupId, buildSettings, **kwargs)
 
-        self._dirHyriseDB = os.path.join(os.getcwd(), "hyrise", "test")
+        self._dirHyriseDB = os.path.join(os.getcwd(), "hyrise")
         os.environ['HYRISE_DB_PATH'] = self._dirHyriseDB
 
         self.scalefactor     = kwargs["scalefactor"] if kwargs.has_key("scalefactor") else 1
@@ -126,7 +122,7 @@ class TPCCBenchmark(benchmark.Benchmark):
     def benchPrepare(self):
         # make sure the TPC-C query and table directories are present
         dirPyTPCC   = os.path.join(os.getcwd(), "pytpcc", "pytpcc")
-        dirTables   = os.path.join(self._dirHyriseDB, "tpcc", "tables")
+        dirTables   = os.path.join(self._dirHyriseDB, "test", "tpcc", "tables")
 
         sys.stdout.write("Checking for table files... ")
         sys.stdout.flush()
@@ -135,6 +131,9 @@ class TPCCBenchmark(benchmark.Benchmark):
             print "no table files found"
             generate = True
             os.makedirs(dirTables)
+        elif self.regenerate:
+            print "table file regeneration requested"
+            generate = True
         else:
             for t in self.driver.tables:
                 if not os.path.isfile(os.path.join(dirTables, "%s.tbl" % t)): #or not os.path.isfile(os.path.join(dirTables, "%s.hdr" % t)):
@@ -142,32 +141,30 @@ class TPCCBenchmark(benchmark.Benchmark):
                     generate = True
                     break
 
+        rand.setNURand(nurand.makeForLoad())
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
         config["querylog"] = None
         config["print_load"] = False
         config["port"] = self._port
-	config["hyrise_builddir"] = self._dirHyriseDB
+        config["hyrise_builddir"] = self._dirHyriseDB
         config["table_location"] = dirTables
         config["query_location"] = os.path.join(dirPyTPCC, "queries")
         self.driver.loadConfig(config)
 
-        if self.regenerate:
-            print "table file regeneration requested"
-            generate = True
         if generate:
             sys.stdout.write("regenerating... ")
             sys.stdout.flush()
-            # regenerate here
-            import pdb; pdb.set_trace()
             self.driver.deleteExistingTablefiles(dirTables)
             self.driver.createFilesWithHeader(dirTables)
-            rand.setNURand(nurand.makeForLoad())
             generator = loader.Loader(self.driver, self.scaleParameters, range(1,self.warehouses+1), True)
             generator.execute()
         print "done"
 
+        sys.stdout.write("Importing tables into HYRISE... ")
+        sys.stdout.flush()
         self.driver.executeStart()
+        print "done"
 
         self.setUserArgs({
             "scaleParameters": self.scaleParameters,
@@ -208,7 +205,9 @@ if __name__ == "__main__":
         "numUsers"          : args["clients"],
         "warehouses"        : args["warehouses"],
         "benchmarkQueries"  : [],
-        "prepareQueries"    : []
+        "prepareQueries"    : [],
+        "showStdout"        : False,
+        "showStderr"        : True
     }
 
     for num_clients in xrange(11, 31):
