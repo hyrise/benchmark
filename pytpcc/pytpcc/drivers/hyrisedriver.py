@@ -127,17 +127,17 @@ class HyriseDriver(AbstractDriver):
     def deleteExistingTablefiles(self, tblpath):
         for tblname in ['%s.tbl' % tbl for tbl in self.tables]:
             try:
-                os.unlink(os.path.join(tblpath, tablename))
+                os.unlink(os.path.join(tblpath, tblname))
             except OSError as e:
                 if e.errno == 2: #FileNotFound
-                    print '{} not found in {}. Skipping.'.format(tablename, os.path.join(self.basepath, self.database))
+                    print 'Trying to delete {}. File not found. Skipping.'.format(tblname)
 
     def loadConfig(self, config):
         for key in HyriseDriver.DEFAULT_CONFIG.keys():
             assert key in config, "Missing parameter '%s' in %s configuration" % (key, self.name)
 
         self.hyrise_builddir = str(config['hyrise_builddir'])
-        self.table_location = os.path.join(self.hyrise_builddir, str(config['table_location']))
+        self.table_location = str(config['table_location'])
         self.queries = self.loadQueryfiles(str(config['query_location']), QUERY_FILES)
 
         #Print the JSON used for loading the table files into HYRISE and exit
@@ -532,7 +532,7 @@ class HyriseDriver(AbstractDriver):
             "table": "{}",
             "filename" : "{}.tbl"
             }}
-            """.format(i, tblname, os.path.join(self.database, tblname))
+            """.format(i, tblname, os.path.relpath(self.hyrise_builddir, os.path.join(self.table_location, tblname)))
             )
 
         edgestr = ','.join('["{}","{}"]'.format(j,j+1) for j in range(len(self.tables)))
@@ -554,63 +554,63 @@ class HyriseDriver(AbstractDriver):
             "0": {
                 "type": "TableLoad",
                 "table": "CUSTOMER",
-                "filename" : "tpcc/tables/CUSTOMER.tbl"
+                "filename" : "test/tpcc/tables/CUSTOMER.tbl"
                 }
                 ,
 
             "1": {
                 "type": "TableLoad",
                 "table": "DISTRICT",
-                "filename" : "tpcc/tables/DISTRICT.tbl"
+                "filename" : "test/tpcc/tables/DISTRICT.tbl"
                 }
                 ,
 
             "2": {
                 "type": "TableLoad",
                 "table": "HISTORY",
-                "filename" : "tpcc/tables/HISTORY.tbl"
+                "filename" : "test/tpcc/tables/HISTORY.tbl"
                 }
                 ,
 
             "3": {
                 "type": "TableLoad",
                 "table": "ITEM",
-                "filename" : "tpcc/tables/ITEM.tbl"
+                "filename" : "test/tpcc/tables/ITEM.tbl"
                 }
                 ,
 
             "4": {
                 "type": "TableLoad",
                 "table": "NEW_ORDER",
-                "filename" : "tpcc/tables/NEW_ORDER.tbl"
+                "filename" : "test/tpcc/tables/NEW_ORDER.tbl"
                 }
                 ,
 
             "5": {
                 "type": "TableLoad",
                 "table": "ORDER_LINE",
-                "filename" : "tpcc/tables/ORDER_LINE.tbl"
+                "filename" : "test/tpcc/tables/ORDER_LINE.tbl"
                 }
                 ,
 
             "6": {
                 "type": "TableLoad",
                 "table": "ORDERS",
-                "filename" : "tpcc/tables/ORDERS.tbl"
+                "filename" : "test/tpcc/tables/ORDERS.tbl"
                 }
                 ,
 
             "7": {
                 "type": "TableLoad",
                 "table": "STOCK",
-                "filename" : "tpcc/tables/STOCK.tbl"
+                "filename" : "test/tpcc/tables/STOCK.tbl"
                 }
                 ,
 
             "8": {
                 "type": "TableLoad",
                 "table": "WAREHOUSE",
-                "filename" : "tpcc/tables/WAREHOUSE.tbl"
+                "filename" : "test/tpcc/tables/WAREHOUSE.tbl"
                 },
 
             "noop": {"type" : "NoOp"}

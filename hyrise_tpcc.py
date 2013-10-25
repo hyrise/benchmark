@@ -110,48 +110,64 @@ class TPCCUser(benchmark.User):
 class TPCCBenchmark(benchmark.Benchmark):
 
     def __init__(self, benchmarkGroupId, buildSettings, **kwargs):
-        os.environ['HYRISE_DB_PATH'] = os.path.join(os.getcwd(), "builds", buildSettings.getName())
         benchmark.Benchmark.__init__(self, benchmarkGroupId, buildSettings, **kwargs)
+
+        self._dirHyriseDB = os.path.join(os.getcwd(), "hyrise", "test")
+        os.environ['HYRISE_DB_PATH'] = self._dirHyriseDB
 
         self.scalefactor     = kwargs["scalefactor"] if kwargs.has_key("scalefactor") else 1
         self.warehouses      = kwargs["warehouses"] if kwargs.has_key("warehouses") else 4
         self.driverClass     = createDriverClass("hyrise")
         self.driver          = self.driverClass(os.path.join(os.getcwd(), "pytpcc", "tpcc.sql"))
         self.scaleParameters = scaleparameters.makeWithScaleFactor(self.warehouses, self.scalefactor)
+        self.regenerate      = False
         self.setUserClass(TPCCUser)
 
     def benchPrepare(self):
-        """ executed once after benchmark was started and HYRISE server is running """
-        rand.setNURand(nurand.makeForLoad())
-        dirTPCC = os.path.join(self._dirBinary, "tpcc")
-        if not os.path.isdir(dirTPCC):
-            os.makedirs(dirTPCC)
-        dirTPCCTables = os.path.join(dirTPCC, "tables")
-        dirTPCCQueries = os.path.join(dirTPCC, "queries")
+        # make sure the TPC-C query and table directories are present
+        dirPyTPCC   = os.path.join(os.getcwd(), "pytpcc", "pytpcc")
+        dirTables   = os.path.join(self._dirHyriseDB, "tpcc", "tables")
 
-        if not os.path.islink(dirTPCCQueries):
-            os.symlink(os.path.join(os.getcwd(), "pytpcc", "pytpcc", "queries"), dirTPCCQueries)
-        if not os.path.islink(dirTPCCTables):
-            os.symlink(os.path.join(os.getcwd(), "pytpcc", "pytpcc", "tables"), dirTPCCTables)
+        sys.stdout.write("Checking for table files... ")
+        sys.stdout.flush()
+        generate = False
+        if not os.path.isdir(dirTables):
+            print "no table files found"
+            generate = True
+            os.makedirs(dirTables)
+        else:
+            for t in self.driver.tables:
+                if not os.path.isfile(os.path.join(dirTables, "%s.tbl" % t)): #or not os.path.isfile(os.path.join(dirTables, "%s.hdr" % t)):
+                    print "table files incomplete"
+                    generate = True
+                    break
 
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
         config["querylog"] = None
         config["print_load"] = False
         config["port"] = self._port
-        config["table_location"] = "tpcc/tables"
-        config["query_location"] = dirTPCCQueries
+	config["hyrise_builddir"] = self._dirHyriseDB
+        config["table_location"] = dirTables
+        config["query_location"] = os.path.join(dirPyTPCC, "queries")
         self.driver.loadConfig(config)
 
-        import pdb; pdb.set_trace()
-        generator = loader.Loader(self.driver, self.scaleParameters, range(1,self.warehouses+1), True)
-        generator.execute()
+        if self.regenerate:
+            print "table file regeneration requested"
+            generate = True
+        if generate:
+            sys.stdout.write("regenerating... ")
+            sys.stdout.flush()
+            # regenerate here
+            import pdb; pdb.set_trace()
+            self.driver.deleteExistingTablefiles(dirTables)
+            self.driver.createFilesWithHeader(dirTables)
+            rand.setNURand(nurand.makeForLoad())
+            generator = loader.Loader(self.driver, self.scaleParameters, range(1,self.warehouses+1), True)
+            generator.execute()
+        print "done"
 
-        try:
-            self.driver.executeStart()
-        except Exception as e:
-            print "Hat nicht geklappt :("
-            print e
+        self.driver.executeStart()
 
         self.setUserArgs({
             "scaleParameters": self.scaleParameters,
@@ -180,7 +196,7 @@ if __name__ == "__main__":
                          help='Do not build and start a HYRISE instance (note: a HYRISE server must be running on the specified port)')
     args = vars(aparser.parse_args())
 
-    s1 = benchmark.Settings("none", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NONE",)
+    s1 = benchmark.Settings("none", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NONE")
     s2 = benchmark.Settings("logger", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="BUFFEREDLOGGER")
     s3 = benchmark.Settings("nvram", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NVRAM")
 
