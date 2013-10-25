@@ -138,7 +138,7 @@ class HyriseDriver(AbstractDriver):
 
         self.hyrise_builddir = str(config['hyrise_builddir'])
         self.table_location = str(config['table_location'])
-        self.queries = self.loadQueryfiles(str(config['query_location']), QUERY_FILES)
+        self.loadQueryfiles(str(config['query_location']), QUERY_FILES)
 
         #Print the JSON used for loading the table files into HYRISE and exit
         if config["print_load"]:
