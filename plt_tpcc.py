@@ -126,12 +126,10 @@ if __name__ == "__main__":
 		plt.title("Total transactions for Run %s" % runId)
 		plt.ylabel("Total number of transactions")
 		plt.xlabel("Build name")
-		plt.xticks(ind+width/2, buildIds)
+		plt.xticks(arange(len(buildIds)), buildIds)
+		plt.xlim(xmax=len(buildIds)+3)
 		plt.legend([p1[0], p2[0], p3[0], p4[0], p5[0]], barData.keys())
 
 		fname = os.path.join(dirOutput, "%s.pdf" % runId)
 		plt.savefig(fname)
 		plt.close()
-		#plt.show()
-
-
