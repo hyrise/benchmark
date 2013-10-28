@@ -191,11 +191,20 @@ if __name__ == "__main__":
                          help='Warmuptime before logging is activated')
     aparser.add_argument('--manual', action='store_true',
                          help='Do not build and start a HYRISE instance (note: a HYRISE server must be running on the specified port)')
+    aparser.add_argument('--stdout', action='store_true',
+                         help='Print HYRISE server\'s stdout to console')
+    aparser.add_argument('--stderr', action='store_true',
+                         help='Print HYRISE server\'s stderr to console')
+    aparser.add_argument('--rebuild', action='store_true',
+                         help='Force `make clean` before each build')
+    aparser.add_argument('--regenerate', action='store_true',
+                         help='Force regeneration of TPC-C table files')
     args = vars(aparser.parse_args())
 
-    s1 = benchmark.Settings("none", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NONE")
-    s2 = benchmark.Settings("logger", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="BUFFEREDLOGGER")
-    s3 = benchmark.Settings("nvram", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NVRAM")
+    s1 = benchmark.Settings("none")
+    #s1 = benchmark.Settings("none", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NONE")
+    #s2 = benchmark.Settings("logger", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="BUFFEREDLOGGER")
+    #s3 = benchmark.Settings("nvram", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NVRAM")
 
     kwargs = {
         "port"              : args["port"],
@@ -206,8 +215,10 @@ if __name__ == "__main__":
         "warehouses"        : args["warehouses"],
         "benchmarkQueries"  : [],
         "prepareQueries"    : [],
-        "showStdout"        : False,
-        "showStderr"        : True
+        "showStdout"        : args["stdout"],
+        "showStderr"        : args["stderr"],
+        "rebuild"           : args["rebuild"],
+        "regenerate"        : args["regenerate"]
     }
 
     groupId = "tpcc"
@@ -219,9 +230,9 @@ if __name__ == "__main__":
         print "+---------------------------------+\n"
 
         b1 = TPCCBenchmark(groupId, runId, s1, **kwargs)
-        b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
+        #b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
         # b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
 
         b1.run()
-        b2.run()
+        #b2.run()
         #b3.run()
