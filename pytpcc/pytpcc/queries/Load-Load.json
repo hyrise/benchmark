@@ -1,0 +1,229 @@
+{
+    "operators" : {
+
+        "0l": {
+            "type": "TableLoad",
+            "table": "CUSTOMER",
+            "filename" : "test/tpcc/tables/CUSTOMER.tbl"
+            },
+
+            /* Indices for table CUSTOMER */
+            "0_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "CUSTOMER_idx_C_ID",
+                "fields" : ["C_ID"]
+                },
+            "0_idx1": {
+                "type": "CreateIndex",
+                "index_name" : "CUSTOMER_idx_C_D_ID",
+                "fields" : ["C_D_ID"]
+                },
+            "0_idx2": {
+                "type": "CreateIndex",
+                "index_name" : "CUSTOMER_idx_C_W_ID",
+                "fields" : ["C_W_ID"]
+                },
+            "0_idx3": {
+                "type": "CreateIndex",
+                "index_name" : "CUSTOMER_idx_C_LAST",
+                "fields" : ["C_LAST"]
+                },
+
+        "1l": {
+            "type": "TableLoad",
+            "table": "DISTRICT",
+            "filename" : "test/tpcc/tables/DISTRICT.tbl"
+            },
+
+            /* Indices for table DISTRICT */
+            "1_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "DISTRICT_idx_D_ID",
+                "fields" : ["D_ID"]
+                },
+            "1_idx1": {
+                "type": "CreateIndex",
+                "index_name" : "DISTRICT_idx_D_W_ID",
+                "fields" : ["D_W_ID"]
+                },
+
+        "2l": {
+            "type": "TableLoad",
+            "table": "HISTORY",
+            "filename" : "test/tpcc/tables/HISTORY.tbl"
+            },
+
+        "3l": {
+            "type": "TableLoad",
+            "table": "ITEM",
+            "filename" : "test/tpcc/tables/ITEM.tbl"
+            },
+
+            /* Indices for table ITEM */
+            "3_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "ITEM_idx_I_ID",
+                "fields" : ["I_ID"]
+                },
+
+        "4l": {
+            "type": "TableLoad",
+            "table": "NEW_ORDER",
+            "filename" : "test/tpcc/tables/NEW_ORDER.tbl"
+            },
+
+            /* Indices for table NEW_ORDER */
+            "4_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "NEW_ORDER_idx_NO_D_ID",
+                "fields" : ["NO_D_ID"]
+                },
+            "4_idx1": {
+                "type": "CreateIndex",
+                "index_name" : "NEW_ORDER_idx_NO_W_ID",
+                "fields" : ["NO_W_ID"]
+                },
+            "4_idx2": {
+                "type": "CreateIndex",
+                "index_name" : "NEW_ORDER_idx_NO_O_ID",
+                "fields" : ["NO_O_ID"]
+                },
+
+        "5l": {
+            "type": "TableLoad",
+            "table": "ORDER_LINE",
+            "filename" : "test/tpcc/tables/ORDER_LINE.tbl"
+            },
+
+            /* Indices for table ORDER_LINE */
+            "5_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "ORDER_LINE_idx_OL_O_ID",
+                "fields" : ["OL_O_ID"]
+                },
+            "5_idx1": {
+                "type": "CreateIndex",
+                "index_name" : "ORDER_LINE_idx_OL_W_ID",
+                "fields" : ["OL_W_ID"]
+                },
+            "5_idx2": {
+                "type": "CreateIndex",
+                "index_name" : "ORDER_LINE_idx_OL_D_ID",
+                "fields" : ["OL_D_ID"]
+                },
+
+        "6l": {
+            "type": "TableLoad",
+            "table": "ORDERS",
+            "filename" : "test/tpcc/tables/ORDERS.tbl"
+            },
+
+            /* Indices for table ORDERS */
+            "6_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "ORDERS_idx_O_ID",
+                "fields" : ["O_ID"]
+                },
+            "6_idx1": {
+                "type": "CreateIndex",
+                "index_name" : "ORDERS_idx_O_D_ID",
+                "fields" : ["O_D_ID"]
+                },
+            "6_idx2": {
+                "type": "CreateIndex",
+                "index_name" : "ORDERS_idx_O_W_ID",
+                "fields" : ["O_W_ID"]
+                },
+            "6_idx3": {
+                "type": "CreateIndex",
+                "index_name" : "ORDERS_idx_O_C_ID",
+                "fields" : ["O_C_ID"]
+                },
+
+        "7l": {
+            "type": "TableLoad",
+            "table": "STOCK",
+            "filename" : "test/tpcc/tables/STOCK.tbl"
+            },
+
+            /* Indices for table STOCK */
+            "7_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "STOCK_idx_S_I_ID",
+                "fields" : ["S_I_ID"]
+                },
+            "7_idx1": {
+                "type": "CreateIndex",
+                "index_name" : "STOCK_idx_S_W_ID",
+                "fields" : ["S_W_ID"]
+                },
+
+        "8l": {
+            "type": "TableLoad",
+            "table": "WAREHOUSE",
+            "filename" : "test/tpcc/tables/WAREHOUSE.tbl"
+            },
+
+            /* Indices for table WAREHOUSE */
+            "8_idx0": {
+                "type": "CreateIndex",
+                "index_name" : "WAREHOUSE_idx_W_ID",
+                "fields" : ["W_ID"]
+                },        
+
+        "noop": {"type" : "NoOp"}
+    },
+
+    "edges": [
+        /* CUSTOMER + 4 Indices */
+        ["0l","0_idx0"],["0_idx0","noop"],
+        ["0l","0_idx1"],["0_idx1","noop"],
+        ["0l","0_idx2"],["0_idx2","noop"],
+        ["0l","0_idx3"],["0_idx3","noop"],
+
+        /* DISTRICT + 2 Indices */
+        ["1l","1_idx0"],["1_idx0","noop"],
+        ["1l","1_idx1"],["1_idx1","noop"],
+
+        /*  HISTORY + 0 Indices */
+        ["2l","noop"],
+
+        /*  ITEM + 1 Indices */
+        ["3l","3_idx0"],["3_idx0","noop"],
+
+        /*  NEW_ORDER + 3 Indices */
+        ["4l","4_idx0"],["4_idx0","noop"],
+        ["4l","4_idx1"],["4_idx1","noop"],
+        ["4l","4_idx2"],["4_idx2","noop"],
+
+        /*  ORDER_LINE + 3 Indices */
+        ["5l","5_idx0"],["5_idx0","noop"],
+        ["5l","5_idx1"],["5_idx1","noop"],
+        ["5l","5_idx2"],["5_idx2","noop"],
+
+        /*  ORDERS + 4 Indices */
+        ["6l","6_idx0"],["6_idx0","noop"],
+        ["6l","6_idx1"],["6_idx1","noop"],
+        ["6l","6_idx2"],["6_idx2","noop"],
+        ["6l","6_idx3"],["6_idx3","noop"],
+
+        /*  STOCK + 2 Indices */
+        ["7l","7_idx0"],["7_idx0","noop"],
+        ["7l","7_idx1"],["7_idx1","noop"],
+
+        /*  WAREHOUSE + 1 Indices */
+        ["8l","8_idx0"],["8_idx0","noop"]
+    ]
+}
+
+
+
+
+
+
+
+
+
+
+
+

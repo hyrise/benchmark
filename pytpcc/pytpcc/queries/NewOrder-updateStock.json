@@ -1,17 +1,31 @@
 {
+  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "STOCK"
     },
-    "select": {
-       "type": "SimpleTableScan",
-       "predicates": [
-         {"type": "AND"},
-         {"type": "EQ", "in": 0, "f": "S_I_ID", "vtype": 0 /*Int*/, "value": %(ol_i_id)d},
-         {"type": "EQ", "in": 0, "f": "S_W_ID", "vtype": 0 /*Int*/, "value": %(ol_supply_w_id)d}
-       ]
+
+    "idx_scan_S_I_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(ol_i_id)d,
+      "fields": ["S_I_ID"],
+      "index": "STOCK_idx_S_I_ID"
     },
+
+    "idx_scan_S_W_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(ol_supply_w_id)d,
+      "fields": ["S_W_ID"],
+      "index": "STOCK_idx_S_W_ID"
+    },
+
+    "intersect": {
+      "type": "IntersectPositions"
+    },
+
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -28,5 +42,15 @@
       "type": "NoOp"
     }
   },
-  "edges": [["load", "select"], ["select", "validate"], ["validate", "update"], ["update","NoOp"]]
+  "edges": [
+    ["load", "idx_scan_S_I_ID"], 
+    ["load", "idx_scan_S_W_ID"],
+
+    ["idx_scan_S_I_ID", "intersect"], 
+    ["idx_scan_S_W_ID", "intersect"],
+
+    ["intersect", "validate"],
+    ["validate", "update"],
+    ["update","NoOp"]
+  ]
 }

@@ -1,19 +1,39 @@
 {
+  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "ORDER_LINE"
     },
-    "select": {
-       "type": "SimpleTableScan",
-       "predicates": [
-         {"type": "AND"},
-         {"type": "EQ", "in": 0, "f": "OL_W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d},
-         {"type": "AND"},
-         {"type": "EQ", "in": 0, "f": "OL_D_ID", "vtype": 0 /*Int*/, "value": %(d_id)d},
-         {"type": "EQ", "in": 0, "f": "OL_O_ID", "vtype": 0 /*Int*/, "value": %(o_id)d}
-       ]
+
+    "idx_scan_OL_O_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(o_id)d,
+      "fields": ["OL_O_ID"],
+      "index": "ORDER_LINE_idx_OL_O_ID"
     },
+
+    "idx_scan_OL_D_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(d_id)d,
+      "fields": ["OL_D_ID"],
+      "index": "ORDER_LINE_idx_OL_D_ID"
+    },
+
+    "idx_scan_OL_W_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(w_id)d,
+      "fields": ["OL_W_ID"],
+      "index": "ORDER_LINE_idx_OL_W_ID"
+    },
+
+    "intersect": {
+      "type": "IntersectPositions"
+    }, 
+
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -22,5 +42,16 @@
        "fields": ["OL_SUPPLY_W_ID", "OL_I_ID", "OL_QUANTITY", "OL_AMOUNT", "OL_DELIVERY_D"]
     }
   },
-  "edges": [["load", "select"], ["select", "validate"], ["validate", "project"]]
+  "edges": [
+    ["load", "idx_scan_OL_O_ID"], 
+    ["load", "idx_scan_OL_D_ID"], 
+    ["load", "idx_scan_OL_W_ID"], 
+
+    ["idx_scan_OL_O_ID", "intersect"], 
+    ["idx_scan_OL_D_ID", "intersect"], 
+    ["idx_scan_OL_W_ID", "intersect"], 
+
+    ["intersect", "validate"],
+    ["validate", "project"]
+  ]
 }

@@ -1,9 +1,11 @@
 {
+  "priority" : 1,
   "operators": {
     "load": {
       "type": "TableLoad",
       "table": "CUSTOMER"
     },
+
     "select": {
       "type": "SimpleTableScan",
       "predicates": [

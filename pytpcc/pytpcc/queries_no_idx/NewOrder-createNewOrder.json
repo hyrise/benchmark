@@ -1,0 +1,16 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "NEW_ORDER"
+    },
+    "insert": {
+       "type": "InsertScan",
+       "data" : [[%(o_id)d, %(d_id)d, %(w_id)d]]
+    },
+    "NoOp": {
+      "type": "NoOp"
+    }
+  },
+  "edges": [["load", "insert"],["insert","NoOp"]]
+}

@@ -1,19 +1,39 @@
 {
+  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "ORDERS"
     },
-    "select": {
-       "type": "SimpleTableScan",
-       "predicates": [
-         {"type": "AND"},
-         {"type": "EQ", "in": 0, "f": "O_ID", "vtype": 0 /*Int*/, "value": %(no_o_id)d},
-         {"type": "AND"},
-         {"type": "EQ", "in": 0, "f": "O_D_ID", "vtype": 0 /*Int*/, "value": %(d_id)d},
-         {"type": "EQ", "in": 0, "f": "O_W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d}
-       ]
+
+    "idx_scan_O_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(no_o_id)d,
+      "fields": ["O_ID"],
+      "index": "ORDERS_idx_O_ID"
     },
+
+    "idx_scan_O_D_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(d_id)d,
+      "fields": ["O_D_ID"],
+      "index": "ORDERS_idx_O_D_ID"
+    },
+
+    "idx_scan_O_W_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(w_id)d,
+      "fields": ["O_W_ID"],
+      "index": "ORDERS_idx_O_W_ID"
+    },
+
+    "intersect": {
+      "type": "IntersectPositions"
+    }, 
+
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -27,5 +47,17 @@
       "type": "NoOp"
     }
   },
-  "edges": [["load", "select"], ["select", "validate"], ["validate", "update"], ["update","NoOp"]]
+  "edges": [
+    ["load", "idx_scan_O_ID"], 
+    ["load", "idx_scan_O_D_ID"], 
+    ["load", "idx_scan_O_W_ID"], 
+
+    ["idx_scan_O_ID", "intersect"], 
+    ["idx_scan_O_D_ID", "intersect"], 
+    ["idx_scan_O_W_ID", "intersect"], 
+
+    ["intersect", "validate"],
+    ["validate", "update"],
+    ["update","NoOp"]
+  ]
 }

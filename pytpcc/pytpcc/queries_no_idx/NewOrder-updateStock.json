@@ -1,0 +1,32 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "STOCK"
+    },
+    "select": {
+       "type": "SimpleTableScan",
+       "predicates": [
+         {"type": "AND"},
+         {"type": "EQ", "in": 0, "f": "S_I_ID", "vtype": 0 /*Int*/, "value": %(ol_i_id)d},
+         {"type": "EQ", "in": 0, "f": "S_W_ID", "vtype": 0 /*Int*/, "value": %(ol_supply_w_id)d}
+       ]
+    },
+    "validate" : {
+      "type" : "ValidatePositions"
+    },
+    "update": {
+       "type": "PosUpdateScan",
+       "data": {
+          "S_QUANTITY": %(s_quantity)d,
+          "S_ORDER_CNT": %(s_order_cnt)d,
+          "S_REMOTE_CNT": %(s_remote_cnt)d,
+          "S_YTD": %(s_ytd)d
+       }
+    },
+    "NoOp": {
+      "type": "NoOp"
+    }
+  },
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "update"], ["update","NoOp"]]
+}

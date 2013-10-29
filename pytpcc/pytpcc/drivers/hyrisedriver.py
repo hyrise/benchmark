@@ -113,6 +113,7 @@ class HyriseDriver(AbstractDriver):
         self.table_location = None
         self.tables = constants.ALL_TABLES
         self.queries = {}
+        self.query_directory = None
         self.conn = None
 
     def makeDefaultConfig(self):
@@ -138,7 +139,8 @@ class HyriseDriver(AbstractDriver):
 
         self.hyrise_builddir = str(config['hyrise_builddir'])
         self.table_location = str(config['table_location'])
-        self.loadQueryfiles(str(config['query_location']), QUERY_FILES)
+        self.query_directory = str(config['query_location'])
+        self.loadQueryfiles(self.query_directory, QUERY_FILES)
 
         #Print the JSON used for loading the table files into HYRISE and exit
         if config["print_load"]:
@@ -520,104 +522,9 @@ class HyriseDriver(AbstractDriver):
         return int(result[0]) if result else 0
 
     def generateTableloadJson(self):
-        parts = []
-        loadstr = """
-            {
-                "operators" : {
-            """
-        for i ,tblname in enumerate(self.tables):
-            parts.append("""
-        "{}": {{
-            "type": "TableLoad",
-            "table": "{}",
-            "filename" : "{}.tbl"
-            }}
-            """.format(i, tblname, os.path.relpath(self.hyrise_builddir, os.path.join(self.table_location, tblname)))
-            )
-
-        edgestr = ','.join('["{}","{}"]'.format(j,j+1) for j in range(len(self.tables)))
-
-
-        loadstr = """
-{{
-    "operators" : {{
-        {},
-        "{}": {{"type" : "Commit"}}
-        }},
-    "edges": [{}]
-    }}""".format(',\n'.join(parts), len(self.tables), edgestr)
-
-
-        loadstr = """
-        {
-    "operators" : {
-            "0": {
-                "type": "TableLoad",
-                "table": "CUSTOMER",
-                "filename" : "test/tpcc/tables/CUSTOMER.tbl"
-                }
-                ,
-
-            "1": {
-                "type": "TableLoad",
-                "table": "DISTRICT",
-                "filename" : "test/tpcc/tables/DISTRICT.tbl"
-                }
-                ,
-
-            "2": {
-                "type": "TableLoad",
-                "table": "HISTORY",
-                "filename" : "test/tpcc/tables/HISTORY.tbl"
-                }
-                ,
-
-            "3": {
-                "type": "TableLoad",
-                "table": "ITEM",
-                "filename" : "test/tpcc/tables/ITEM.tbl"
-                }
-                ,
-
-            "4": {
-                "type": "TableLoad",
-                "table": "NEW_ORDER",
-                "filename" : "test/tpcc/tables/NEW_ORDER.tbl"
-                }
-                ,
-
-            "5": {
-                "type": "TableLoad",
-                "table": "ORDER_LINE",
-                "filename" : "test/tpcc/tables/ORDER_LINE.tbl"
-                }
-                ,
-
-            "6": {
-                "type": "TableLoad",
-                "table": "ORDERS",
-                "filename" : "test/tpcc/tables/ORDERS.tbl"
-                }
-                ,
-
-            "7": {
-                "type": "TableLoad",
-                "table": "STOCK",
-                "filename" : "test/tpcc/tables/STOCK.tbl"
-                }
-                ,
-
-            "8": {
-                "type": "TableLoad",
-                "table": "WAREHOUSE",
-                "filename" : "test/tpcc/tables/WAREHOUSE.tbl"
-                },
-
-            "noop": {"type" : "NoOp"}
-        },
-    "edges": [["0","noop"],["1","noop"],["2","noop"],["3","noop"],["4","noop"],["5","noop"],["6","noop"],["7","noop"],["8","noop"]]
-    }
-    """
+        filename = "Load-Load.json"
+        with open(os.path.abspath(os.path.join(self.query_directory, filename)), 'r') as jsonfile:
+            loadstr = jsonfile.read()
         return loadstr
 
 ## CLAS

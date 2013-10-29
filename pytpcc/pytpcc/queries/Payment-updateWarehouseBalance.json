@@ -1,15 +1,19 @@
 {
+  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "WAREHOUSE"
     },
-    "select": {
-       "type": "SimpleTableScan",
-       "predicates": [
-         {"type": "EQ", "in": 0, "f": "W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d}
-       ]
+
+    "idx_scan_W_ID": {
+      "type": "IndexAwareTableScan",
+      "vtype": 0,
+      "value": %(w_id)d,
+      "fields": ["W_ID"],
+      "index": "WAREHOUSE_idx_W_ID"
     },
+
     "validate" : {
       "type" : "ValidatePositions"
     }, 
@@ -22,5 +26,10 @@
       "type": "NoOp"
     }    
   },
-  "edges": [["load", "select"], ["select", "validate"], ["validate", "updateinc"], ["updateinc","NoOp"]]
+  "edges": [
+    ["load", "idx_scan_W_ID"],
+    ["idx_scan_W_ID", "validate"],
+    ["validate", "updateinc"],
+    ["updateinc","NoOp"]
+  ]
 }

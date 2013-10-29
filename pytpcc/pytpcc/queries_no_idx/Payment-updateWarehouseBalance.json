@@ -1,0 +1,26 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "WAREHOUSE"
+    },
+    "select": {
+       "type": "SimpleTableScan",
+       "predicates": [
+         {"type": "EQ", "in": 0, "f": "W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d}
+       ]
+    },
+    "validate" : {
+      "type" : "ValidatePositions"
+    }, 
+    "updateinc" : { 
+        "type" : "PosUpdateIncrementScan",
+        "column" : "W_YTD",
+        "offset" : %(w_ytd)f
+    },
+    "NoOp": {
+      "type": "NoOp"
+    }    
+  },
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "updateinc"], ["updateinc","NoOp"]]
+}
