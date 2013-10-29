@@ -201,11 +201,9 @@ if __name__ == "__main__":
                          help='Force regeneration of TPC-C table files')
     args = vars(aparser.parse_args())
 
-    s1 = benchmark.Settings("none")
-    s2 = benchmark.Settings("logger", PERSISTENCY="BUFFEREDLOGGER")
-    #s1 = benchmark.Settings("none", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NONE")
-    #s2 = benchmark.Settings("logger", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="BUFFEREDLOGGER")
-    #s3 = benchmark.Settings("nvram", oldMode=True, PRODUCTION=1, WITH_MYSQL=1, COMPILER="g++48", PERSISTENCY="NVRAM")
+    s1 = benchmark.Settings("NoLogger", PERSISTENCY="NONE")
+    s2 = benchmark.Settings("BufferedLogger", PERSISTENCY="BUFFEREDLOGGER")
+    s3 = benchmark.Settings("NVRAM", PERSISTENCY="NVRAM", NVRAM_FILENAME="hyrise_tpcc")
 
     kwargs = {
         "port"              : args["port"],
@@ -223,7 +221,7 @@ if __name__ == "__main__":
     }
 
     groupId = "tpcc"
-    for num_clients in xrange(1,3):#xrange(11, 31):
+    for num_clients in xrange(1,5):#xrange(11, 31):
         runId = "tpcc_users_%s"%num_clients
         kwargs["numUsers"] = num_clients
 
@@ -232,8 +230,11 @@ if __name__ == "__main__":
 
         b1 = TPCCBenchmark(groupId, runId, s1, **kwargs)
         b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
-        # b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
+        b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
 
         b1.run()
         b2.run()
-        #b3.run()
+        b3.run()
+
+    plotter = benchmark.Plotter(groupId)
+    plotter.printStatistics()
