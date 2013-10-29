@@ -45,7 +45,7 @@ class Plotter:
                 plotY.append(total)
             plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
             plt.plot(plotX, plotY, label=buildId)
-        plt.xticks(arange(1, plotX[-1]+1))
+        plt.xticks(arange(plotX[0], plotX[-1]+1))
         plt.legend(loc='upper left', prop={'size':10})
         fname = os.path.join(self._dirOutput, "total_throughput.pdf")
         plt.savefig(fname)
