@@ -7,8 +7,9 @@ class Plotter:
 
     def __init__(self, benchmarkGroupId):
         self._groupId = benchmarkGroupId
-        self._dirOutput = os.path.join(os.getcwd(), str(self._groupId))
+        self._dirOutput = os.path.join(os.getcwd(), "plots", str(self._groupId))
         self._runs = self._collect()
+        self._buildIds = self._runs[self._runs.keys()[0]].keys()
 
         if not os.path.isdir(self._dirOutput):
             os.makedirs(self._dirOutput)
@@ -29,11 +30,10 @@ class Plotter:
 
     def plotResponseTimesVaryingUsers(self):
         plt.figure(1, figsize=(10, 20))
-        buildIds = self._runs[self._runs.keys()[0]].keys()
         curPlt = 0
-        for buildId in buildIds:
+        for buildId in self._buildIds:
             curPlt += 1
-            plt.subplot(len(buildIds), 1, curPlt)
+            plt.subplot(len(self._buildIds), 1, curPlt)
             plt.tight_layout()
             plt.yscale('log')
             plt.ylabel("Response Time in s")
@@ -56,13 +56,30 @@ class Plotter:
         plt.close()
 
     def plotResponseTimeFrequencies(self):
-        for runId, runData in self._runs.iteritems():
-            plt.figure(1, figsize=(10, 20))
-            for buildId, buildData in runData.iteritems():
-                aggData  = self._aggregateUsers(self._runs, runId, buildId)
-            fname = os.path.join(self._dirOutput, "rt_frequencies_%s.pdf" % runId)
-            plt.savefig(fname)
-            plt.close()
+        for buildId in self._buildIds:
+            for runId, runData in self._runs.iteritems():
+                aggData = self._aggregateUsers(runId, buildId)
+                maxPlt = len(aggData.keys())
+                curPlt = 0
+                plt.figure(1, figsize=(10, 4*maxPlt))
+                for txId, txData in aggData.iteritems():
+                    curPlt += 1
+                    plt.subplot(maxPlt, 1, curPlt)
+                    plt.tight_layout()
+                    plt.title("RT Frequency in %s (build '%s', run '%s')" % (txId, buildId, runId))
+                    plt.xlabel("Response Time in s")
+                    plt.ylabel("Number of Transactions")
+                    plt.xlim(txData["min"], txData["max"])
+                    plt.xticks([txData["min"], txData["average"], percentile(txData["raw"], 90), txData["max"]],
+                               ["" % txData["min"], "avg\n(%s)" % txData["average"], "90th percentile\n(%s)" % percentile(txData["raw"], 90), "max\n(%s)" % txData["max"]],
+                               rotation=45, fontsize=5)
+                    plt.grid(axis='x')
+                    y, binEdges = np.histogram(txData["raw"], bins=10)
+                    binCenters = 0.5*(binEdges[1:]+binEdges[:-1])
+                    plt.plot(binCenters, y, '-')
+                fname = os.path.join(self._dirOutput, "rt_freq_%s_%s.pdf" % (buildId, runId))
+                plt.savefig(fname)
+                plt.close()
 
     def _collect(self):
         """
