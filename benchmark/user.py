@@ -58,7 +58,7 @@ class User(multiprocessing.Process):
         self.stopUser()
         self._writeLogs()
 
-        print "\nThroughput: %f runs per second (%i total)\n================\n" % ( self.getThroughput(), self._totalRuns)
+        #print "\nThroughput: %f runs per second (%i total)\n================\n" % ( self.getThroughput(), self._totalRuns)
 
 
     def stop(self):
