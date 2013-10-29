@@ -17,6 +17,8 @@ if __name__ == "__main__":
 
 	plotter.plotResponseTimesVaryingUsers()
 
+	plotter.plotResponseTimeFrequencies()
+
 	# total transaction plot
 	if False:
 		for runId, runData in runs.iteritems():
