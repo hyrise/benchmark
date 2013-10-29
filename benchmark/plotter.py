@@ -28,6 +28,29 @@ class Plotter:
                     print "|     {:16s}  {:5s}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}".format(txId, str(txData["total"]), txData["min"], txData["max"], txData["average"], txData["median"])
                 print "|\n"
 
+    def plotTotalThroughput(self):
+        plt.title("Total Transaction Throughput")
+        plt.ylabel("Number of Transactions")
+        plt.xlabel("Number of Parallel Users")
+        for buildId in self._buildIds:
+            plotX = []
+            plotY = []
+            for runId, runData in self._runs.iteritems():
+                numUsers = len(runData[runData.keys()[0]])
+                aggData = self._aggregateUsers(runId, buildId)
+                plotX.append(numUsers)
+                total = 0
+                for txId, txData in aggData.iteritems():
+                    total += txData["total"]
+                plotY.append(total)
+            plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
+            plt.plot(plotX, plotY, label=buildId)
+        plt.xticks(arange(1, plotX[-1]+1))
+        plt.legend(loc='upper left', prop={'size':10})
+        fname = os.path.join(self._dirOutput, "total_throughput.pdf")
+        plt.savefig(fname)
+        plt.close()
+
     def plotResponseTimesVaryingUsers(self):
         plt.figure(1, figsize=(10, 20))
         curPlt = 0
