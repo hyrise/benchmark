@@ -198,7 +198,8 @@ class Benchmark:
 
     def _signalHandler(self, signal, frame):
         print "\n*** received SIGINT, initiating graceful shutdown"
-        self._build.unlink()
+        if self._build:
+            self._build.unlink()
         for u in self._users:
             u.stopLogging()
             u.stop()
