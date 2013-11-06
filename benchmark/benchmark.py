@@ -13,6 +13,7 @@ import multiprocessing
 class Benchmark:
 
     def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
+        self._pid           = os.getpid()
         self._id            = benchmarkGroupId
         self._runId         = benchmarkRunId
         self._buildSettings = buildSettings
@@ -92,7 +93,11 @@ class Benchmark:
         sys.stdout.flush()
         for i in range(self._numUsers):
             self._users[i].startLogging()
-        time.sleep(self._runtime)
+        for i in range(self._runtime):
+            sys.stdout.write("Logging results for %i seconds... \r" % (self._runtime - i))
+            sys.stdout.flush()
+            time.sleep(1)
+        #time.sleep(self._runtime)
         for i in range(self._numUsers):
             self._users[i].stopLogging()
         print "Logging results for %i seconds... done" % self._runtime
@@ -107,6 +112,12 @@ class Benchmark:
             self._users[i].join()
         print "Stopping %s user(s)... done     " % self._numUsers
         self._stopServer()
+
+    def addQuery(self, queryId, queryStr):
+        if self._queryDict.has_key(queryId):
+            raise Exception("a query with id '%s' is already registered" % queryId)
+        else:
+            self._queryDict[queryId] = queryStr
 
     def addQueryFile(self, queryId, filename):
         if self._queryDict.has_key(queryId):
