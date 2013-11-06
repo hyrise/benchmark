@@ -1,5 +1,6 @@
 import argparse
 import benchmark
+import httplib
 import logging
 import os
 import requests
@@ -27,6 +28,7 @@ class TPCCUser(benchmark.User):
         self.config = kwargs["config"]
         self.config["reset"] = False
         self.config["execute"] = True
+        self.perf = {}
 
     def prepareUser(self):
         """ executed once when user starts """
@@ -40,15 +42,30 @@ class TPCCUser(benchmark.User):
 
     def runUser(self):
         """ main user activity """
-        txn, params = self.e.doOne()
+        self.perf = {}
+        #txn, params = self.e.doOne()
+        txn, params = "STOCK_LEVEL", self.e.generateStockLevelParams()
         tStart = time.time()
-        self.driver.executeTransaction(txn, params)
+        try:
+            self.driver.executeTransaction(txn, params)
+        except (requests.ConnectionError, RuntimeError):
+            print "*** TPCCUser Exception in '%s' after %fs" % (txn, time.time()-tStart)
+            return
         tEnd = time.time()
-        self.log("transactions", "%s,%f" % (txn, tEnd - tStart))
+        #self.log("transactions", "%s,%f" % (txn, tEnd - tStart))
+        self.log("transactions", [txn, tEnd-tStart, tStart, self.perf])
 
     def stopUser(self):
         """ executed once after stop request was sent to user """
         pass
+
+    def formatLog(self, key, value):
+        logStr = "%s;%f;%f" % (value[0], value[1], value[2])
+        for op, opData in value[3].iteritems():
+            logStr += ";%s,%i,%f" % (op, opData["n"], opData["t"])
+        logStr += "\n"
+        return logStr
+
 
     # HyriseConnection stubs
     # ======================
@@ -57,21 +74,28 @@ class TPCCUser(benchmark.User):
             if v == True:    v = 1;
             elif v == False: v = 0;
         result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
-        self.context = result.get("session_context", None)
+        self.context    = result.get("session_context", None)
         self.lastResult = result.get("rows", None)
         self.lastHeader = result.get("header", None)
-        self.lastPerf   = result.get("performanceData", None)
+
+        perf = result.get("performanceData", None)
+        if perf:
+            for op in perf:
+                self.perf.setdefault(op["name"], {"n": 0, "t": 0.0})
+                self.perf[op["name"]]["n"] += 1
+                self.perf[op["name"]]["t"] += op["endTime"] - op["startTime"]
+
 
     def commit(self):
         if not self.context:
-            raise Exception("Should not commit without running context")
+            raise RuntimeError("Should not commit without running context")
         result = self.fireQuery("""{"operators": {"cm": {"type": "Commit"}}}""", sessionContext=self.context)
         self.context = None
         return result
 
     def rollback(self):
         if not self.context:
-            raise Exception("Should not rollback without running context")
+            raise RuntimeError("Should not rollback without running context")
         result = self.fireQuery("""{"operators": {"rb": {"type": "Rollback"}}}""", sessionContext=self.context)
         self.context = None
         return result
@@ -117,6 +141,7 @@ class TPCCBenchmark(benchmark.Benchmark):
         self.driver          = self.driverClass(os.path.join(os.getcwd(), "pytpcc", "tpcc.sql"))
         self.scaleParameters = scaleparameters.makeWithScaleFactor(self.warehouses, self.scalefactor)
         self.regenerate      = False
+        self.noLoad          = kwargs["noLoad"] if kwargs.has_key("noLoad") else False
         self.setUserClass(TPCCUser)
 
     def benchPrepare(self):
@@ -161,10 +186,13 @@ class TPCCBenchmark(benchmark.Benchmark):
             generator.execute()
         print "done"
 
-        sys.stdout.write("Importing tables into HYRISE... ")
-        sys.stdout.flush()
-        self.driver.executeStart()
-        print "done"
+        if self.noLoad:
+            print "Skipping table load"
+        else:
+            sys.stdout.write("Importing tables into HYRISE... ")
+            sys.stdout.flush()
+            self.driver.executeStart()
+            print "done"
 
         self.setUserArgs({
             "scaleParameters": self.scaleParameters,
@@ -179,8 +207,12 @@ if __name__ == "__main__":
                          help='Number of Warehouses')
     aparser.add_argument('--duration', default=20, type=int, metavar='D',
                          help='How long to run the benchmark in seconds')
-    aparser.add_argument('--clients', default=1, type=int, metavar='N',
-                         help='The number of blocking clients to fork')
+    aparser.add_argument('--clients', default=-1, type=int, metavar='N',
+                         help='The number of blocking clients to fork (note: this overrides --clients-min/--clients-max')
+    aparser.add_argument('--clients-min', default=1, type=int, metavar='N',
+                         help='The minimum number of blocking clients to fork')
+    aparser.add_argument('--clients-max', default=1, type=int, metavar='N',
+                         help='The maximum number of blocking clients to fork')
     aparser.add_argument('--no-load', action='store_true',
                          help='Disable loading the data')
     aparser.add_argument('--no-execute', action='store_true',
@@ -210,23 +242,27 @@ if __name__ == "__main__":
         "manual"            : args["manual"],
         "warmuptime"        : args["warmup"],
         "runtime"           : args["duration"],
-        "numUsers"          : args["clients"],
         "warehouses"        : args["warehouses"],
         "benchmarkQueries"  : [],
         "prepareQueries"    : [],
         "showStdout"        : args["stdout"],
         "showStderr"        : args["stderr"],
         "rebuild"           : args["rebuild"],
-        "regenerate"        : args["regenerate"]
+        "regenerate"        : args["regenerate"],
+        "noLoad"            : args["no_load"]
     }
 
     groupId = "tpcc"
-    for num_clients in xrange(1,5):#xrange(11, 31):
-        runId = "tpcc_users_%s"%num_clients
-        kwargs["numUsers"] = num_clients
+    num_clients = args["clients"]
+    minClients = args["clients_min"]
+    maxClients = args["clients_max"]
+    if args["clients"] > 0:
+        minClients = args["clients"]
+        maxClients = args["clients"]
 
-        print "Executing number of users: " + str(num_clients)
-        print "+---------------------------------+\n"
+    for num_clients in xrange(minClients, maxClients+1):
+        runId = "numClients_%s" % num_clients
+        kwargs["numUsers"] = num_clients
 
         b1 = TPCCBenchmark(groupId, runId, s1, **kwargs)
         b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
@@ -235,6 +271,9 @@ if __name__ == "__main__":
         b1.run()
         b2.run()
         b3.run()
+
+        if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
+            os.remove("/mnt/pmfs/hyrise_tpcc")
 
     plotter = benchmark.Plotter(groupId)
     plotter.printStatistics()
