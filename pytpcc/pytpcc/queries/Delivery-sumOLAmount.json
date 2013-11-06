@@ -1,39 +1,20 @@
 {
-  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "ORDER_LINE"
     },
-
-    "idx_scan_OL_O_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(no_o_id)d,
-      "fields": ["OL_O_ID"],
-      "index": "ORDER_LINE_idx_OL_O_ID"
+    "select": {
+       "type": "IndexAwareTableScan",
+       "tablename": "ORDER_LINE",
+       "predicates": [
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "OL_W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d},
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "OL_D_ID", "vtype": 0 /*Int*/, "value": %(d_id)d},
+         {"type": "EQ_V", "in": 0, "f": "OL_O_ID", "vtype": 0 /*Int*/, "value": %(no_o_id)d}
+       ]
     },
-
-    "idx_scan_OL_D_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(d_id)d,
-      "fields": ["OL_D_ID"],
-      "index": "ORDER_LINE_idx_OL_D_ID"
-    },
-
-    "idx_scan_OL_W_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(w_id)d,
-      "fields": ["OL_W_ID"],
-      "index": "ORDER_LINE_idx_OL_W_ID"
-    },
-
-     "intersect": {
-      "type": "IntersectPositions"
-    }, 
-
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -43,16 +24,5 @@
         "functions": [{"type": "SUM", "field": "OL_AMOUNT"}]
       }
   },
-  "edges" : [
-    ["load", "idx_scan_OL_O_ID"], 
-    ["load", "idx_scan_OL_D_ID"], 
-    ["load", "idx_scan_OL_W_ID"], 
-
-    ["idx_scan_OL_O_ID", "intersect"], 
-    ["idx_scan_OL_D_ID", "intersect"], 
-    ["idx_scan_OL_W_ID", "intersect"], 
-
-    ["intersect", "validate"],
-    ["validate", "groupby"]
-  ]
+  "edges" : [["load", "select"], ["select", "validate"], ["validate", "groupby"]]
 }

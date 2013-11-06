@@ -1,31 +1,18 @@
 {
-  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "DISTRICT"
     },
-
-    "idx_scan_D_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(d_id)d,
-      "fields": ["D_ID"],
-      "index": "DISTRICT_idx_D_ID"
+    "select": {
+       "type": "IndexAwareTableScan",
+       "tablename": "DISTRICT",
+       "predicates": [
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "D_W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d},
+         {"type": "EQ_V", "in": 0, "f": "D_ID", "vtype": 0 /*Int*/, "value": %(d_id)d}
+       ]
     },
-
-    "idx_scan_D_W_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(w_id)d,
-      "fields": ["D_W_ID"],
-      "index": "DISTRICT_idx_D_W_ID"
-    },
-
-    "intersect": {
-      "type": "IntersectPositions"
-    },
-
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -34,13 +21,5 @@
        "fields": ["D_NAME", "D_STREET_1", "D_STREET_2", "D_CITY", "D_STATE", "D_ZIP", "D_YTD"]
     }
   },
-  "edges": [
-    ["load", "idx_scan_D_ID"], 
-    ["load", "idx_scan_D_W_ID"],
-
-    ["idx_scan_D_ID", "intersect"], 
-    ["idx_scan_D_W_ID", "intersect"],
-
-    ["intersect", "validate"],
-    ["validate", "project"]]
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "project"]]
 }

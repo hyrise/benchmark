@@ -1,31 +1,18 @@
 {
-  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "STOCK"
     },
-
-    "idx_scan_S_I_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(ol_i_id)d,
-      "fields": ["S_I_ID"],
-      "index": "STOCK_idx_S_I_ID"
+    "select": {
+       "type": "IndexAwareTableScan",
+       "tablename": "STOCK",
+       "predicates": [
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "S_I_ID", "vtype": 0 /*Int*/, "value": %(ol_i_id)d},
+         {"type": "EQ_V", "in": 0, "f": "S_W_ID", "vtype": 0 /*Int*/, "value": %(ol_supply_w_id)d}
+       ]
     },
-
-    "idx_scan_S_W_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(ol_supply_w_id)d,
-      "fields": ["S_W_ID"],
-      "index": "STOCK_idx_S_W_ID"
-    },
-
-    "intersect": {
-      "type": "IntersectPositions"
-    },
-
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -34,14 +21,5 @@
        "fields": ["S_QUANTITY", "S_DATA", "S_YTD", "S_ORDER_CNT", "S_REMOTE_CNT", "S_DIST_%(2d_id)02d"]
     }
   },
-  "edges": [
-    ["load", "idx_scan_S_I_ID"], 
-    ["load", "idx_scan_S_W_ID"],
-
-    ["idx_scan_S_I_ID", "intersect"], 
-    ["idx_scan_S_W_ID", "intersect"],
-
-    ["intersect", "validate"],
-    ["validate", "project"]
-  ]
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "project"]]
 }

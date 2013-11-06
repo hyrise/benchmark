@@ -1,19 +1,16 @@
 {
-  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "ITEM"
     },
-    
-    "idx_scan_I_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(i_id)d,
-      "fields": ["I_ID"],
-      "index": "ITEM_idx_I_ID"
+    "select": {
+       "type": "IndexAwareTableScan",
+       "tablename": "ITEM",
+       "predicates": [
+         {"type": "EQ_V", "in": 0, "f": "I_ID", "vtype": 0 /*Int*/, "value": %(i_id)d}
+       ]
     },
-
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -22,9 +19,5 @@
        "fields": ["I_PRICE", "I_NAME", "I_DATA"]
     }
   },
-  "edges": [
-    ["load", "idx_scan_I_ID"],
-    ["idx_scan_I_ID", "validate"],
-    ["validate", "project"]
-  ]
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "project"]]
 }

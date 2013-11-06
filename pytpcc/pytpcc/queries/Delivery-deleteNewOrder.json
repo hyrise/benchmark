@@ -1,35 +1,20 @@
 {
-  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "NEW_ORDER"
     },
-
-    "idx_scan_NO_W_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(w_id)d,
-      "fields": ["NO_W_ID"],
-      "index": "NEW_ORDER_idx_NO_W_IDs"
+    "select": {
+       "type": "IndexAwareTableScan",
+       "tablename": "NEW_ORDER",
+       "predicates": [
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "NO_D_ID", "vtype": 0 /*Int*/, "value": %(d_id)d},
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "NO_W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d},
+         {"type": "EQ_V", "in": 0, "f": "NO_O_ID", "vtype": 0 /*Int*/, "value": %(no_o_id)d}
+       ]
     },
-
-    "idx_scan_NO_D_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(d_id)d,
-      "fields": ["NO_D_ID"],
-      "index": "NEW_ORDER_idx_NO_D_ID"
-    }, 
-
-    "idx_scan_NO_O_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(no_o_id)d,
-      "fields": ["NO_O_ID"],
-      "index": "NEW_ORDER_idx_NO_O_ID"
-    }, 
-
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -37,17 +22,5 @@
        "type": "Delete"
     }
   },
-  "edges": [
-
-    ["load", "idx_scan_NO_W_ID"], 
-    ["load", "idx_scan_NO_D_ID"], 
-    ["load", "idx_scan_NO_O_ID"], 
-
-    ["idx_scan_NO_W_ID", "intersect"], 
-    ["idx_scan_NO_D_ID", "intersect"], 
-    ["idx_scan_NO_O_ID", "intersect"], 
-
-    ["intersect", "validate"],
-    ["validate", "delete"]
-  ]
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "delete"]]
 }

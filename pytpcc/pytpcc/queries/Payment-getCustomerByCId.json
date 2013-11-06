@@ -1,39 +1,20 @@
 {
-  "priority" : 1,
   "operators": {
     "load": {
        "type": "TableLoad",
        "table": "CUSTOMER"
     },
-
-    "idx_scan_C_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(c_id)d,
-      "fields": ["C_ID"],
-      "index": "CUSTOMER_idx_C_ID"
+    "select": {
+       "type": "IndexAwareTableScan",
+       "tablename": "CUSTOMER",
+       "predicates": [
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "C_W_ID", "vtype": 0 /*Int*/, "value": %(c_w_id)d},
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "C_D_ID", "vtype": 0 /*Int*/, "value": %(c_d_id)d},
+         {"type": "EQ_V", "in": 0, "f": "C_ID", "vtype": 0 /*Int*/, "value": %(c_id)d}
+       ]
     },
-
-    "idx_scan_C_D_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(c_d_id)d,
-      "fields": ["C_D_ID"],
-      "index": "CUSTOMER_idx_C_D_ID"
-    },
-
-    "idx_scan_C_W_ID": {
-      "type": "IndexAwareTableScan",
-      "vtype": 0,
-      "value": %(c_w_id)d,
-      "fields": ["C_W_ID"],
-      "index": "CUSTOMER_idx_C_W_ID"
-    },
-
-    "intersect": {
-      "type": "IntersectPositions"
-    }, 
-
     "validate" : {
       "type" : "ValidatePositions"
     },
@@ -44,16 +25,5 @@
                   "C_DISCOUNT", "C_BALANCE", "C_YTD_PAYMENT","C_PAYMENT_CNT","C_DATA"]
     }
   },
-  "edges": [
-    ["load", "idx_scan_C_ID"], 
-    ["load", "idx_scan_C_D_ID"], 
-    ["load", "idx_scan_C_W_ID"], 
-
-    ["idx_scan_C_ID", "intersect"], 
-    ["idx_scan_C_D_ID", "intersect"], 
-    ["idx_scan_C_W_ID", "intersect"], 
-
-    ["intersect", "validate"],
-    ["validate", "project"]
-  ]
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "project"]]
 }
