@@ -27,6 +27,7 @@ class User(multiprocessing.Process):
         self._logevent      = multiprocessing.Event()
         self._logging       = False
         self._log           = {}
+        self._lastQuery     = None
 
         self._totalRuns     = 0
         self._totalTime     = 0
@@ -58,19 +59,17 @@ class User(multiprocessing.Process):
         self.stopUser()
         self._writeLogs()
 
-        #print "\nThroughput: %f runs per second (%i total)\n================\n" % ( self.getThroughput(), self._totalRuns)
-
-
     def stop(self):
         self._stopevent.set()
 
 
-    def fireQuery(self, queryString, queryArgs={}, sessionContext=None, autocommit=False):
+    def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False):
         query = queryString % queryArgs
         data = {"query": query}
         if sessionContext: data["sessionContext"] = sessionContext
         if autocommit: data["autocommit"] = "true"
-        return self._session.post("http://%s:%s/" % (self._host, self._port), data=data)
+        self._lastQuery = data
+        return self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
 
     def startLogging(self):
         self._logevent.set()
@@ -90,7 +89,7 @@ class User(multiprocessing.Process):
         return self._totalRuns / self._totalTime
 
     def _prepare(self):
-        self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+        self._session.headers = {"Content-type": "application/json", "Accept": "text/plain"}
         if not os.path.isdir(self._dirOutput):
             os.makedirs(self._dirOutput)
 
