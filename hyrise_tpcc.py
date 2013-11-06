@@ -43,13 +43,12 @@ class TPCCUser(benchmark.User):
     def runUser(self):
         """ main user activity """
         self.perf = {}
-        #txn, params = self.e.doOne()
-        txn, params = "STOCK_LEVEL", self.e.generateStockLevelParams()
+        txn, params = self.e.doOne()
         tStart = time.time()
         try:
             self.driver.executeTransaction(txn, params)
-        except (requests.ConnectionError, RuntimeError):
-            print "*** TPCCUser Exception in '%s' after %fs" % (txn, time.time()-tStart)
+        except (requests.ConnectionError, RuntimeError), e:
+            print "*** TPCCUser %i Exception in '%s' after %fs (%s)" % (self._userId, txn, time.time()-tStart, e)
             return
         tEnd = time.time()
         #self.log("transactions", "%s,%f" % (txn, tEnd - tStart))
