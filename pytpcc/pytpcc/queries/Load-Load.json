@@ -157,6 +157,11 @@
                 "index_name" : "idx__STOCK__S_W_ID",
                 "fields" : ["S_W_ID"]
                 },
+            "7_idx2": {
+                "type": "CreateIndex",
+                "index_name" : "idx__STOCK__S_QUANTITY",
+                "fields" : ["S_QUANTITY"]
+                },
 
         "8l": {
             "type": "TableLoad",
@@ -210,6 +215,7 @@
         /*  STOCK + 2 Indices */
         ["7l","7_idx0"],["7_idx0","noop"],
         ["7l","7_idx1"],["7_idx1","noop"],
+        ["7l","7_idx2"],["7_idx2","noop"],
 
         /*  WAREHOUSE + 1 Indices */
         ["8l","8_idx0"],["8_idx0","noop"]

@@ -256,7 +256,8 @@ if __name__ == "__main__":
         "showStderr"        : args["stderr"],
         "rebuild"           : args["rebuild"],
         "regenerate"        : args["regenerate"],
-        "noLoad"            : args["no_load"]
+        "noLoad"            : args["no_load"],
+        "collectPerfData"   : True
     }
 
     groupId = "tpcc"
@@ -279,8 +280,8 @@ if __name__ == "__main__":
         kwargs["port"] += 1
 
         b1.run()
-        b2.run()
-        b3.run()
+        # b2.run()
+        # b3.run()
 
         if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
             os.remove("/mnt/pmfs/hyrise_tpcc")
