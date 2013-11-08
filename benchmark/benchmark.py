@@ -205,6 +205,15 @@ class Benchmark:
             sys.stdout.write("Stopping server... ")
             sys.stdout.flush()
             self._serverProc.terminate()
+            time.sleep(0.5)
+            if self._serverProc.poll() is None:
+                #print "Server still running. Waiting 2 sec and forcing shutdown..."
+                time.sleep(2)
+                self._serverProc.kill()
+            time.sleep(0.5)
+            if self._serverProc.poll() is None:
+                subprocess.call("killall hyrise-server_release")
+            time.sleep(0.5)
             print "done."
 
     def _signalHandler(self, signal, frame):
