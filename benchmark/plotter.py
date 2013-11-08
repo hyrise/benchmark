@@ -18,67 +18,68 @@ class Plotter:
 
     def printStatistics(self):
         for runId, runData in self._runs.iteritems():
-            numUsers = len(runData[runData.keys()[0]])
+            numUsers = runData[runData.keys()[0]]["numUsers"]
             print "Run ID: %s [%s users]" % (runId, numUsers)
             print "=============================="
             for buildId, buildData in runData.iteritems():
                 print "|\n+-- Build ID: %s" % buildId
                 print "|"
-                print "|     Transaction       #      min     max     avg     median"
+                print "|     Transaction       tps    min     max     avg     median"
                 print "|     --------------------------------------------------------"
-                total = 0
-                for txId, txData in self._aggregateUsers(runId, buildId).iteritems():
-                    total += txData["total"]
-                    print "|     {:16s}  {:5s}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}".format(txId, str(txData["total"]), txData["min"]*1000, txData["max"]*1000, txData["average"]*1000, txData["median"]*1000)
+                totalRuns = 0.0
+                totalTime = 0.0
+                for txId, txData in buildData["txStats"].iteritems():
+                    totalRuns += txData["totalRuns"]
+                    totalTime += txData["userTime"]
+                for txId, txData in buildData["txStats"].iteritems():
+                    print "|     {:16s}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"], txData["rtMax"], txData["rtAvg"], txData["rtMed"])
                     if txData["operators"] and len(txData["operators"].keys()) > 0:
-                        print "|       Operator                   #      total time"
+                        print "|       Operator                   avg #  avg cumm. time"
                         for opName, opData in txData["operators"].iteritems():
-                            print "|       {:25s}  {:5s}  {:1.4f}".format(opName, str(opData["total"]), opData["runtime"])
+                            print "|       {:25s}  {:1.2f}   {:1.3f}".format(opName, opData["avgRuns"], opData["avgTime"])
                 print "|     --------------------------------------------------------"
-                print "|     total:            %s\n" % total
+                print "|     total:            %1.2f tps\n" % (totalRuns / totalTime)
 
     def plotTotalThroughput(self):
         plt.title("Total Transaction Throughput")
-        plt.ylabel("Number of Transactions")
+        plt.ylabel("Transactions per Second")
         plt.xlabel("Number of Parallel Users")
         for buildId in self._buildIds:
             plotX = []
             plotY = []
             for runId, runData in self._runs.iteritems():
-                numUsers = len(runData[runData.keys()[0]])
-                aggData = self._aggregateUsers(runId, buildId)
-                plotX.append(numUsers)
-                total = 0
-                for txId, txData in aggData.iteritems():
-                    total += txData["total"]
-                plotY.append(total)
+                plotX.append(runData[buildId]["numUsers"])
+                totalRuns = 0.0
+                totalTime = 0.0
+                for txId, txData in runData[buildId]["txStats"].iteritems():
+                    totalRuns += txData["totalRuns"]
+                    totalTime += txData["userTime"]
+                plotY.append(totalRuns / totalTime)
             plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
             plt.plot(plotX, plotY, label=buildId)
-        plt.xticks(arange(plotX[0], plotX[-1]+1))
+        plt.xticks(plotX)
         plt.legend(loc='upper left', prop={'size':10})
         fname = os.path.join(self._dirOutput, "total_throughput.pdf")
         plt.savefig(fname)
         plt.close()
 
-    def plotNewOrderResponseTimes(self):
-        plt.title("NEW_ORDER Response Times")
-        plt.ylabel("Avg. Response Time in s")
-        plt.xlabel("Number of Parallel Users")
-        for buildId in self._buildIds:
-            plotX = []
-            plotY = []
-            for runId, runData in self._runs.iteritems():
-                numUsers = len(runData[runData.keys()[0]])
-                aggData = self._aggregateUsers(runId, buildId)
-                plotX.append(numUsers)
-                plotY.append(aggData["NEW_ORDER"]["average"])
-            plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
-            plt.plot(plotX, plotY, label=buildId)
-        plt.xticks(arange(plotX[0], plotX[-1]+1))
-        plt.legend(loc='upper left', prop={'size':10})
-        fname = os.path.join(self._dirOutput, "new_order_avg_rt.pdf")
-        plt.savefig(fname)
-        plt.close()
+    def plotTransactionResponseTimes(self):
+        for txId in ["NEW_ORDER","PAYMENT","STOCK_LEVEL","DELIVERY","ORDER_STATUS"]:
+            plt.title("%s Response Times" % txId)
+            plt.ylabel("Avg. Response Time in ms")
+            plt.xlabel("Number of Parallel Users")
+            for buildId in self._buildIds:
+                plotX = []
+                plotY = []
+                for runId, runData in self._runs.iteritems():
+                    plotX.append(runData[buildId]["numUsers"])
+                    plotY.append(runData[buildId]["txStats"][txId]["rtAvg"] / 1000)
+                plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
+                plt.plot(plotX, plotY, label=buildId)
+            plt.legend(loc='upper left', prop={'size':10})
+            fname = os.path.join(self._dirOutput, "%s_avg_rt.pdf" % txId)
+            plt.savefig(fname)
+            plt.close()
 
     def plotResponseTimesVaryingUsers(self):
         plt.figure(1, figsize=(10, 20))
@@ -134,35 +135,38 @@ class Plotter:
                 plt.close()
 
     def _collect(self):
-        """
-        Returns a collection dictionary with information about a benchmark group.
-        structure:
-        {
-            <Run ID>: {
-                <Build ID>: [
-                    {<Transaction1>: {runtimes: [<runtime 1>, <runtime 2>, ...], optimes: [] ...}, // User 1
-
-                ]
-            }
-        }
-        """
         runs = {}
         dirResults = os.path.join(os.getcwd(), "results", self._groupId)
         if not os.path.isdir(dirResults):
             raise Exception("Group result directory '%s' not found!" % dirResults)
 
+        # --- Runs --- #
         for run in os.listdir(dirResults):
             dirRun = os.path.join(dirResults, run)
             if os.path.isdir(dirRun):
                 runs[run] = {}
+
+                # --- Builds --- #
                 for build in os.listdir(dirRun):
                     dirBuild = os.path.join(dirRun, build)
                     if os.path.isdir(dirBuild):
-                        runs[run][build] = []
+                        #runs[run][build] = []
+
+                        # -- Count Users --- #
+                        numUsers = 0
                         for user in os.listdir(dirBuild):
                             dirUser = os.path.join(dirBuild, user)
                             if os.path.isdir(dirUser):
-                                userStats = {}
+                                numUsers += 1
+
+                        txStats = {}
+                        opStats = {}
+                        hasOpData = False
+
+                        # -- Users --- #
+                        for user in os.listdir(dirBuild):
+                            dirUser = os.path.join(dirBuild, user)
+                            if os.path.isdir(dirUser):
                                 if not os.path.isfile(os.path.join(dirUser, "transactions.log")):
                                     print "WARNING: no transaction log found in %s!" % dirUser
                                     continue
@@ -170,42 +174,49 @@ class Plotter:
                                     linedata = rawline.split(";")
                                     if len(linedata) < 2:
                                         continue
-                                    transaction = linedata[0]
-                                    runtime = linedata[1]
-                                    starttime = linedata[2]
-                                    operators = {}
+
+                                    txId        = linedata[0]
+                                    runtime     = float(linedata[1])
+                                    starttime   = float(linedata[2])
+
+                                    opStats.setdefault(txId, {})
+                                    txStats.setdefault(txId,{
+                                        "totalTime": 0.0,
+                                        "userTime":  0.0,
+                                        "totalRuns": 0,
+                                        "rtTuples":  [],
+                                        "rtMin":     0.0,
+                                        "rtMax":     0.0,
+                                        "rtAvg":     0.0,
+                                        "rtMed":     0.0,
+                                        "rtStd":     0.0
+                                    })
+                                    txStats[txId]["totalTime"] += runtime
+                                    txStats[txId]["userTime"]  += runtime / float(numUsers)
+                                    txStats[txId]["totalRuns"] += 1
+                                    txStats[txId]["rtTuples"].append((starttime, runtime))
+
                                     if len(linedata) > 3:
                                         for opStr in linedata[3:]:
                                             opData = opStr.split(",")
-                                            operators[opData[0]] = {"total": int(opData[1]), "runtime": float(opData[2])}
-                                    userStats.setdefault(transaction,{"runtimes": [], "optimes": []})
-                                    userStats[transaction]["runtimes"].append(float(runtime))
-                                    userStats[transaction]["optimes"].append(operators)
-                                runs[run][build].append(userStats)
-        return runs
+                                            opStats[txId].setdefault(opData[0], {
+                                                "rtTuples": [],
+                                                "avgRuns": 0.0,
+                                                "avgTime": 0.0
+                                            })
+                                            opStats[txId][opData[0]]["rtTuples"].append((float(opData[1]), float(opData[2])))
 
-    def _aggregateUsers(self, runId, buildId):
-        buildData = self._runs[runId][buildId]
-        numUsers = len(buildData)
-        stats = {}
-        for userStats in self._runs[runId][buildId]:
-            for txId, txData in userStats.iteritems():
-                stats.setdefault(txId, {})
-                stats[txId].setdefault("raw", [])
-                stats[txId].setdefault("total", 0)
-                stats[txId].setdefault("min", 0.0)
-                stats[txId].setdefault("max", 0.0)
-                stats[txId].setdefault("average", 0.0)
-                stats[txId].setdefault("median", 0.0)
-                stats[txId].setdefault("stddev", 0.0)
-                stats[txId].setdefault("operators", [])
-                stats[txId]["raw"] += txData["runtimes"]
-                stats[txId]["total"] += len(txData["runtimes"])
-                stats[txId]["min"] += amin(txData["runtimes"]) / numUsers
-                stats[txId]["max"] += amax(txData["runtimes"]) / numUsers
-                stats[txId]["average"] += average(txData["runtimes"]) / numUsers
-                stats[txId]["median"] += median(txData["runtimes"]) / numUsers
-                stats[txId]["stddev"] += std(txData["runtimes"]) / numUsers
-                #for op in txData["optimes"]:
-                stats[txId]["operators"] = txData["optimes"][0]
-        return stats
+                        for txId, txData in txStats.iteritems():
+                            allRuntimes = [a[1] for a in txData["rtTuples"]]
+                            txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
+                            txStats[txId]["rtMin"] = amin(allRuntimes)
+                            txStats[txId]["rtMax"] = amax(allRuntimes)
+                            txStats[txId]["rtAvg"] = average(allRuntimes)
+                            txStats[txId]["rtMed"] = median(allRuntimes)
+                            txStats[txId]["rtStd"] = std(allRuntimes)
+                            for opId, opData in opStats[txId].iteritems():
+                                opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["avgTime"] = average([a[1] for a in opData["rtTuples"]])
+                            txStats[txId]["operators"] = opStats[txId]
+                        runs[run][build] = {"txStats": txStats, "numUsers": numUsers}
+        return runs
