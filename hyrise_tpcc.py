@@ -29,6 +29,7 @@ class TPCCUser(benchmark.User):
         self.config["reset"] = False
         self.config["execute"] = True
         self.perf = {}
+        self.numErrors = 0
 
     def prepareUser(self):
         """ executed once when user starts """
@@ -39,6 +40,7 @@ class TPCCUser(benchmark.User):
         self.lastResult = None
         self.lastHeader = None
         self.e = executor.Executor(self.driver, self.scaleParameters)
+        self.userStartTime = time.time()
 
     def runUser(self):
         """ main user activity """
@@ -47,12 +49,18 @@ class TPCCUser(benchmark.User):
         tStart = time.time()
         try:
             self.driver.executeTransaction(txn, params)
-        except (requests.ConnectionError, RuntimeError), e:
-            print "*** TPCCUser %i Exception in '%s' after %fs (%s)" % (self._userId, txn, time.time()-tStart, e)
+        except (requests.ConnectionError, RuntimeError):
+            #print "*** TPCCUser %i Exception in '%s' after %fs" % (self._userId, txn, time.time()-tStart)
+            self.numErrors += 1
+            if self.numErrors > 5:
+                print "*** TPCCUser %i: too many failed requests" % (self._userId)
+                self.stopLogging()
+                self.stop()
             return
+        self.numErrors = 0
         tEnd = time.time()
         #self.log("transactions", "%s,%f" % (txn, tEnd - tStart))
-        self.log("transactions", [txn, tEnd-tStart, tStart, self.perf])
+        self.log("transactions", [txn, tEnd-tStart, tStart-self.userStartTime, self.perf])
 
     def stopUser(self):
         """ executed once after stop request was sent to user """
@@ -264,8 +272,11 @@ if __name__ == "__main__":
         kwargs["numUsers"] = num_clients
 
         b1 = TPCCBenchmark(groupId, runId, s1, **kwargs)
+        kwargs["port"] += 1
         b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
+        kwargs["port"] += 1
         b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
+        kwargs["port"] += 1
 
         b1.run()
         b2.run()
