@@ -518,7 +518,7 @@ class HyriseDriver(AbstractDriver):
 
         self.conn.query(q["getStockCount"], {"w_id":w_id, "d_id":d_id, "o_id1":o_id, "o_id2":(o_id - 20), "w_id":w_id, "threshold":threshold})
         result = self.conn.fetchone()
-        self.conn.commit()
+        #self.conn.commit()
         return int(result[0]) if result else 0
 
     def generateTableloadJson(self):
