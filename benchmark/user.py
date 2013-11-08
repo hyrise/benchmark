@@ -14,23 +14,24 @@ class User(multiprocessing.Process):
     def __init__(self, userId, host, port, dirOutput, queryDict, **kwargs):
         multiprocessing.Process.__init__(self)
 
-        self._userId        = userId
-        self._host          = host
-        self._port          = port
-        self._session       = requests.Session()
-        self._dirOutput     = os.path.join(dirOutput, str(userId))
-        self._queryDict     = queryDict
-        self._queries       = kwargs["queries"] if kwargs.has_key("queries") else queries.QUERIES_ALL
-        self._thinkTime     = kwargs["thinkTime"] if kwargs.has_key("thinkTime") else 0
-        self._papi          = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
-        self._stopevent     = multiprocessing.Event()
-        self._logevent      = multiprocessing.Event()
-        self._logging       = False
-        self._log           = {}
-        self._lastQuery     = None
+        self._userId            = userId
+        self._host              = host
+        self._port              = port
+        self._session           = requests.Session()
+        self._dirOutput         = os.path.join(dirOutput, str(userId))
+        self._queryDict         = queryDict
+        self._queries           = kwargs["queries"] if kwargs.has_key("queries") else queries.QUERIES_ALL
+        self._thinkTime         = kwargs["thinkTime"] if kwargs.has_key("thinkTime") else 0
+        self._papi              = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
+        self._stopevent         = multiprocessing.Event()
+        self._logevent          = multiprocessing.Event()
+        self._logging           = False
+        self._log               = {}
+        self._lastQuery         = None
+        self._collectPerfData   = kwargs["collectPerfData"] if kwargs.has_key("collectPerfData") else False
 
-        self._totalRuns     = 0
-        self._totalTime     = 0
+        self._totalRuns         = 0
+        self._totalTime         = 0
 
     def prepareUser(self):
         """ implement this in subclasses """
@@ -68,6 +69,7 @@ class User(multiprocessing.Process):
         data = {"query": query}
         if sessionContext: data["sessionContext"] = sessionContext
         if autocommit: data["autocommit"] = "true"
+        if self._collectPerfData: data["performance"] = "true"
         self._lastQuery = data
         return self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
 

@@ -13,39 +13,40 @@ import multiprocessing
 class Benchmark:
 
     def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
-        self._pid           = os.getpid()
-        self._id            = benchmarkGroupId
-        self._runId         = benchmarkRunId
-        self._buildSettings = buildSettings
-        self._userClass     = kwargs["userClass"] if kwargs.has_key("userClass") else user.User
-        self._numUsers      = kwargs["numUsers"] if kwargs.has_key("numUsers") else 1
-        self._mysqlDB       = kwargs["mysqlDB"] if kwargs.has_key("mysqlDB") else "cbtr"
-        self._mysqlHost     = kwargs["mysqlHost"] if kwargs.has_key("mysqlHost") else "vm-hyrise-jenkins.eaalab.hpi.uni-potsdam.de"
-        self._mysqlPort     = kwargs["mysqlPort"] if kwargs.has_key("mysqlPort") else 3306
-        self._mysqlUser     = kwargs["mysqlUser"] if kwargs.has_key("mysqlUser") else "hyrise"
-        self._mysqlPass     = kwargs["mysqlPass"] if kwargs.has_key("mysqlPass") else "hyrise"
-        self._papi          = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
-        self._prepQueries   = kwargs["prepareQueries"] if kwargs.has_key("prepareQueries") else queries.QUERIES_PREPARE
-        self._prepArgs      = kwargs["prepareArgs"] if kwargs.has_key("prepareArgs") else {"db": "cbtr"}
-        self._queries       = kwargs["benchmarkQueries"] if kwargs.has_key("benchmarkQueries") else queries.QUERIES_ALL
-        self._host          = kwargs["host"] if kwargs.has_key("host") else "127.0.0.1"
-        self._port          = kwargs["port"] if kwargs.has_key("port") else 5000
-        self._warmuptime    = kwargs["warmuptime"] if kwargs.has_key("warmuptime") else 0
-        self._runtime       = kwargs["runtime"] if kwargs.has_key("runtime") else 5
-        self._thinktime     = kwargs["thinktime"] if kwargs.has_key("thinktime") else 0
-        self._manual        = kwargs["manual"] if kwargs.has_key("manual") else False
-        self._rebuild       = kwargs["rebuild"] if kwargs.has_key("rebuild") else False
-        self._userArgs      = kwargs["userArgs"] if kwargs.has_key("userArgs") else {"queries": self._queries}
-        self._stdout        = kwargs["showStdout"] if kwargs.has_key("showStdout") else False
-        self._stderr        = kwargs["showStderr"] if kwargs.has_key("showStderr") else True
-        self._dirBinary     = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
-        self._dirHyriseDB   = kwargs["hyriseDBPath"] if kwargs.has_key("hyriseDBPath") else self._dirBinary
-        self._dirResults    = os.path.join(os.getcwd(), "results", self._id, self._runId, buildSettings.getName())
-        self._queryDict     = self._readDefaultQueryFiles()
-        self._session       = requests.Session()
-        self._build         = None
-        self._serverProc    = None
-        self._users         = []
+        self._pid               = os.getpid()
+        self._id                = benchmarkGroupId
+        self._runId             = benchmarkRunId
+        self._buildSettings     = buildSettings
+        self._userClass         = kwargs["userClass"] if kwargs.has_key("userClass") else user.User
+        self._numUsers          = kwargs["numUsers"] if kwargs.has_key("numUsers") else 1
+        self._mysqlDB           = kwargs["mysqlDB"] if kwargs.has_key("mysqlDB") else "cbtr"
+        self._mysqlHost         = kwargs["mysqlHost"] if kwargs.has_key("mysqlHost") else "vm-hyrise-jenkins.eaalab.hpi.uni-potsdam.de"
+        self._mysqlPort         = kwargs["mysqlPort"] if kwargs.has_key("mysqlPort") else 3306
+        self._mysqlUser         = kwargs["mysqlUser"] if kwargs.has_key("mysqlUser") else "hyrise"
+        self._mysqlPass         = kwargs["mysqlPass"] if kwargs.has_key("mysqlPass") else "hyrise"
+        self._papi              = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
+        self._prepQueries       = kwargs["prepareQueries"] if kwargs.has_key("prepareQueries") else queries.QUERIES_PREPARE
+        self._prepArgs          = kwargs["prepareArgs"] if kwargs.has_key("prepareArgs") else {"db": "cbtr"}
+        self._queries           = kwargs["benchmarkQueries"] if kwargs.has_key("benchmarkQueries") else queries.QUERIES_ALL
+        self._host              = kwargs["host"] if kwargs.has_key("host") else "127.0.0.1"
+        self._port              = kwargs["port"] if kwargs.has_key("port") else 5000
+        self._warmuptime        = kwargs["warmuptime"] if kwargs.has_key("warmuptime") else 0
+        self._runtime           = kwargs["runtime"] if kwargs.has_key("runtime") else 5
+        self._thinktime         = kwargs["thinktime"] if kwargs.has_key("thinktime") else 0
+        self._manual            = kwargs["manual"] if kwargs.has_key("manual") else False
+        self._rebuild           = kwargs["rebuild"] if kwargs.has_key("rebuild") else False
+        self._userArgs          = kwargs["userArgs"] if kwargs.has_key("userArgs") else {"queries": self._queries}
+        self._stdout            = kwargs["showStdout"] if kwargs.has_key("showStdout") else False
+        self._stderr            = kwargs["showStderr"] if kwargs.has_key("showStderr") else True
+        self._dirBinary         = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
+        self._dirHyriseDB       = kwargs["hyriseDBPath"] if kwargs.has_key("hyriseDBPath") else self._dirBinary
+        self._dirResults        = os.path.join(os.getcwd(), "results", self._id, self._runId, buildSettings.getName())
+        self._queryDict         = self._readDefaultQueryFiles()
+        self._session           = requests.Session()
+        self._collectPerfData   = kwargs["collectPerfData"] if kwargs.has_key("collectPerfData") else False
+        self._build             = None
+        self._serverProc        = None
+        self._users             = []
 
         self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirResults):
@@ -198,7 +199,7 @@ class Benchmark:
 
     def _createUsers(self):
         for i in range(self._numUsers):
-            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, **self._userArgs))
+            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, **self._userArgs))
 
     def _stopServer(self):
         if not self._manual and self._serverProc:
