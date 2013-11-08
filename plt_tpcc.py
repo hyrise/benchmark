@@ -15,8 +15,10 @@ if __name__ == "__main__":
 		plotter.printStatistics()
 		exit()
 
-	plotter.plotResponseTimesVaryingUsers()
+	#plotter.plotResponseTimesVaryingUsers()
 
-	plotter.plotResponseTimeFrequencies()
+	#plotter.plotResponseTimeFrequencies()
 
 	plotter.plotTotalThroughput()
+
+	plotter.plotTransactionResponseTimes()
