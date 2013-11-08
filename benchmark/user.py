@@ -71,7 +71,14 @@ class User(multiprocessing.Process):
         if autocommit: data["autocommit"] = "true"
         if self._collectPerfData: data["performance"] = "true"
         self._lastQuery = data
-        return self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
+        result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
+        
+        if result.status_code != 200:
+            print "Rquest failed. Status code: ", result.status_code
+            print "Response: ", result.text
+            print "Query: ", queryString
+            raise RuntimeError("Request failed!")
+        return result
 
     def startLogging(self):
         self._logevent.set()
