@@ -81,7 +81,14 @@ class TPCCUser(benchmark.User):
             if v == True:    v = 1;
             elif v == False: v = 0;
         result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
-        self.context    = result.get("session_context", None)
+        
+        # check session context to make sure we are in the correct transaction
+        new_session_context = result.get("session_context", None)
+        if self.context != new_session_context:
+            if self.context != None and new_session_context != None:
+                raise RuntimeError("Session context was ignored by database")
+
+        self.context    = new_session_context
         self.lastResult = result.get("rows", None)
         self.lastHeader = result.get("header", None)
 

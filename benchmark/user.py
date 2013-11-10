@@ -67,7 +67,7 @@ class User(multiprocessing.Process):
     def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False):
         query = queryString % queryArgs
         data = {"query": query}
-        if sessionContext: data["sessionContext"] = sessionContext
+        if sessionContext: data["session_context"] = sessionContext
         if autocommit: data["autocommit"] = "true"
         if self._collectPerfData: data["performance"] = "true"
         self._lastQuery = data
@@ -76,7 +76,7 @@ class User(multiprocessing.Process):
         if result.status_code != 200:
             print "Rquest failed. Status code: ", result.status_code
             print "Response: ", result.text
-            print "Query: ", queryString
+            print "Query: ", query
             raise RuntimeError("Request failed!")
         return result
 

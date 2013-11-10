@@ -36,12 +36,7 @@
          {"type": "LT_V", "in": 0, "f": "S_QUANTITY", "vtype": 0, "value": %(threshold)d}
          ]
     },
-    /*"join": {
-       "type":"JoinScan",
-       "predicates": [
-         {"type": 3, "input_left": 0, "field_left": "OL_I_ID", "input_right": 1, "field_right": "S_I_ID"}
-       ]
-    },*/
+
     "hash_build": {
         "type": "HashBuild",
         "fields": ["OL_I_ID"],
@@ -59,8 +54,15 @@
        ]
     }
   },
-  "edges": [["load_orderline", "select_orderlines"], ["select_orderlines", "validate_orderline"],
-            ["load_stock", "select_stock"], ["select_stock", "validate_stock"],
-            //["validate_orderline", "join"], ["validate_stock", "join"], ["join", "groupby"]]
-            ["validate_orderline", "hash_build"], ["validate_stock", "hash_join"], ["hash_build", "hash_join"], ["hash_join", "groupby"]]
+  "edges": [
+    ["load_orderline", "select_orderlines"],
+    ["select_orderlines", "validate_orderline"],
+
+    ["load_stock", "select_stock"],
+    ["select_stock", "validate_stock"],
+    ["validate_orderline", "hash_build"],    
+
+    ["validate_stock", "hash_join"],
+    ["hash_build", "hash_join"],
+    ["hash_join", "groupby"]]
 }
