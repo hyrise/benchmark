@@ -22,6 +22,8 @@ class Plotter:
             print "Run ID: %s [%s users]" % (runId, numUsers)
             print "=============================="
             for buildId, buildData in runData.iteritems():
+                if buildData == {'numUsers': 0, 'txStats': {}}:
+                    continue
                 print "|\n+-- Build ID: %s" % buildId
                 print "|"
                 print "|     Transaction       tps    min     max     avg     median"
@@ -30,7 +32,7 @@ class Plotter:
                 totalTime = 0.0
                 for txId, txData in buildData["txStats"].iteritems():
                     totalRuns += txData["totalRuns"]
-                    totalTime += txData["userTime"]
+                    totalTime += txData["userTime"] 
                 for txId, txData in buildData["txStats"].iteritems():
                     print "|     {:16s}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"], txData["rtMax"], txData["rtAvg"], txData["rtMed"])
                     if txData["operators"] and len(txData["operators"].keys()) > 0:
@@ -142,6 +144,7 @@ class Plotter:
 
         # --- Runs --- #
         for run in os.listdir(dirResults):
+
             dirRun = os.path.join(dirResults, run)
             if os.path.isdir(dirRun):
                 runs[run] = {}
@@ -178,7 +181,7 @@ class Plotter:
                                     txId        = linedata[0]
                                     runtime     = float(linedata[1])
                                     starttime   = float(linedata[2])
-
+                                                                        
                                     opStats.setdefault(txId, {})
                                     txStats.setdefault(txId,{
                                         "totalTime": 0.0,
