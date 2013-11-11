@@ -49,17 +49,20 @@ class TPCCUser(benchmark.User):
         tStart = time.time()
         try:
             self.driver.executeTransaction(txn, params)
-        except (requests.ConnectionError, RuntimeError):
-            #print "*** TPCCUser %i Exception in '%s' after %fs" % (self._userId, txn, time.time()-tStart)
+        except requests.ConnectionError:
             self.numErrors += 1
             if self.numErrors > 5:
                 print "*** TPCCUser %i: too many failed requests" % (self._userId)
                 self.stopLogging()
                 self.stop()
             return
+        except RuntimeError:
+            self.context = None
+            self.lastResult = None
+            self.lastHeader = None
+            return
         self.numErrors = 0
         tEnd = time.time()
-        #self.log("transactions", "%s,%f" % (txn, tEnd - tStart))
         self.log("transactions", [txn, tEnd-tStart, tStart-self.userStartTime, self.perf])
 
     def stopUser(self):
@@ -82,7 +85,7 @@ class TPCCUser(benchmark.User):
                 if v == True:    v = 1;
                 elif v == False: v = 0;
         result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
-        
+
         # check session context to make sure we are in the correct transaction
         new_session_context = result.get("session_context", None)
         if self.context != new_session_context:
@@ -283,11 +286,11 @@ if __name__ == "__main__":
         kwargs["port"] += 1
         b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
         kwargs["port"] += 1
-        b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
-        kwargs["port"] += 1
+        #b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
+        #kwargs["port"] += 1
 
         b1.run()
-        # b2.run()
+        b2.run()
         # b3.run()
 
         if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
