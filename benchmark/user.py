@@ -64,7 +64,7 @@ class User(multiprocessing.Process):
         self._stopevent.set()
 
 
-    def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False):
+    def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False, stored_procedure=None):
         if queryArgs: query = queryString % queryArgs
         else: query = queryString
         data = {"query": query}
@@ -72,7 +72,12 @@ class User(multiprocessing.Process):
         if autocommit: data["autocommit"] = "true"
         if self._collectPerfData: data["performance"] = "true"
         self._lastQuery = data
-        result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
+
+        if stored_procedure:
+            result = self._session.post("http://%s:%s/%s/" % (self._host, self._port, stored_procedure), data={"data": query}, timeout=100000)
+            print result.text
+        else:
+            result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
         
         if result.status_code != 200:
             print "Rquest failed. Status code: ", result.status_code

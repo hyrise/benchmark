@@ -79,12 +79,19 @@ class TPCCUser(benchmark.User):
 
     # HyriseConnection stubs
     # ======================
-    def query(self, querystr, paramlist=None, commit=False):
+    def query(self, querystr, paramlist=None, commit=False, stored_procedure=None):
         if paramlist:
             for k,v in paramlist.iteritems():
                 if v == True:    v = 1;
                 elif v == False: v = 0;
-        result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
+
+        result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure).json()
+
+        self.lastResult = result.get("rows", None)
+        self.lastHeader = result.get("header", None)
+
+        if stored_procedure:
+            return
 
         # check session context to make sure we are in the correct transaction
         new_session_context = result.get("session_context", None)
@@ -92,9 +99,7 @@ class TPCCUser(benchmark.User):
             if self.context != None and new_session_context != None:
                 raise RuntimeError("Session context was ignored by database")
 
-        self.context    = new_session_context
-        self.lastResult = result.get("rows", None)
-        self.lastHeader = result.get("header", None)
+        self.context = new_session_context
 
         perf = result.get("performanceData", None)
         if perf:

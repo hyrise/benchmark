@@ -45,7 +45,8 @@ QUERY_FILES = {
              'updateGCCustomer': 'Payment-updateGCCustomer.json',
              'updateWarehouseBalance': 'Payment-updateWarehouseBalance.json'},
  'STOCK_LEVEL': {'getOId': 'StockLevel-getOId.json',
-                 'getStockCount': 'StockLevel-getStockCount.json'}
+                 'getStockCount': 'StockLevel-getStockCount.json'},
+ 'STORED_PROCEDURES': {'delivery': 'StoredProcedure-delivery.json'}
 
 }
 
@@ -192,7 +193,7 @@ class HyriseDriver(AbstractDriver):
         """Callback after the execution phase finishes"""
         return None
 
-    def doDelivery(self, params):
+    def doDelivery(self, params, use_stored_procedure=True):
         """Execute DELIVERY Transaction
         Parameters Dict:
             w_id
@@ -205,40 +206,56 @@ class HyriseDriver(AbstractDriver):
         o_carrier_id = params["o_carrier_id"]
         ol_delivery_d = params["ol_delivery_d"]
 
-        result = [ ]
-        for d_id in range(1, constants.DISTRICTS_PER_WAREHOUSE+1):
-            self.conn.query(q["getNewOrder"], {'d_id':d_id, 'w_id':w_id})
-            newOrder = self.conn.fetchone_as_dict()
-            if newOrder == None:
-                ## No orders for this district: skip it. Note: This must be reported if > 1%
-                continue
-            assert len(newOrder) > 0
-            no_o_id = newOrder['NO_O_ID']
+        if use_stored_procedure:
+            result = [ ]
+            for d_id in range(1, constants.DISTRICTS_PER_WAREHOUSE+1):
+                ## FIXME Do this in Hyrise
+                self.conn.query(q["getNewOrder"], {'d_id':d_id, 'w_id':w_id})
+                newOrder = self.conn.fetchone_as_dict()
+                if newOrder == None:
+                    ## No orders for this district: skip it. Note: This must be reported if > 1%
+                    continue
+                print newOrder
 
-            self.conn.query(q["getCId"], {'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
-            c_id = self.conn.fetchone_as_dict()['C_ID']
+                self.conn.query(self.queries["STORED_PROCEDURES"]["delivery"], {"w_id": w_id, "d_id": d_id, "o_carrier_id": o_carrier_id}, stored_procedure="TPCC-Delivery")
+                print self.conn.fetchall()
+            return result
 
-            self.conn.query(q["sumOLAmount"], {'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
-            ol_total = self.conn.fetchone_as_dict()['C_ID']
+        else:
+            result = [ ]
+            for d_id in range(1, constants.DISTRICTS_PER_WAREHOUSE+1):
+                self.conn.query(q["getNewOrder"], {'d_id':d_id, 'w_id':w_id})
+                newOrder = self.conn.fetchone_as_dict()
+                if newOrder == None:
+                    ## No orders for this district: skip it. Note: This must be reported if > 1%
+                    continue
+                assert len(newOrder) > 0
+                no_o_id = newOrder['NO_O_ID']
 
-            self.conn.query(q["deleteNewOrder"], {'no_d_id':d_id, 'no_w_id':w_id, 'no_o_id':no_o_id})
-            self.conn.query(q["updateOrders"], {'o_carrier_id':o_carrier_id, 'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
-            self.conn.query(q["updateOrderLine"], {'date':ol_delivery_d, 'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
+                self.conn.query(q["getCId"], {'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
+                c_id = self.conn.fetchone_as_dict()['C_ID']
 
-            # These must be logged in the "result file" according to TPC-C 2.7.2.2 (page 39)
-            # We remove the queued time, completed time, w_id, and o_carrier_id: the client can figure
-            # them out
-            # If there are no order lines, SUM returns null. There should always be order lines.
-            assert ol_total != None, "ol_total is NULL: there are no order lines. This should not happen"
-            assert ol_total > 0.0
+                self.conn.query(q["sumOLAmount"], {'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
+                ol_total = self.conn.fetchone_as_dict()['C_ID']
 
-            self.conn.query(q["updateCustomer"], {'ol_total':ol_total, 'c_id':c_id, 'd_id':d_id, 'w_id':w_id})
+                self.conn.query(q["deleteNewOrder"], {'no_d_id':d_id, 'no_w_id':w_id, 'no_o_id':no_o_id})
+                self.conn.query(q["updateOrders"], {'o_carrier_id':o_carrier_id, 'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
+                self.conn.query(q["updateOrderLine"], {'date':ol_delivery_d, 'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
 
-            result.append((d_id, no_o_id))
-        ## FOR
+                # These must be logged in the "result file" according to TPC-C 2.7.2.2 (page 39)
+                # We remove the queued time, completed time, w_id, and o_carrier_id: the client can figure
+                # them out
+                # If there are no order lines, SUM returns null. There should always be order lines.
+                assert ol_total != None, "ol_total is NULL: there are no order lines. This should not happen"
+                assert ol_total > 0.0
 
-        self.conn.commit()
-        return result
+                self.conn.query(q["updateCustomer"], {'ol_total':ol_total, 'c_id':c_id, 'd_id':d_id, 'w_id':w_id})
+
+                result.append((d_id, no_o_id))
+            ## FOR
+
+            self.conn.commit()
+            return result
 
     def doNewOrder(self, params):
         """Execute NEW_ORDER Transaction
