@@ -57,6 +57,9 @@ class TPCCUser(benchmark.User):
                 self.stop()
             return
         except RuntimeError:
+            self.context = None
+            self.lastResult = None
+            self.lastHeader = None
             return
         self.numErrors = 0
         tEnd = time.time()
