@@ -77,9 +77,10 @@ class TPCCUser(benchmark.User):
     # HyriseConnection stubs
     # ======================
     def query(self, querystr, paramlist=None, commit=False):
-        for k,v in paramlist.iteritems():
-            if v == True:    v = 1;
-            elif v == False: v = 0;
+        if paramlist:
+            for k,v in paramlist.iteritems():
+                if v == True:    v = 1;
+                elif v == False: v = 0;
         result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
         
         # check session context to make sure we are in the correct transaction
@@ -103,9 +104,8 @@ class TPCCUser(benchmark.User):
     def commit(self):
         if not self.context:
             raise RuntimeError("Should not commit without running context")
-        result = self.fireQuery("""{"operators": {"cm": {"type": "Commit"}}}""", sessionContext=self.context)
+        self.query("""{"operators": {"cm": {"type": "Commit"}}}""", commit=False)
         self.context = None
-        return result
 
     def rollback(self):
         if not self.context:

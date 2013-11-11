@@ -65,7 +65,8 @@ class User(multiprocessing.Process):
 
 
     def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False):
-        query = queryString % queryArgs
+        if queryArgs: query = queryString % queryArgs
+        else: query = queryString
         data = {"query": query}
         if sessionContext: data["session_context"] = sessionContext
         if autocommit: data["autocommit"] = "true"
