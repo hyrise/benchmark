@@ -193,7 +193,7 @@ class HyriseDriver(AbstractDriver):
         """Callback after the execution phase finishes"""
         return None
 
-    def doDelivery(self, params, use_stored_procedure=True):
+    def doDelivery(self, params, use_stored_procedure=False):
         """Execute DELIVERY Transaction
         Parameters Dict:
             w_id
