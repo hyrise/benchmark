@@ -26,20 +26,22 @@ class Plotter:
                     continue
                 print "|\n+-- Build ID: %s" % buildId
                 print "|"
-                print "|     Transaction       tps    min     max     avg     median"
-                print "|     --------------------------------------------------------"
+                print "|     Transaction       tps      min(ms)    max(ms)   avg(ms)    median(ms)"
                 totalRuns = 0.0
                 totalTime = 0.0
                 for txId, txData in buildData["txStats"].iteritems():
                     totalRuns += txData["totalRuns"]
                     totalTime += txData["userTime"] 
                 for txId, txData in buildData["txStats"].iteritems():
-                    print "|     {:16s}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}  {:1.4f}".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"], txData["rtMax"], txData["rtAvg"], txData["rtMed"])
+                    print "|     -------------------------------------------------------------------------------------------"
+                    print "|     TX: {:14s} tps: {:05.2f}, min: {:05.2f}, max: {:05.2f}, avg: {:05.2f}, med: {:05.2f} (all in ms)".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"]*1000, txData["rtMax"]*1000, txData["rtAvg"]*1000, txData["rtMed"]*1000)
+                    print "|     -------------------------------------------------------------------------------------------"
                     if txData["operators"] and len(txData["operators"].keys()) > 0:
-                        print "|       Operator                   avg #  avg cumm. time"
+                        print "|       Operator                   #perTX     min(ms)    max(ms)   avg(ms)    median(ms)"
+                        print "|       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
                         for opName, opData in txData["operators"].iteritems():
-                            print "|       {:25s}  {:1.2f}   {:1.3f}".format(opName, opData["avgRuns"], opData["avgTime"])
-                print "|     --------------------------------------------------------"
+                            print "|       {:25s}  {:05.2f}      {:05.2f}      {:05.2f}      {:05.2f}      {:05.2f}".format(opName, opData["avgRuns"], opData["rtMin"], opData["rtMax"], opData["rtAvg"], opData["rtMed"])
+                print "|     -------------------------------------------------------------------------------------------"
                 print "|     total:            %1.2f tps\n" % (totalRuns / totalTime)
 
     def plotTotalThroughput(self):
@@ -203,9 +205,13 @@ class Plotter:
                                         for opStr in linedata[3:]:
                                             opData = opStr.split(",")
                                             opStats[txId].setdefault(opData[0], {
-                                                "rtTuples": [],
-                                                "avgRuns": 0.0,
-                                                "avgTime": 0.0
+                                                "rtTuples":  [],
+                                                "avgRuns":   0.0,
+                                                "rtMin":     0.0,
+                                                "rtMax":     0.0,
+                                                "rtAvg":     0.0,
+                                                "rtMed":     0.0,
+                                                "rtStd":     0.0
                                             })
                                             opStats[txId][opData[0]]["rtTuples"].append((float(opData[1]), float(opData[2])))
 
@@ -219,7 +225,11 @@ class Plotter:
                             txStats[txId]["rtStd"] = std(allRuntimes)
                             for opId, opData in opStats[txId].iteritems():
                                 opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
-                                opStats[txId][opId]["avgTime"] = average([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtMax"] = amax([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtAvg"] = average([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtMed"] = median([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
                             txStats[txId]["operators"] = opStats[txId]
                         runs[run][build] = {"txStats": txStats, "numUsers": numUsers}
         return runs
