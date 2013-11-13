@@ -233,10 +233,10 @@ class HyriseDriver(AbstractDriver):
                 no_o_id = newOrder['NO_O_ID']
 
                 self.conn.query(q["getCId"], {'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
-                c_id = self.conn.fetchone_as_dict()['C_ID']
+                c_id = self.conn.fetchone_as_dict()['O_C_ID']
 
                 self.conn.query(q["sumOLAmount"], {'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})
-                ol_total = self.conn.fetchone_as_dict()['C_ID']
+                ol_total = self.conn.fetchone_as_dict()['SUM(OL_AMOUNT)']
 
                 self.conn.query(q["deleteNewOrder"], {'no_d_id':d_id, 'no_w_id':w_id, 'no_o_id':no_o_id})
                 self.conn.query(q["updateOrders"], {'o_carrier_id':o_carrier_id, 'no_o_id':no_o_id, 'd_id':d_id, 'w_id':w_id})

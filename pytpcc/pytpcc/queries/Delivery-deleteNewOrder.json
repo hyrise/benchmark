@@ -9,9 +9,9 @@
        "tablename": "NEW_ORDER",
        "predicates": [
          {"type": "AND"},
-         {"type": "EQ_V", "in": 0, "f": "NO_D_ID", "vtype": 0 /*Int*/, "value": %(d_id)d},
+         {"type": "EQ_V", "in": 0, "f": "NO_D_ID", "vtype": 0 /*Int*/, "value": %(no_d_id)d},
          {"type": "AND"},
-         {"type": "EQ_V", "in": 0, "f": "NO_W_ID", "vtype": 0 /*Int*/, "value": %(w_id)d},
+         {"type": "EQ_V", "in": 0, "f": "NO_W_ID", "vtype": 0 /*Int*/, "value": %(no_w_id)d},
          {"type": "EQ_V", "in": 0, "f": "NO_O_ID", "vtype": 0 /*Int*/, "value": %(no_o_id)d}
        ]
     },

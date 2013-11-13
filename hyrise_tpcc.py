@@ -50,16 +50,16 @@ class TPCCUser(benchmark.User):
         try:
             self.driver.executeTransaction(txn, params)
         except requests.ConnectionError:
+            self.context = None
             self.numErrors += 1
             if self.numErrors > 5:
                 print "*** TPCCUser %i: too many failed requests" % (self._userId)
                 self.stopLogging()
                 self.stop()
             return
-        except RuntimeError:
+        except (RuntimeError, AssertionError), e:
+            print e
             self.context = None
-            self.lastResult = None
-            self.lastHeader = None
             return
         self.numErrors = 0
         tEnd = time.time()
@@ -127,13 +127,13 @@ class TPCCUser(benchmark.User):
 
     def fetchone(self, column=None):
         if self.lastResult:
-            r = self.lastResult.pop()
+            r = self.lastResult.pop(0)
             return r[self.lastHeader.index(column)] if column else r
         return None
 
     def fetchone_as_dict(self):
         if self.lastResult:
-            return dict(zip(self.lastHeader, self.lastResult.pop()))
+            return dict(zip(self.lastHeader, self.lastResult.pop(0)))
         return None
 
     def fetchall(self):
@@ -288,11 +288,8 @@ if __name__ == "__main__":
         kwargs["numUsers"] = num_clients
 
         b1 = TPCCBenchmark(groupId, runId, s1, **kwargs)
-        kwargs["port"] += 1
         b2 = TPCCBenchmark(groupId, runId, s2, **kwargs)
-        kwargs["port"] += 1
         #b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
-        #kwargs["port"] += 1
 
         b1.run()
         b2.run()
@@ -301,5 +298,5 @@ if __name__ == "__main__":
         if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
             os.remove("/mnt/pmfs/hyrise_tpcc")
 
-    plotter = benchmark.Plotter(groupId)
-    plotter.printStatistics()
+    #plotter = benchmark.Plotter(groupId)
+    #plotter.printStatistics()
