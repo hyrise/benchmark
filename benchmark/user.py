@@ -32,6 +32,7 @@ class User(multiprocessing.Process):
 
         self._totalRuns         = 0
         self._totalTime         = 0
+        self._totalQueryTime    = 0
 
     def prepareUser(self):
         """ implement this in subclasses """
@@ -59,6 +60,8 @@ class User(multiprocessing.Process):
             self._totalRuns += 1
         self.stopUser()
         self._writeLogs()
+        print "User runtime: ", self._totalTime, " User querytime: ", self._totalQueryTime
+
 
     def stop(self):
         self._stopevent.set()
@@ -72,12 +75,13 @@ class User(multiprocessing.Process):
         if autocommit: data["autocommit"] = "true"
         if self._collectPerfData: data["performance"] = "true"
         self._lastQuery = data
-
+        tStart = time.time()
         if stored_procedure:
             result = self._session.post("http://%s:%s/%s/" % (self._host, self._port, stored_procedure), data={"data": query}, timeout=100000)
             print result.text
         else:
             result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
+        self._totalQueryTime += time.time() - tStart
         
         if result.status_code != 200:
             print "Rquest failed. Status code: ", result.status_code
