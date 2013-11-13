@@ -9,22 +9,22 @@
 
             /* Indices for table CUSTOMER */
             "0_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__CUSTOMER__C_ID",
                 "fields" : ["C_ID"]
                 },
             "0_idx1": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__CUSTOMER__C_D_ID",
                 "fields" : ["C_D_ID"]
                 },
             "0_idx2": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__CUSTOMER__C_W_ID",
                 "fields" : ["C_W_ID"]
                 },
             "0_idx3": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__CUSTOMER__C_LAST",
                 "fields" : ["C_LAST"]
                 },
@@ -37,12 +37,12 @@
 
             /* Indices for table DISTRICT */
             "1_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__DISTRICT__D_ID",
                 "fields" : ["D_ID"]
                 },
             "1_idx1": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__DISTRICT__D_W_ID",
                 "fields" : ["D_W_ID"]
                 },
@@ -61,7 +61,7 @@
 
             /* Indices for table ITEM */
             "3_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ITEM__I_ID",
                 "fields" : ["I_ID"]
                 },
@@ -74,17 +74,17 @@
 
             /* Indices for table NEW_ORDER */
             "4_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__NEW_ORDER__NO_D_ID",
                 "fields" : ["NO_D_ID"]
                 },
             "4_idx1": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__NEW_ORDER__NO_W_ID",
                 "fields" : ["NO_W_ID"]
                 },
             "4_idx2": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__NEW_ORDER__NO_O_ID",
                 "fields" : ["NO_O_ID"]
                 },
@@ -97,17 +97,17 @@
 
             /* Indices for table ORDER_LINE */
             "5_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ORDER_LINE__OL_O_ID",
                 "fields" : ["OL_O_ID"]
                 },
             "5_idx1": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ORDER_LINE__OL_W_ID",
                 "fields" : ["OL_W_ID"]
                 },
             "5_idx2": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ORDER_LINE__OL_D_ID",
                 "fields" : ["OL_D_ID"]
                 },
@@ -120,22 +120,22 @@
 
             /* Indices for table ORDERS */
             "6_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ORDERS__O_ID",
                 "fields" : ["O_ID"]
                 },
             "6_idx1": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ORDERS__O_D_ID",
                 "fields" : ["O_D_ID"]
                 },
             "6_idx2": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ORDERS__O_W_ID",
                 "fields" : ["O_W_ID"]
                 },
             "6_idx3": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__ORDERS__O_C_ID",
                 "fields" : ["O_C_ID"]
                 },
@@ -148,17 +148,17 @@
 
             /* Indices for table STOCK */
             "7_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__STOCK__S_I_ID",
                 "fields" : ["S_I_ID"]
                 },
             "7_idx1": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__STOCK__S_W_ID",
                 "fields" : ["S_W_ID"]
                 },
             "7_idx2": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__STOCK__S_QUANTITY",
                 "fields" : ["S_QUANTITY"]
                 },
@@ -171,7 +171,7 @@
 
             /* Indices for table WAREHOUSE */
             "8_idx0": {
-                "type": "CreateIndex",
+                "type": "CreateGroupkeyIndex",
                 "index_name" : "idx__WAREHOUSE__W_ID",
                 "fields" : ["W_ID"]
                 },
