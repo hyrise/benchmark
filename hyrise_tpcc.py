@@ -241,6 +241,8 @@ if __name__ == "__main__":
                          help='Disable executing the workload')
     aparser.add_argument('--port', default=5001, type=int, metavar="P",
                          help='Port on which HYRISE should be run')
+    aparser.add_argument('--threads', default=0, type=int, metavar="T",
+                         help='Number of server threadsto use')
     aparser.add_argument('--warmup', default=5, type=int,
                          help='Warmuptime before logging is activated')
     aparser.add_argument('--manual', action='store_true',
@@ -272,6 +274,7 @@ if __name__ == "__main__":
         "rebuild"           : args["rebuild"],
         "regenerate"        : args["regenerate"],
         "noLoad"            : args["no_load"],
+        "serverThreads"     : args["threads"],
         "collectPerfData"   : True
     }
 

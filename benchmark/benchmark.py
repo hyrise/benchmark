@@ -43,6 +43,7 @@ class Benchmark:
         self._dirResults        = os.path.join(os.getcwd(), "results", self._id, self._runId, buildSettings.getName())
         self._queryDict         = self._readDefaultQueryFiles()
         self._session           = requests.Session()
+        self._serverThreads     = kwargs["serverThreads"] if kwargs.has_key("serverThreads") else 0
         self._collectPerfData   = kwargs["collectPerfData"] if kwargs.has_key("collectPerfData") else False
         self._build             = None
         self._serverProc        = None
@@ -175,7 +176,10 @@ class Benchmark:
         else:
             server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
         logdef = os.path.join(self._dirBinary, "log.properties")
-        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=CoreBoundQueuesScheduler"],
+        threadstring = ""
+        if (self._serverThreads > 0):
+            threadstring = "--threads=%s" % self._serverThreads
+        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=CoreBoundQueuesScheduler", threadstring],
                                             cwd=self._dirBinary,
                                             env=env,
                                             stdout=open("/dev/null") if not self._stdout else None,
