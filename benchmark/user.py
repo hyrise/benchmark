@@ -78,7 +78,6 @@ class User(multiprocessing.Process):
         tStart = time.time()
         if stored_procedure:
             result = self._session.post("http://%s:%s/%s/" % (self._host, self._port, stored_procedure), data={"data": query}, timeout=100000)
-            print result.text
         else:
             result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
         self._totalQueryTime += time.time() - tStart
