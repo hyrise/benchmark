@@ -261,6 +261,8 @@ if __name__ == "__main__":
                          help='Force `make clean` before each build')
     aparser.add_argument('--regenerate', action='store_true',
                          help='Force regeneration of TPC-C table files')
+    aparser.add_argument('--perfdata', default=False, action='store_true',
+                         help='Collect additional performance data. Slows down benchmark.')
     args = vars(aparser.parse_args())
 
     s1 = benchmark.Settings("NoLogger", PERSISTENCY="NONE")
@@ -281,9 +283,10 @@ if __name__ == "__main__":
         "regenerate"        : args["regenerate"],
         "noLoad"            : args["no_load"],
         "serverThreads"     : args["threads"],
-        "collectPerfData"   : True
+        "collectPerfData"   : args["perfdata"]
     }
-
+    print "perfdata: ", args["perfdata"]
+    
     groupId = "tpcc"
     num_clients = args["clients"]
     minClients = args["clients_min"]
