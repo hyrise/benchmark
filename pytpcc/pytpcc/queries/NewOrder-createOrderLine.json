@@ -6,7 +6,7 @@
     },
     "insert": {
        "type": "InsertScan",
-       "data" : [[%(w_id)d, %(d_id)d, %(o_id)d, %(ol_number)d, %(ol_i_id)d,  %(ol_supply_w_id)d, "%(date)s", %(ol_quantity)d, %(ol_amount)d, "%(ol_dist_info)s"]]
+       "data" : [[%(o_id)d, %(d_id)d, %(w_id)d, %(ol_number)d, %(ol_i_id)d,  %(ol_supply_w_id)d, "%(date)s", %(ol_quantity)d, %(ol_amount)d, "%(ol_dist_info)s"]]
     },
     "NoOp": {
       "type": "NoOp"
