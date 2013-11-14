@@ -1,0 +1,1 @@
+{ "W_ID": %(w_id)d, "D_ID": %(d_id)d, "C_W_ID": %(c_w_id)d, "C_D_ID": %(c_d_id)d, "H_AMOUNT": %(h_amount)d, "C_LAST": "%(c_last)s" }

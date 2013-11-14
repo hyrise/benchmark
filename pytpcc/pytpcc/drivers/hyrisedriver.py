@@ -47,7 +47,10 @@ QUERY_FILES = {
  'STOCK_LEVEL': {'getOId': 'StockLevel-getOId.json',
                  'getStockCount': 'StockLevel-getStockCount.json'},
  'STORED_PROCEDURES': {'delivery': 'StoredProcedure-delivery.json',
+                       'stockLevel': 'StoredProcedure-stockLevel.json',
                        'newOrder': 'StoredProcedure-newOrder.json',
+                       'paymentById': 'StoredProcedure-paymentById.json',
+                       'paymentByName': 'StoredProcedure-paymentByName.json',
                        'orderStatusByName': 'StoredProcedure-orderStatusByName.json',
                        'orderStatusById': 'StoredProcedure-orderStatusById.json'}
 
@@ -196,7 +199,7 @@ class HyriseDriver(AbstractDriver):
         """Callback after the execution phase finishes"""
         return None
 
-    def doDelivery(self, params, use_stored_procedure=False):
+    def doDelivery(self, params, use_stored_procedure=True):
         """Execute DELIVERY Transaction
         Parameters Dict:
             w_id
@@ -210,9 +213,9 @@ class HyriseDriver(AbstractDriver):
         ol_delivery_d = params["ol_delivery_d"]
 
         if use_stored_procedure:
-            self.conn.query(self.queries["STORED_PROCEDURES"]["delivery"], {"w_id": w_id, "o_carrier_id": o_carrier_id}, stored_procedure="TPCC-Delivery")
-            raise "delivery stored procedure only delivers for one district - fixme"
-            return self.conn.fetchall()
+            self.conn.stored_procedure("TPCC-Delivery", self.queries["STORED_PROCEDURES"]["delivery"], {"w_id": w_id, "o_carrier_id": o_carrier_id})
+            return []
+            # FIXME - do something with the result
 
         else:
             result = [ ]
@@ -399,7 +402,7 @@ class HyriseDriver(AbstractDriver):
 
             return [ customer_info, misc, item_data ]
 
-    def doOrderStatus(self, params, use_stored_procedure=False):
+    def doOrderStatus(self, params, use_stored_procedure=True):
         """Execute ORDER_STATUS Transaction
         Parameters Dict:
             w_id
@@ -454,7 +457,7 @@ class HyriseDriver(AbstractDriver):
             self.conn.commit()
             return [ customer, order, orderLines ]
 
-    def doPayment(self, params):
+    def doPayment(self, params, use_stored_procedure=True):
         """Execute PAYMENT Transaction
         Parameters Dict:
             w_id
@@ -463,97 +466,114 @@ class HyriseDriver(AbstractDriver):
             c_w_id
             c_d_id
             c_id
-            c_lasr()t
+            c_last
             h_date
         """
-        q = self.queries["PAYMENT"]
 
-        w_id = params["w_id"]
-        d_id = params["d_id"]
-        h_amount = params["h_amount"]
-        c_w_id = params["c_w_id"]
-        c_d_id = params["c_d_id"]
-        c_id = params["c_id"]
-        c_last = params["c_last"]
-        h_date = params["h_date"]
+        if use_stored_procedure:
+            if params["c_last"] is None:
+                r = self.conn.stored_procedure("TPCC-Payment", self.queries["STORED_PROCEDURES"]['paymentById'], params)
+            else:
+                r = self.conn.stored_procedure("TPCC-Payment", self.queries["STORED_PROCEDURES"]['paymentByName'], params)
 
-        #import pdb; pdb.set_trace()
-        if c_id != None:
-            self.conn.query(q["getCustomerByCustomerId"], {"c_w_id":w_id, "c_d_id":d_id, "c_id":c_id})
-            customer = self.conn.fetchone_as_dict()
+            # fixme do sth with the return value
+            return []
+
         else:
-            # Get the midpoint customer's id
-            self.conn.query(q["getCustomersByLastName"], {"c_w_id":w_id, "c_d_id":d_id, "c_last":c_last})
-            all_customers = self.conn.fetchall_as_dict()
-            assert len(all_customers) > 0
-            namecnt = len(all_customers)
-            index = (namecnt-1)/2
-            customer = all_customers[index]
-            c_id = customer["C_ID"]
-        assert len(customer) > 0
-        c_balance = customer["C_BALANCE"] - h_amount
-        c_ytd_payment = customer["C_YTD_PAYMENT"] + h_amount
-        c_payment_cnt = customer["C_PAYMENT_CNT"] + 1
-        c_data = customer["C_DATA"]
+            q = self.queries["PAYMENT"]
 
-        self.conn.query(q["getWarehouse"], {"w_id":w_id})
-        warehouse = self.conn.fetchone()
+            w_id = params["w_id"]
+            d_id = params["d_id"]
+            h_amount = params["h_amount"]
+            c_w_id = params["c_w_id"]
+            c_d_id = params["c_d_id"]
+            c_id = params["c_id"]
+            c_last = params["c_last"]
+            h_date = params["h_date"]
 
-        self.conn.query(q["getDistrict"], {"w_id":w_id, "d_id":d_id})
-        district = self.conn.fetchone()
-        #TODO: Berechnung der Amounts
-        self.conn.query(q["updateWarehouseBalance"], {"w_ytd":h_amount, "w_id":w_id})
-        self.conn.query(q["updateDistrictBalance"], {"d_ytd":h_amount, "w_id":w_id, "d_id":d_id})
+            #import pdb; pdb.set_trace()
+            if c_id != None:
+                self.conn.query(q["getCustomerByCustomerId"], {"c_w_id":w_id, "c_d_id":d_id, "c_id":c_id})
+                customer = self.conn.fetchone_as_dict()
+            else:
+                # Get the midpoint customer's id
+                self.conn.query(q["getCustomersByLastName"], {"c_w_id":w_id, "c_d_id":d_id, "c_last":c_last})
+                all_customers = self.conn.fetchall_as_dict()
+                assert len(all_customers) > 0
+                namecnt = len(all_customers)
+                index = (namecnt-1)/2
+                customer = all_customers[index]
+                c_id = customer["C_ID"]
+            assert len(customer) > 0
+            c_balance = customer["C_BALANCE"] - h_amount
+            c_ytd_payment = customer["C_YTD_PAYMENT"] + h_amount
+            c_payment_cnt = customer["C_PAYMENT_CNT"] + 1
+            c_data = customer["C_DATA"]
 
-        # Customer Credit Information
-        if customer["C_CREDIT"] == constants.BAD_CREDIT:
-            newData = " ".join(map(str, [c_id, c_d_id, c_w_id, d_id, w_id, h_amount]))
-            c_data = (newData + "|" + c_data)
-            if len(c_data) > constants.MAX_C_DATA: c_data = c_data[:constants.MAX_C_DATA]
-            self.conn.query(q["updateBCCustomer"], {"c_balance":c_balance, "c_ytd_payment":c_ytd_payment, "c_payment_cnt":c_payment_cnt, "c_data":c_data, "c_w_id":c_w_id, "c_d_id":c_d_id, "c_id":c_id})
-        else:
-            c_data = ""
-            self.conn.query(q["updateGCCustomer"], {"c_balance":c_balance, "c_ytd_payment":c_ytd_payment, "c_payment_cnt":c_payment_cnt, "c_w_id":c_w_id, "c_d_id":c_d_id, "c_id":c_id})
+            self.conn.query(q["getWarehouse"], {"w_id":w_id})
+            warehouse = self.conn.fetchone()
 
-        # Concatenate w_name, four spaces, d_name
-        h_data = "%s    %s" % (warehouse[0], district[0])
-        # Create the history record
-        self.conn.query(q["insertHistory"], {"c_id":c_id, "c_d_id":c_d_id, "c_w_id":c_w_id, "d_id":d_id, "w_id":w_id, "h_date":h_date, "h_amount":h_amount, "h_data":h_data})
+            self.conn.query(q["getDistrict"], {"w_id":w_id, "d_id":d_id})
+            district = self.conn.fetchone()
+            #TODO: Berechnung der Amounts
+            self.conn.query(q["updateWarehouseBalance"], {"w_ytd":h_amount, "w_id":w_id})
+            self.conn.query(q["updateDistrictBalance"], {"d_ytd":h_amount, "w_id":w_id, "d_id":d_id})
 
-        self.conn.commit()
+            # Customer Credit Information
+            if customer["C_CREDIT"] == constants.BAD_CREDIT:
+                newData = " ".join(map(str, [c_id, c_d_id, c_w_id, d_id, w_id, h_amount]))
+                c_data = (newData + "|" + c_data)
+                if len(c_data) > constants.MAX_C_DATA: c_data = c_data[:constants.MAX_C_DATA]
+                self.conn.query(q["updateBCCustomer"], {"c_balance":c_balance, "c_ytd_payment":c_ytd_payment, "c_payment_cnt":c_payment_cnt, "c_data":c_data, "c_w_id":c_w_id, "c_d_id":c_d_id, "c_id":c_id})
+            else:
+                c_data = ""
+                self.conn.query(q["updateGCCustomer"], {"c_balance":c_balance, "c_ytd_payment":c_ytd_payment, "c_payment_cnt":c_payment_cnt, "c_w_id":c_w_id, "c_d_id":c_d_id, "c_id":c_id})
 
-        # TPC-C 2.5.3.3: Must display the following fields:
-        # W_ID, D_ID, C_ID, C_D_ID, C_W_ID, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP,
-        # D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1,
-        # C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_CREDIT, C_CREDIT_LIM,
-        # C_DISCOUNT, C_BALANCE, the first 200 characters of C_DATA (only if C_CREDIT = "BC"),
-        # H_AMOUNT, and H_DATE.
+            # Concatenate w_name, four spaces, d_name
+            h_data = "%s    %s" % (warehouse[0], district[0])
+            # Create the history record
+            self.conn.query(q["insertHistory"], {"c_id":c_id, "c_d_id":c_d_id, "c_w_id":c_w_id, "d_id":d_id, "w_id":w_id, "h_date":h_date, "h_amount":h_amount, "h_data":h_data})
 
-        # Hand back all the warehouse, district, and customer data
-        return [ warehouse, district, customer ]
+            self.conn.commit()
 
-    def doStockLevel(self, params):
+            # TPC-C 2.5.3.3: Must display the following fields:
+            # W_ID, D_ID, C_ID, C_D_ID, C_W_ID, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP,
+            # D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1,
+            # C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_CREDIT, C_CREDIT_LIM,
+            # C_DISCOUNT, C_BALANCE, the first 200 characters of C_DATA (only if C_CREDIT = "BC"),
+            # H_AMOUNT, and H_DATE.
+
+            # Hand back all the warehouse, district, and customer data
+            return [ warehouse, district, customer ]
+
+    def doStockLevel(self, params, use_stored_procedure=True):
         """Execute STOCK_LEVEL Transaction
         Parameters Dict:
             w_id
             d_id
             threshold
         """
-        q = self.queries["STOCK_LEVEL"]
+        if use_stored_procedure:
+            r = self.conn.stored_procedure("TPCC-StockLevel", self.queries["STORED_PROCEDURES"]['stockLevel'], params)
+            # FIXME do something with the stock level
 
-        w_id = params["w_id"]
-        d_id = params["d_id"]
-        threshold = params["threshold"]
 
-        self.conn.query(q["getOId"], {"w_id":w_id, "d_id":d_id})
-        result = self.conn.fetchone()
-        assert result
-        o_id = result[0]
+        else:
+            q = self.queries["STOCK_LEVEL"]
 
-        self.conn.query(q["getStockCount"], {"w_id":w_id, "d_id":d_id, "o_id1":o_id, "o_id2":(o_id - 20), "w_id":w_id, "threshold":threshold})
-        result = self.conn.fetchone()
-        #self.conn.commit()
-        return int(result[0]) if result else 0
+            w_id = params["w_id"]
+            d_id = params["d_id"]
+            threshold = params["threshold"]
+
+            self.conn.query(q["getOId"], {"w_id":w_id, "d_id":d_id})
+            result = self.conn.fetchone()
+            assert result
+            o_id = result[0]
+
+            self.conn.query(q["getStockCount"], {"w_id":w_id, "d_id":d_id, "o_id1":o_id, "o_id2":(o_id - 20), "w_id":w_id, "threshold":threshold})
+            result = self.conn.fetchone()
+            #self.conn.commit()
+            return int(result[0]) if result else 0
 
     def generateTableloadJson(self):
         filename = "Load-Load.json"
