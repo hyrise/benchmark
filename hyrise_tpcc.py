@@ -79,19 +79,25 @@ class TPCCUser(benchmark.User):
 
     # HyriseConnection stubs
     # ======================
-    def query(self, querystr, paramlist=None, commit=False, stored_procedure=None):
+    def stored_procedure(self, stored_procedure, querystr, paramlist=None, commit=False):
         if paramlist:
             for k,v in paramlist.iteritems():
                 if v == True:    v = 1;
                 elif v == False: v = 0;
 
-        result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure).json()
+        return self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure).json()
+
+
+    def query(self, querystr, paramlist=None, commit=False):
+        if paramlist:
+            for k,v in paramlist.iteritems():
+                if v == True:    v = 1;
+                elif v == False: v = 0;
+
+        result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
 
         self.lastResult = result.get("rows", None)
         self.lastHeader = result.get("header", None)
-
-        if stored_procedure:
-            return
 
         # check session context to make sure we are in the correct transaction
         new_session_context = result.get("session_context", None)

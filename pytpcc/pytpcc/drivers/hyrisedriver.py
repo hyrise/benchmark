@@ -46,7 +46,8 @@ QUERY_FILES = {
              'updateWarehouseBalance': 'Payment-updateWarehouseBalance.json'},
  'STOCK_LEVEL': {'getOId': 'StockLevel-getOId.json',
                  'getStockCount': 'StockLevel-getStockCount.json'},
- 'STORED_PROCEDURES': {'delivery': 'StoredProcedure-delivery.json'}
+ 'STORED_PROCEDURES': {'delivery': 'StoredProcedure-delivery.json',
+                       'newOrder': 'StoredProcedure-newOrder.json'}
 
 }
 
@@ -207,19 +208,9 @@ class HyriseDriver(AbstractDriver):
         ol_delivery_d = params["ol_delivery_d"]
 
         if use_stored_procedure:
-            result = [ ]
-            for d_id in range(1, constants.DISTRICTS_PER_WAREHOUSE+1):
-                ## FIXME Do this in Hyrise
-                self.conn.query(q["getNewOrder"], {'d_id':d_id, 'w_id':w_id})
-                newOrder = self.conn.fetchone_as_dict()
-                if newOrder == None:
-                    ## No orders for this district: skip it. Note: This must be reported if > 1%
-                    continue
-                print newOrder
-
-                self.conn.query(self.queries["STORED_PROCEDURES"]["delivery"], {"w_id": w_id, "d_id": d_id, "o_carrier_id": o_carrier_id}, stored_procedure="TPCC-Delivery")
-                print self.conn.fetchall()
-            return result
+            self.conn.query(self.queries["STORED_PROCEDURES"]["delivery"], {"w_id": w_id, "o_carrier_id": o_carrier_id}, stored_procedure="TPCC-Delivery")
+            raise "delivery stored procedure only delivers for one district - fixme"
+            return self.conn.fetchall()
 
         else:
             result = [ ]
@@ -257,7 +248,7 @@ class HyriseDriver(AbstractDriver):
             self.conn.commit()
             return result
 
-    def doNewOrder(self, params):
+    def doNewOrder(self, params, use_stored_procedure=True):
         """Execute NEW_ORDER Transaction
         Parameters Dict:
             w_id
@@ -282,116 +273,129 @@ class HyriseDriver(AbstractDriver):
         assert len(i_ids) == len(i_w_ids)
         assert len(i_ids) == len(i_qtys)
 
-        all_local = True
-        items = [ ]
-        for i in range(len(i_ids)):
-            ## Determine if this is an all local order or not
-            all_local = all_local and i_w_ids[i] == w_id
-            self.conn.query(q["getItemInfo"], {"i_id":i_ids[i]})
-            items.append(self.conn.fetchone_as_dict())
-        assert len(items) == len(i_ids)
+        if use_stored_procedure:
+            items = []
+            for i in range(len(i_ids)):
+                items.append({"I_ID": i_ids[i], "I_W_ID": i_w_ids[i], "quantity": i_qtys[i]})
 
-        ## TPCC defines 1% of neworder gives a wrong itemid, causing rollback.
-        ## Note that this will happen with 1% of transactions on purpose.
-        for item in items:
-            if item == None:
-                self.conn.rollback()
-                return
-        ## FOR
+            r = self.conn.stored_procedure("TPCC-NewOrder", self.queries["STORED_PROCEDURES"]['newOrder'], {"w_id": w_id, "d_id": d_id, "c_id": c_id, "items": json.dumps(items)})
 
-        ## ----------------
-        ## Collect Information from WAREHOUSE, DISTRICT, and CUSTOMER
-        ## ----------------
-        self.conn.query(q["getWarehouseTaxRate"], {"w_id":w_id})
-        w_tax = self.conn.fetchone_as_dict()['W_TAX']
+            customer_info = {"C_CREDIT": r["C_CREDIT"], "C_DISCOUNT": r["C_DISCOUNT"], "C_LAST": r["C_LAST"]}
+            misc = [ (r["W_TAX"], r["D_TAX"], r["D_NEXT_O_ID"], r["total-amount"]) ]
+            item_data = [(i["I_NAME"], i["S_QUANTITY"], i["brand-generic"], i["I_PRICE"], i["OL_AMOUNT"]) for i in r['items']]
+            return [ customer_info, misc, item_data ]
 
-        self.conn.query(q["getDistrict"], {"d_id":d_id, "w_id":w_id})
-        district_info = self.conn.fetchone_as_dict()
-        d_tax = district_info['D_TAX']
-        d_next_o_id = district_info['D_NEXT_O_ID']
+        else:
+            all_local = True
+            items = [ ]
+            for i in range(len(i_ids)):
+                ## Determine if this is an all local order or not
+                all_local = all_local and i_w_ids[i] == w_id
+                self.conn.query(q["getItemInfo"], {"i_id":i_ids[i]})
+                items.append(self.conn.fetchone_as_dict())
+            assert len(items) == len(i_ids)
 
-        self.conn.query(q["getCustomer"], {"w_id":w_id, "d_id":d_id, "c_id":c_id})
-        customer_info = self.conn.fetchone_as_dict()
-        c_discount = customer_info['C_DISCOUNT']
+            ## TPCC defines 1% of neworder gives a wrong itemid, causing rollback.
+            ## Note that this will happen with 1% of transactions on purpose.
+            for item in items:
+                if item == None:
+                    self.conn.rollback()
+                    return
+            ## FOR
 
-        ## ----------------
-        ## Insert Order Information
-        ## ----------------
-        ol_cnt = len(i_ids)
-        o_carrier_id = constants.NULL_CARRIER_ID
+            ## ----------------
+            ## Collect Information from WAREHOUSE, DISTRICT, and CUSTOMER
+            ## ----------------
+            self.conn.query(q["getWarehouseTaxRate"], {"w_id":w_id})
+            w_tax = self.conn.fetchone_as_dict()['W_TAX']
 
-        self.conn.query(q["incrementNextOrderId"], {"d_next_o_id":d_next_o_id + 1, "d_id":d_id, "w_id":w_id})
-        self.conn.query(q["createOrder"], {"o_id":d_next_o_id, "d_id":d_id, "w_id":w_id, "c_id":c_id, "date":o_entry_d, "o_carrier_id":o_carrier_id, "o_ol_cnt":ol_cnt, "all_local":all_local})
-        self.conn.query(q["createNewOrder"], {"o_id":d_next_o_id, "d_id":d_id, "w_id":w_id})
+            self.conn.query(q["getDistrict"], {"d_id":d_id, "w_id":w_id})
+            district_info = self.conn.fetchone_as_dict()
+            d_tax = district_info['D_TAX']
+            d_next_o_id = district_info['D_NEXT_O_ID']
 
-        ## ----------------
-        ## Insert Order Item Information
-        ## ----------------
-        item_data = [ ]
-        total = 0
-        for i in range(len(i_ids)):
-            ol_number = i + 1
-            ol_supply_w_id = i_w_ids[i]
-            ol_i_id = i_ids[i]
-            ol_quantity = i_qtys[i]
+            self.conn.query(q["getCustomer"], {"w_id":w_id, "d_id":d_id, "c_id":c_id})
+            customer_info = self.conn.fetchone_as_dict()
+            c_discount = customer_info['C_DISCOUNT']
 
-            itemInfo = items[i]
-            i_name = itemInfo["I_NAME"]
-            i_data = itemInfo["I_DATA"]
-            i_price = itemInfo["I_PRICE"]
+            ## ----------------
+            ## Insert Order Information
+            ## ----------------
+            ol_cnt = len(i_ids)
+            o_carrier_id = constants.NULL_CARRIER_ID
 
-            self.conn.query(q["getStockInfo"], {"2d_id":d_id, "ol_i_id":ol_i_id, "ol_supply_w_id":ol_supply_w_id})
-            stockInfo = self.conn.fetchone_as_dict()
-            if len(stockInfo) == 0:
-                logging.warn("No STOCK record for (ol_i_id=%d, ol_supply_w_id=%d)" % (ol_i_id, ol_supply_w_id))
-                continue
-            s_quantity = stockInfo["S_QUANTITY"]
-            s_ytd = stockInfo["S_YTD"]
-            s_order_cnt = stockInfo["S_ORDER_CNT"]
-            s_remote_cnt = stockInfo["S_REMOTE_CNT"]
-            s_data = stockInfo["S_DATA"]
-            s_dist_xx = stockInfo["S_DIST_%02d" % (d_id)] # Fetches data from the s_dist_[d_id] column
+            self.conn.query(q["incrementNextOrderId"], {"d_next_o_id":d_next_o_id + 1, "d_id":d_id, "w_id":w_id})
+            self.conn.query(q["createOrder"], {"o_id":d_next_o_id, "d_id":d_id, "w_id":w_id, "c_id":c_id, "date":o_entry_d, "o_carrier_id":o_carrier_id, "o_ol_cnt":ol_cnt, "all_local":all_local})
+            self.conn.query(q["createNewOrder"], {"o_id":d_next_o_id, "d_id":d_id, "w_id":w_id})
 
-            ## Update stock
-            s_ytd += ol_quantity
-            if s_quantity >= ol_quantity + 10:
-                s_quantity = s_quantity - ol_quantity
-            else:
-                s_quantity = s_quantity + 91 - ol_quantity
-            s_order_cnt += 1
+            ## ----------------
+            ## Insert Order Item Information
+            ## ----------------
+            item_data = [ ]
+            total = 0
+            for i in range(len(i_ids)):
+                ol_number = i + 1
+                ol_supply_w_id = i_w_ids[i]
+                ol_i_id = i_ids[i]
+                ol_quantity = i_qtys[i]
 
-            if ol_supply_w_id != w_id: s_remote_cnt += 1
+                itemInfo = items[i]
+                i_name = itemInfo["I_NAME"]
+                i_data = itemInfo["I_DATA"]
+                i_price = itemInfo["I_PRICE"]
 
-            self.conn.query(q["updateStock"], {"s_quantity":s_quantity, "s_ytd":s_ytd, "s_order_cnt":s_order_cnt, "s_remote_cnt":s_remote_cnt, "ol_i_id":ol_i_id, "ol_supply_w_id":ol_supply_w_id})
+                self.conn.query(q["getStockInfo"], {"2d_id":d_id, "ol_i_id":ol_i_id, "ol_supply_w_id":ol_supply_w_id})
+                stockInfo = self.conn.fetchone_as_dict()
+                if len(stockInfo) == 0:
+                    logging.warn("No STOCK record for (ol_i_id=%d, ol_supply_w_id=%d)" % (ol_i_id, ol_supply_w_id))
+                    continue
+                s_quantity = stockInfo["S_QUANTITY"]
+                s_ytd = stockInfo["S_YTD"]
+                s_order_cnt = stockInfo["S_ORDER_CNT"]
+                s_remote_cnt = stockInfo["S_REMOTE_CNT"]
+                s_data = stockInfo["S_DATA"]
+                s_dist_xx = stockInfo["S_DIST_%02d" % (d_id)] # Fetches data from the s_dist_[d_id] column
 
-            if i_data.find(constants.ORIGINAL_STRING) != -1 and s_data.find(constants.ORIGINAL_STRING) != -1:
-                brand_generic = 'B'
-            else:
-                brand_generic = 'G'
+                ## Update stock
+                s_ytd += ol_quantity
+                if s_quantity >= ol_quantity + 10:
+                    s_quantity = s_quantity - ol_quantity
+                else:
+                    s_quantity = s_quantity + 91 - ol_quantity
+                s_order_cnt += 1
 
-            ## Transaction profile states to use "ol_quantity * i_price"
-            ol_amount = ol_quantity * i_price
-            total += ol_amount
+                if ol_supply_w_id != w_id: s_remote_cnt += 1
 
-            self.conn.query(q["createOrderLine"], {"o_id":d_next_o_id, "d_id":d_id, "w_id":w_id, "ol_number":ol_number, "ol_i_id":ol_i_id, "ol_supply_w_id":ol_supply_w_id, "date":o_entry_d, "ol_quantity":ol_quantity, "ol_amount":ol_amount, "ol_dist_info":s_dist_xx})
+                self.conn.query(q["updateStock"], {"s_quantity":s_quantity, "s_ytd":s_ytd, "s_order_cnt":s_order_cnt, "s_remote_cnt":s_remote_cnt, "ol_i_id":ol_i_id, "ol_supply_w_id":ol_supply_w_id})
 
-            ## Add the info to be returned
-            item_data.append( (i_name, s_quantity, brand_generic, i_price, ol_amount) )
-        ## FOR
+                if i_data.find(constants.ORIGINAL_STRING) != -1 and s_data.find(constants.ORIGINAL_STRING) != -1:
+                    brand_generic = 'B'
+                else:
+                    brand_generic = 'G'
 
-        ## Commit!
-        self.conn.commit()
+                ## Transaction profile states to use "ol_quantity * i_price"
+                ol_amount = ol_quantity * i_price
+                total += ol_amount
 
-        ## Adjust the total for the discount
-        #print "c_discount:", c_discount, type(c_discount)
-        #print "w_tax:", w_tax, type(w_tax)
-        #print "d_tax:", d_tax, type(d_tax)
-        total *= (1 - c_discount) * (1 + w_tax + d_tax)
+                self.conn.query(q["createOrderLine"], {"o_id":d_next_o_id, "d_id":d_id, "w_id":w_id, "ol_number":ol_number, "ol_i_id":ol_i_id, "ol_supply_w_id":ol_supply_w_id, "date":o_entry_d, "ol_quantity":ol_quantity, "ol_amount":ol_amount, "ol_dist_info":s_dist_xx})
 
-        ## Pack up values the client is missing (see TPC-C 2.4.3.5)
-        misc = [ (w_tax, d_tax, d_next_o_id, total) ]
+                ## Add the info to be returned
+                item_data.append( (i_name, s_quantity, brand_generic, i_price, ol_amount) )
+            ## FOR
 
-        return [ customer_info, misc, item_data ]
+            ## Commit!
+            self.conn.commit()
+
+            ## Adjust the total for the discount
+            #print "c_discount:", c_discount, type(c_discount)
+            #print "w_tax:", w_tax, type(w_tax)
+            #print "d_tax:", d_tax, type(d_tax)
+            total *= (1 - c_discount) * (1 + w_tax + d_tax)
+
+            ## Pack up values the client is missing (see TPC-C 2.4.3.5)
+            misc = [ (w_tax, d_tax, d_next_o_id, total) ]
+
+            return [ customer_info, misc, item_data ]
 
     def doOrderStatus(self, params):
         """Execute ORDER_STATUS Transaction
