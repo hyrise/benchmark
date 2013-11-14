@@ -47,10 +47,10 @@ class TPCCUser(benchmark.User):
         self.perf = {}
         txn, params = self.e.doOne()
         tStart = time.time()
+        self.context = None
         try:
             self.driver.executeTransaction(txn, params)
         except requests.ConnectionError:
-            self.context = None
             self.numErrors += 1
             if self.numErrors > 5:
                 print "*** TPCCUser %i: too many failed requests" % (self._userId)
@@ -58,8 +58,8 @@ class TPCCUser(benchmark.User):
                 self.stop()
             return
         except (RuntimeError, AssertionError), e:
+            print "TX ", txn
             print e
-            self.context = None
             return
         self.numErrors = 0
         tEnd = time.time()
