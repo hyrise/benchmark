@@ -47,7 +47,9 @@ QUERY_FILES = {
  'STOCK_LEVEL': {'getOId': 'StockLevel-getOId.json',
                  'getStockCount': 'StockLevel-getStockCount.json'},
  'STORED_PROCEDURES': {'delivery': 'StoredProcedure-delivery.json',
-                       'newOrder': 'StoredProcedure-newOrder.json'}
+                       'newOrder': 'StoredProcedure-newOrder.json',
+                       'orderStatusByName': 'StoredProcedure-orderStatusByName.json',
+                       'orderStatusById': 'StoredProcedure-orderStatusById.json'}
 
 }
 
@@ -397,7 +399,7 @@ class HyriseDriver(AbstractDriver):
 
             return [ customer_info, misc, item_data ]
 
-    def doOrderStatus(self, params):
+    def doOrderStatus(self, params, use_stored_procedure=False):
         """Execute ORDER_STATUS Transaction
         Parameters Dict:
             w_id
@@ -415,31 +417,42 @@ class HyriseDriver(AbstractDriver):
         assert w_id, pformat(params)
         assert d_id, pformat(params)
 
-        if c_id != None:
-            self.conn.query(q["getCustomerByCustomerId"], {"w_id":w_id, "d_id":d_id, "c_id":c_id})
-            customer = self.conn.fetchone()
-        else:
-            # Get the midpoint customer's id
-            self.conn.query(q["getCustomersByLastName"], {"w_id":w_id, "d_id":d_id, "c_last":c_last})
-            all_customers = self.conn.fetchall_as_dict()
-            assert len(all_customers) > 0
-            namecnt = len(all_customers)
-            index = (namecnt-1)/2
-            customer = all_customers[index]
-            c_id = customer["C_ID"]
-        assert len(customer) > 0
-        assert c_id != None
+        if use_stored_procedure:
+            if params["c_id"] is None:
+                r = self.conn.stored_procedure("TPCC-OrderStatus", self.queries["STORED_PROCEDURES"]['orderStatusByName'], {'w_id': w_id, 'd_id': d_id, 'c_last': c_last})
+            else:
+                r = self.conn.stored_procedure("TPCC-OrderStatus", self.queries["STORED_PROCEDURES"]['orderStatusById'], {'w_id': w_id, 'd_id': d_id, 'c_id': c_id})
+            # customer = {'C_ID': r['C_ID'], 'C_FIRST': r['C_FIRST'], 'C_MIDDLE': r['C_MIDDLE'], 'C_LAST': r['C_LAST'], 'C_BALANCE': r['C_BALANCE']} 
+            # order = {}
+            # FIXME set values
+            return []
 
-        self.conn.query(q["getLastOrder"], {"w_id":w_id, "d_id":d_id, "c_id":c_id})
-        order = self.conn.fetchone()
-        if order:
-            self.conn.query(q["getOrderLines"], {"w_id":w_id, "d_id":d_id, "o_id":order[0]})
-            orderLines = self.conn.fetchall()
         else:
-            orderLines = [ ]
+            if c_id != None:
+                self.conn.query(q["getCustomerByCustomerId"], {"w_id":w_id, "d_id":d_id, "c_id":c_id})
+                customer = self.conn.fetchone()
+            else:
+                # Get the midpoint customer's id
+                self.conn.query(q["getCustomersByLastName"], {"w_id":w_id, "d_id":d_id, "c_last":c_last})
+                all_customers = self.conn.fetchall_as_dict()
+                assert len(all_customers) > 0
+                namecnt = len(all_customers)
+                index = (namecnt-1)/2
+                customer = all_customers[index]
+                c_id = customer["C_ID"]
+            assert len(customer) > 0
+            assert c_id != None
 
-        self.conn.commit()
-        return [ customer, order, orderLines ]
+            self.conn.query(q["getLastOrder"], {"w_id":w_id, "d_id":d_id, "c_id":c_id})
+            order = self.conn.fetchone()
+            if order:
+                self.conn.query(q["getOrderLines"], {"w_id":w_id, "d_id":d_id, "o_id":order[0]})
+                orderLines = self.conn.fetchall()
+            else:
+                orderLines = [ ]
+
+            self.conn.commit()
+            return [ customer, order, orderLines ]
 
     def doPayment(self, params):
         """Execute PAYMENT Transaction
