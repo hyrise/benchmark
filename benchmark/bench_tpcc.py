@@ -79,6 +79,12 @@ class TPCCUser(User):
         logStr += "\n"
         return logStr
 
+    def addPerfData(self, perf):
+        if perf:
+            for op in perf:
+                self.perf.setdefault(op["name"], {"n": 0, "t": 0.0})
+                self.perf[op["name"]]["n"] += 1
+                self.perf[op["name"]]["t"] += op["endTime"] - op["startTime"]
 
     # HyriseConnection stubs
     # ======================
@@ -88,7 +94,9 @@ class TPCCUser(User):
                 if v == True:    v = 1;
                 elif v == False: v = 0;
 
-        return self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure).json()
+        result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure).json()
+        self.addPerfData(result.get("performanceData", None))
+        return result
 
 
     def query(self, querystr, paramlist=None, commit=False):
@@ -109,13 +117,7 @@ class TPCCUser(User):
                 raise RuntimeError("Session context was ignored by database")
 
         self.context = new_session_context
-
-        perf = result.get("performanceData", None)
-        if perf:
-            for op in perf:
-                self.perf.setdefault(op["name"], {"n": 0, "t": 0.0})
-                self.perf[op["name"]]["n"] += 1
-                self.perf[op["name"]]["t"] += op["endTime"] - op["startTime"]
+        self.addPerfData(result.get("performanceData", None))
 
 
     def commit(self):
