@@ -95,19 +95,21 @@ class AbstractDriver(object):
         """Callback after the execution phase finishes"""
         return None
         
-    def executeTransaction(self, txn, params):
+    def executeTransaction(self, txn, params, use_stored_procedure):
         """Execute a transaction based on the given name"""
         
+        
+
         if constants.TransactionTypes.DELIVERY == txn:
-            result = self.doDelivery(params)
+            result = self.doDelivery(params, use_stored_procedure)
         elif constants.TransactionTypes.NEW_ORDER == txn:
-            result = self.doNewOrder(params)
+            result = self.doNewOrder(params, use_stored_procedure)
         elif constants.TransactionTypes.ORDER_STATUS == txn:
-            result = self.doOrderStatus(params)
+            result = self.doOrderStatus(params, use_stored_procedure)
         elif constants.TransactionTypes.PAYMENT == txn:
-            result = self.doPayment(params)
+            result = self.doPayment(params, use_stored_procedure)
         elif constants.TransactionTypes.STOCK_LEVEL == txn:
-            result = self.doStockLevel(params)
+            result = self.doStockLevel(params, use_stored_procedure)
         else:
             assert False, "Unexpected TransactionType: " + txn
         return result

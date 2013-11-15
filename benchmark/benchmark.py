@@ -41,10 +41,12 @@ class Benchmark:
         self._dirBinary         = os.path.join(os.getcwd(), "builds/%s" % buildSettings.getName())
         self._dirHyriseDB       = kwargs["hyriseDBPath"] if kwargs.has_key("hyriseDBPath") else self._dirBinary
         self._dirResults        = os.path.join(os.getcwd(), "results", self._id, self._runId, buildSettings.getName())
-        self._queryDict         = self._readDefaultQueryFiles()
+        # self._queryDict         = self._readDefaultQueryFiles()
+        self._queryDict         = {}
         self._session           = requests.Session()
         self._serverThreads     = kwargs["serverThreads"] if kwargs.has_key("serverThreads") else 0
         self._collectPerfData   = kwargs["collectPerfData"] if kwargs.has_key("collectPerfData") else False
+        self._useJson           = kwargs["useJson"] if kwargs.has_key("useJson") else False
         self._build             = None
         self._serverProc        = None
         self._users             = []
@@ -140,12 +142,12 @@ class Benchmark:
         if autocommit: data["autocommit"] = "true"
         return self._session.post("http://%s:%s/" % (self._host, self._port), data=data)
 
-    def _readDefaultQueryFiles(self):
-        cwd = os.getcwd()
-        queryDict = {}
-        for queryId, filename in queries.QUERY_FILES.iteritems():
-            queryDict[queryId] = open(os.path.join(cwd, filename)).read()
-        return queryDict
+    # def _readDefaultQueryFiles(self):
+    #     cwd = os.getcwd()
+    #     queryDict = {}
+    #     for queryId, filename in queries.QUERY_FILES.iteritems():
+    #         queryDict[queryId] = open(os.path.join(cwd, filename)).read()
+    #     return queryDict
 
     def _buildServer(self):
         sys.stdout.write("%suilding server for build '%s'... " % ("B" if not self._rebuild else "Reb", self._buildSettings.getName()))
@@ -203,7 +205,7 @@ class Benchmark:
 
     def _createUsers(self):
         for i in range(self._numUsers):
-            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, **self._userArgs))
+            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, **self._userArgs))
 
     def _stopServer(self):
         if not self._manual and self._serverProc:

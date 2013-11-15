@@ -29,7 +29,7 @@ class User(multiprocessing.Process):
         self._log               = {}
         self._lastQuery         = None
         self._collectPerfData   = kwargs["collectPerfData"] if kwargs.has_key("collectPerfData") else False
-
+        self._useJson           = kwargs["useJson"] if kwargs.has_key("useJson") else False
         self._totalRuns         = 0
         self._totalTime         = 0
         self._totalQueryTime    = 0
