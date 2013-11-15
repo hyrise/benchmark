@@ -1,6 +1,5 @@
 import json
 import os
-import queries
 import random
 import requests
 import multiprocessing
@@ -20,7 +19,7 @@ class User(multiprocessing.Process):
         self._session           = requests.Session()
         self._dirOutput         = os.path.join(dirOutput, str(userId))
         self._queryDict         = queryDict
-        self._queries           = kwargs["queries"] if kwargs.has_key("queries") else queries.QUERIES_ALL
+        # self._queries           = kwargs["queries"] if kwargs.has_key("queries") else queries.QUERIES_ALL
         self._thinkTime         = kwargs["thinkTime"] if kwargs.has_key("thinkTime") else 0
         self._papi              = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
         self._stopevent         = multiprocessing.Event()

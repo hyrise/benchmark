@@ -1,6 +1,5 @@
 import build
 import os
-import queries
 import requests
 import settings
 import signal
