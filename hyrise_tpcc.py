@@ -25,6 +25,7 @@ class TPCCUser(benchmark.User):
         benchmark.User.__init__(self, userId, host, port, dirOutput, queryDict, **kwargs)
 
         self.scaleParameters = kwargs["scaleParameters"]
+        self.useStoredProcedures = kwargs["useStoredProcedures"] if kwargs.has_key("useStoredProcedures") else False
         self.config = kwargs["config"]
         self.config["reset"] = False
         self.config["execute"] = True
@@ -48,7 +49,7 @@ class TPCCUser(benchmark.User):
         txn, params = self.e.doOne()
         tStart = time.time()
         try:
-            self.driver.executeTransaction(txn, params)
+            self.driver.executeTransaction(txn, params, self.useStoredProcedures)
         except requests.ConnectionError:
             self.context = None
             self.numErrors += 1
@@ -196,7 +197,7 @@ class TPCCBenchmark(benchmark.Benchmark):
         config["port"] = self._port
         config["hyrise_builddir"] = self._dirHyriseDB
         config["table_location"] = dirTables
-        config["query_location"] = os.path.join(dirPyTPCC, "queries")
+        config["query_location"] = os.path.join(os.getcwd(), "queries", "tpcc-queries")
         self.driver.loadConfig(config)
 
         if generate:
@@ -253,6 +254,8 @@ if __name__ == "__main__":
                          help='Force `make clean` before each build')
     aparser.add_argument('--regenerate', action='store_true',
                          help='Force regeneration of TPC-C table files')
+    aparser.add_argument('--stored-procedures', action='store_true',
+                         help='Use TPCC stored procedures instead of regular queries')
     args = vars(aparser.parse_args())
 
     s1 = benchmark.Settings("NoLogger", PERSISTENCY="NONE")
@@ -260,19 +263,20 @@ if __name__ == "__main__":
     s3 = benchmark.Settings("NVRAM", PERSISTENCY="NVRAM", NVRAM_FILENAME="hyrise_tpcc")
 
     kwargs = {
-        "port"              : args["port"],
-        "manual"            : args["manual"],
-        "warmuptime"        : args["warmup"],
-        "runtime"           : args["duration"],
-        "warehouses"        : args["warehouses"],
-        "benchmarkQueries"  : [],
-        "prepareQueries"    : [],
-        "showStdout"        : args["stdout"],
-        "showStderr"        : args["stderr"],
-        "rebuild"           : args["rebuild"],
-        "regenerate"        : args["regenerate"],
-        "noLoad"            : args["no_load"],
-        "collectPerfData"   : True
+        "port"                : args["port"],
+        "manual"              : args["manual"],
+        "warmuptime"          : args["warmup"],
+        "runtime"             : args["duration"],
+        "warehouses"          : args["warehouses"],
+        "benchmarkQueries"    : [],
+        "prepareQueries"      : [],
+        "showStdout"          : args["stdout"],
+        "showStderr"          : args["stderr"],
+        "rebuild"             : args["rebuild"],
+        "regenerate"          : args["regenerate"],
+        "noLoad"              : args["no_load"],
+        "useStoredProcedures" : args["stored_procedures"],
+        "collectPerfData"     : True
     }
 
     groupId = "tpcc"
