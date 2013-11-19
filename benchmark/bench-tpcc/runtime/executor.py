@@ -43,13 +43,13 @@ from util import *
 
 
 class Executor:
-    
+
     def __init__(self, driver, scaleParameters, stop_on_error = False):
         self.driver = driver
         self.scaleParameters = scaleParameters
         self.stop_on_error = stop_on_error
     ## DEF
-    
+
     def execute(self, duration):
         r = results.Results()
         assert r
@@ -60,7 +60,7 @@ class Executor:
         while (time.time() - start) <= duration:
             txn, params = self.doOne()
             txn_id = r.startTransaction(txn)
-            
+
             if debug: logging.debug("Executing '%s' transaction" % txn)
             try:
                 val = self.driver.executeTransaction(txn, params)
@@ -74,17 +74,17 @@ class Executor:
                 continue
 
             #if debug: logging.debug("%s\nParameters:\n%s\nResult:\n%s" % (txn, pformat(params), pformat(val)))
-            
+
             r.stopTransaction(txn_id)
         ## WHILE
-            
+
         r.stopBenchmark()
         return (r)
     ## DEF
-    
+
     def doOne(self):
         """Selects and executes a transaction at random. The number of new order transactions executed per minute is the official "tpmC" metric. See TPC-C 5.4.2 (page 71)."""
-        
+
         ## This is not strictly accurate: The requirement is for certain
         ## *minimum* percentages to be maintained. This is close to the right
         ## thing, but not precisely correct. See TPC-C 5.2.4 (page 68).
@@ -102,7 +102,7 @@ class Executor:
         else: ## 45%
             assert x > 100 - 45
             txn, params = (constants.TransactionTypes.NEW_ORDER, self.generateNewOrderParams())
-        
+
         return (txn, params)
     ## DEF
 
@@ -138,7 +138,10 @@ class Executor:
             if rollback and i + 1 == ol_cnt:
                 i_ids.append(self.scaleParameters.items + 1)
             else:
-                i_ids.append(self.makeItemId())
+                tmp = self.makeItemId()
+                while tmp in i_ids:
+                    tmp = self.makeItemId()
+                i_ids.append(tmp)
 
             ## 1% of items are from a remote warehouse
             remote = (rand.number(1, 100) == 1)
@@ -162,7 +165,7 @@ class Executor:
         d_id = self.makeDistrictId()
         c_last = None
         c_id = None
-        
+
         ## 60%: order status by last name
         if rand.number(1, 100) <= 60:
             c_last = rand.makeRandomLastName(self.scaleParameters.customersPerDistrict)
@@ -170,7 +173,7 @@ class Executor:
         ## 40%: order status by id
         else:
             c_id = self.makeCustomerId()
-            
+
         return makeParameterDict(locals(), "w_id", "d_id", "c_id", "c_last")
     ## DEF
 
