@@ -31,10 +31,10 @@ class Plotter:
                 totalTime = 0.0
                 for txId, txData in buildData["txStats"].iteritems():
                     totalRuns += txData["totalRuns"]
-                    totalTime += txData["userTime"] 
+                    totalTime += txData["userTime"]
                 for txId, txData in buildData["txStats"].iteritems():
                     print "|     -------------------------------------------------------------------------------------------"
-                    print "|     TX: {:14s} tps: {:05.2f}, min: {:05.2f}, max: {:05.2f}, avg: {:05.2f}, med: {:05.2f} (all in ms)".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"]*1000, txData["rtMax"]*1000, txData["rtAvg"]*1000, txData["rtMed"]*1000)
+                    print "|     TX: {:14s} tps: {:05.2f}, min: {:05.2f}, max: {:05.2f}, avg: {:05.2f}, med: {:05.2f} (all in ms), totalFailed: {:d}".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"]*1000, txData["rtMax"]*1000, txData["rtAvg"]*1000, txData["rtMed"]*1000, txData["totalFail"])
                     print "|     -------------------------------------------------------------------------------------------"
                     if txData["operators"] and len(txData["operators"].keys()) > 0:
                         print "|       Operator                   #perTX     min(ms)    max(ms)   avg(ms)    median(ms)"
@@ -183,12 +183,13 @@ class Plotter:
                                     txId        = linedata[0]
                                     runtime     = float(linedata[1])
                                     starttime   = float(linedata[2])
-                                                                        
+
                                     opStats.setdefault(txId, {})
                                     txStats.setdefault(txId,{
                                         "totalTime": 0.0,
                                         "userTime":  0.0,
                                         "totalRuns": 0,
+                                        "totalFail": 0,
                                         "rtTuples":  [],
                                         "rtMin":     0.0,
                                         "rtMax":     0.0,
@@ -215,6 +216,14 @@ class Plotter:
                                             })
                                             opStats[txId][opData[0]]["rtTuples"].append((float(opData[1]), float(opData[2])))
 
+                                if os.path.isfile(os.path.join(dirUser, "failed.log")):
+                                    for rawline in open(os.path.join(dirUser, "failed.log")):
+                                        linedata = rawline.split(";")
+                                        if len(linedata) < 2:
+                                            continue
+                                        txId = linedata[0]
+                                        txStats[txId]["totalFail"] += 1
+
                         for txId, txData in txStats.iteritems():
                             allRuntimes = [a[1] for a in txData["rtTuples"]]
                             txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
@@ -232,4 +241,5 @@ class Plotter:
                                 opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
                             txStats[txId]["operators"] = opStats[txId]
                         runs[run][build] = {"txStats": txStats, "numUsers": numUsers}
+
         return runs

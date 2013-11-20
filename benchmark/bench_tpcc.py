@@ -60,9 +60,12 @@ class TPCCUser(User):
                 self.stopLogging()
                 self.stop()
             return
-        except (RuntimeError, AssertionError), e:
+        except RuntimeError, e:
             print "TX ", txn
             print e
+            self.log("failed", [txn, tStart-self.userStartTime])
+            return
+        except AssertionError, e:
             return
         self.numErrors = 0
         tEnd = time.time()
@@ -73,11 +76,16 @@ class TPCCUser(User):
         pass
 
     def formatLog(self, key, value):
-        logStr = "%s;%f;%f" % (value[0], value[1], value[2])
-        for op, opData in value[3].iteritems():
-            logStr += ";%s,%i,%f" % (op, opData["n"], opData["t"])
-        logStr += "\n"
-        return logStr
+        if key == "transactions":
+            logStr = "%s;%f;%f" % (value[0], value[1], value[2])
+            for op, opData in value[3].iteritems():
+                logStr += ";%s,%i,%f" % (op, opData["n"], opData["t"])
+            logStr += "\n"
+            return logStr
+        elif key == "failed":
+            return "%s;%f\n" % (value[0], value[1])
+        else:
+            return "%s\n" % str(value)
 
     def addPerfData(self, perf):
         if perf:
@@ -231,4 +239,4 @@ class TPCCBenchmark(Benchmark):
             "scaleParameters": self.scaleParameters,
             "config": config
         })
-        
+
