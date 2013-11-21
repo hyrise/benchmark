@@ -98,10 +98,9 @@ class Plotter:
             pltData = []
             xtickNames = []
             for runId, runData in self._runs.iteritems():
-                numUsers = len(runData[runData.keys()[0]])
-                aggData  = self._aggregateUsers(runId, buildId)
-                for txId, txData in aggData.iteritems():
-                    pltData.append(txData["raw"])
+                numUsers = runData[buildId]["numUsers"]
+                for txId, txData in runData[buildId]["txStats"].iteritems():
+                    pltData.append([a[0] for a in txData["rtTuples"]])
                     xtickNames.append("%s, %s users" % (txId, numUsers))
             bp = plt.boxplot(pltData, notch=0, sym='+', vert=1, whis=1.5)
             plt.title("Transaction response times for varying users in build '%s" % buildId)
@@ -116,23 +115,22 @@ class Plotter:
     def plotResponseTimeFrequencies(self):
         for buildId in self._buildIds:
             for runId, runData in self._runs.iteritems():
-                aggData = self._aggregateUsers(runId, buildId)
-                maxPlt = len(aggData.keys())
+                maxPlt = len(runData[buildId]["txStats"].keys())
                 curPlt = 0
                 plt.figure(1, figsize=(10, 4*maxPlt))
-                for txId, txData in aggData.iteritems():
+                for txId, txData in runData[buildId]["txStats"].iteritems():
                     curPlt += 1
                     plt.subplot(maxPlt, 1, curPlt)
                     plt.tight_layout()
                     plt.title("RT Frequency in %s (build '%s', run '%s')" % (txId, buildId, runId))
                     plt.xlabel("Response Time in s")
                     plt.ylabel("Number of Transactions")
-                    plt.xlim(txData["min"], txData["max"])
-                    plt.xticks([txData["min"], txData["average"], percentile(txData["raw"], 90), txData["max"]],
-                               ["" % txData["min"], "avg\n(%s)" % txData["average"], "90th percentile\n(%s)" % percentile(txData["raw"], 90), "max\n(%s)" % txData["max"]],
+                    plt.xlim(txData["rtMin"], txData["rtMax"])
+                    plt.xticks([txData["rtMin"], txData["rtAvg"], percentile([a[0] for a in txData["rtTuples"]], 90), txData["rtMax"]],
+                               ["min\n(%s)" % txData["rtMin"], "avg\n(%s)" % txData["rtAvg"], "90th percentile\n(%s)" % percentile([a[0] for a in txData["rtTuples"]], 90), "max\n(%s)" % txData["rtMax"]],
                                rotation=45, fontsize=5)
                     plt.grid(axis='x')
-                    y, binEdges = np.histogram(txData["raw"], bins=10)
+                    y, binEdges = np.histogram([a[0] for a in txData["rtTuples"]], bins=10)
                     binCenters = 0.5*(binEdges[1:]+binEdges[:-1])
                     plt.plot(binCenters, y, '-')
                 fname = os.path.join(self._dirOutput, "rt_freq_%s_%s.pdf" % (buildId, runId))
@@ -241,6 +239,7 @@ class Plotter:
                                 opStats[txId][opId]["rtMed"] = median([a[1] for a in opData["rtTuples"]])
                                 opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
                             txStats[txId]["operators"] = opStats[txId]
-                        runs[run][build] = {"txStats": txStats, "numUsers": numUsers}
+                        if txStats != {}:
+                            runs[run][build] = {"txStats": txStats, "numUsers": numUsers}
 
         return runs
