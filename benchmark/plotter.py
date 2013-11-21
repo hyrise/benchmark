@@ -3,6 +3,8 @@ import shutil
 import matplotlib as mpl
 mpl.use('Agg')
 from pylab import *
+from scipy.stats import gaussian_kde
+from matplotlib.ticker import FixedFormatter
 
 class Plotter:
 
@@ -100,7 +102,7 @@ class Plotter:
             for runId, runData in self._runs.iteritems():
                 numUsers = runData[buildId]["numUsers"]
                 for txId, txData in runData[buildId]["txStats"].iteritems():
-                    pltData.append([a[0] for a in txData["rtTuples"]])
+                    pltData.append(txData["rtRaw"])
                     xtickNames.append("%s, %s users" % (txId, numUsers))
             bp = plt.boxplot(pltData, notch=0, sym='+', vert=1, whis=1.5)
             plt.title("Transaction response times for varying users in build '%s" % buildId)
@@ -120,19 +122,25 @@ class Plotter:
                 plt.figure(1, figsize=(10, 4*maxPlt))
                 for txId, txData in runData[buildId]["txStats"].iteritems():
                     curPlt += 1
-                    plt.subplot(maxPlt, 1, curPlt)
+                    ax = plt.subplot(maxPlt, 1, curPlt)
                     plt.tight_layout()
                     plt.title("RT Frequency in %s (build '%s', run '%s')" % (txId, buildId, runId))
                     plt.xlabel("Response Time in s")
                     plt.ylabel("Number of Transactions")
-                    plt.xlim(txData["rtMin"], txData["rtMax"])
-                    plt.xticks([txData["rtMin"], txData["rtAvg"], percentile([a[0] for a in txData["rtTuples"]], 90), txData["rtMax"]],
-                               ["min\n(%s)" % txData["rtMin"], "avg\n(%s)" % txData["rtAvg"], "90th percentile\n(%s)" % percentile([a[0] for a in txData["rtTuples"]], 90), "max\n(%s)" % txData["rtMax"]],
-                               rotation=45, fontsize=5)
-                    plt.grid(axis='x')
-                    y, binEdges = np.histogram([a[0] for a in txData["rtTuples"]], bins=10)
-                    binCenters = 0.5*(binEdges[1:]+binEdges[:-1])
-                    plt.plot(binCenters, y, '-')
+
+                    x2ticks = [txData["rtMin"], txData["rtAvg"], percentile(txData["rtRaw"], 90), txData["rtMax"]]
+                    x2labels = ["min", "avg", "90th percentile", "max"]
+
+                    density = gaussian_kde(txData["rtRaw"])
+                    xs = linspace(txData["rtMin"]*0.8, txData["rtMax"]*1.05, 200)
+                    ax.set_xticks(x2ticks, minor=True)
+                    ax.set_xticks(linspace(txData["rtMin"]*0.8, txData["rtMax"]*1.05, 10), minor=False)
+                    ax.xaxis.grid(True, which="minor")
+                    ax.get_xaxis().set_minor_formatter(FixedFormatter(["min", "avg", "90th", "max"]))
+                    ax.get_xaxis().set_tick_params(which='minor', pad=15)
+                    plt.xlim(txData["rtMin"]*0.8, txData["rtMax"]*1.05)
+                    plt.plot(xs, density(xs))
+
                 fname = os.path.join(self._dirOutput, "rt_freq_%s_%s.pdf" % (buildId, runId))
                 plt.savefig(fname)
                 plt.close()
@@ -226,6 +234,7 @@ class Plotter:
                         for txId, txData in txStats.iteritems():
                             allRuntimes = [a[1] for a in txData["rtTuples"]]
                             txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
+                            txStats[txId]["rtRaw"] = allRuntimes
                             txStats[txId]["rtMin"] = amin(allRuntimes)
                             txStats[txId]["rtMax"] = amax(allRuntimes)
                             txStats[txId]["rtAvg"] = average(allRuntimes)
