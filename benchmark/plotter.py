@@ -34,7 +34,8 @@ class Plotter:
                     totalTime += txData["userTime"]
                 for txId, txData in buildData["txStats"].iteritems():
                     print "|     -------------------------------------------------------------------------------------------"
-                    print "|     TX: {:14s} tps: {:05.2f}, min: {:05.2f}, max: {:05.2f}, avg: {:05.2f}, med: {:05.2f} (all in ms), totalFailed: {:d}".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"]*1000, txData["rtMax"]*1000, txData["rtAvg"]*1000, txData["rtMed"]*1000, txData["totalFail"])
+                    print "|     TX: {:14s} tps: {:05.2f}, min: {:05.2f}, max: {:05.2f}, avg: {:05.2f}, med: {:05.2f} (all in ms)".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"]*1000, txData["rtMax"]*1000, txData["rtAvg"]*1000, txData["rtMed"]*1000)
+                    print "|                        succeeded: {:d}, failed: {:d}, ratio: {:1.3f}".format(txData["totalRuns"], txData["totalFail"], float(txData["totalFail"]) / float(txData["totalRuns"] + txData["totalFail"]))
                     print "|     -------------------------------------------------------------------------------------------"
                     if txData["operators"] and len(txData["operators"].keys()) > 0:
                         print "|       Operator                   #perTX     min(ms)    max(ms)   avg(ms)    median(ms)"
