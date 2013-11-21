@@ -4,6 +4,7 @@ import logging
 import os
 import requests
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -58,7 +59,7 @@ class TPCCUser(User):
             if self.numErrors > 5:
                 print "*** TPCCUser %i: too many failed requests" % (self._userId)
                 self.stopLogging()
-                self.stop()
+                os.kill(os.getppid(), signal.SIGINT)
             return
         except RuntimeError, e:
             print "TX ", txn
