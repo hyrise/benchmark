@@ -1,0 +1,51 @@
+{
+    "operators": {
+      "load_vbap" : {
+            "type" : "MySQLTableLoad",
+            "core" : 0,
+            "database": "%(db)s",
+            "table": "VBAP",
+            "limit" : 100000000
+            },
+        "load_mara" : {
+            "type" : "MySQLTableLoad",
+            "core" : 0,
+            "database": "%(db)s",
+            "table": "MARA",
+            "limit": 0
+            },
+        "hash_mara": {
+            "type": "HashBuild",
+            "core" : 0,
+            "key": "join",
+            "fields": ["MATNR"]
+        },
+        "join_header_item": {
+            "type": "HashJoinProbe",
+            "core" : 0,
+            "fields" : ["MATNR"]
+        },
+        "hash_matnr" : {
+            "type": "HashBuild",
+            "core" : 0,
+            "fields": ["MATNR"], 
+            "key": "groupby"
+        },
+        "groupby" : {
+            "type" : "GroupByScan",
+            "core" : 6,
+            "fields": ["MATNR"],
+            "functions": [
+            {"type": "COUNT", "field": "MATNR"}
+            ]
+        }
+    },
+    "edges": [
+    ["load_mara", "hash_mara"], 
+    ["load_vbap", "join_header_item"], 
+    ["hash_mara", "join_header_item"],
+    ["join_header_item", "hash_matnr"],
+    ["join_header_item", "groupby"],
+    ["hash_matnr", "groupby"]
+    ]
+}

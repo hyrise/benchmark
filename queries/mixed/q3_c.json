@@ -1,0 +1,26 @@
+{
+    "priority": %(priority)s,
+    "sessionId": %(sessionId)s,
+    "papi": "%(papi)s",
+    "operators": {
+        "load_adrc" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "table": "ADRC"
+            },
+        "filter_kunnr": {
+            "type": "SimpleTableScan",
+            "predicates" : [
+                { "type": "EQ", "in": 0, "f": "ADDRNUMBER", "value": "9000000715", "vtype": 2}
+            ]
+        },
+        "mat": {
+            "type": "MaterializingScan",
+            "memcpy": true
+        }
+    },
+    "edges": [
+    ["load_adrc", "filter_kunnr"],
+    ["filter_kunnr", "mat"]
+    ]
+}

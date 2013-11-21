@@ -1,0 +1,12 @@
+{
+    "priority" : 3,
+    "papi": "%(papi)s",
+    "operators": {
+	"nop":
+	{	
+	    "type": "NoOp"
+	}
+    },	
+    "edges": [
+    ]
+}

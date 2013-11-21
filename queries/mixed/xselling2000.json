@@ -1,0 +1,46 @@
+{
+    "priority": %(priority)s,
+    "sessionId": %(sessionId)s,
+    "operators": {
+        // Load the tables
+        "0": {
+            "type": "TableLoad",
+            "table": "vbap2000",
+            "filename" : "vbap_base_project2000.tbl"  
+        },
+        "2": {
+            "type": "SimpleTableScan",
+   "instances": %(instances)s,
+            "predicates" : [
+                {"type": "NEQ", "in": 0, "f": "item_name", "value": "M-07", "vtype": 2}
+            ]
+        },
+        "3": {
+            "type": "SimpleTableScan",
+   "instances":     %(instances)s,
+            "predicates" : [
+                {"type": "NEQ", "in": 0, "f": "item_name", "value": "M-08", "vtype": 2}
+            ]
+        },
+        "4": {
+            "type": "RadixJoin",
+            "bits1": 6,
+            "bits2": 5,
+            "hash_par": %(instances)s,
+            "probe_par":%(instances)s,
+            "join_par": %(instances)s,
+            "fields": [1,1] // "field_names": ["VBELN"], // Left and right
+        },
+"5": {
+   "type": "NoOp"
+}
+    },
+
+    "edges" : [
+        ["0","2"],
+        ["0","3"],
+        ["2","4"],
+        ["3","4"],
+["4","5"]
+    ]
+}

@@ -1,0 +1,23 @@
+{
+  "operators": {
+    "0": {
+      "type": "TableLoad",
+      "table": "employees",
+      "filename": "vbak_base_project1.tbl"
+    },
+    "1": {
+      "type": "CreateIndex",
+      "fields": ["order_id"],
+      "index_name": "emp_comp_ix"
+    },
+
+    "2": {
+      "type": "IndexScan",
+      "vtype": 0,
+      "value": 70000069,
+      "fields": ["order_id"],
+      "index": "emp_comp_ix"
+    }
+  },
+  "edges": [["0", "1"], ["0", "2"]]
+}

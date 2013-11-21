@@ -9,6 +9,9 @@ import time
 import user
 import multiprocessing
 
+from queries import *
+import queries
+
 class Benchmark:
 
     def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
@@ -49,6 +52,7 @@ class Benchmark:
         self._build             = None
         self._serverProc        = None
         self._users             = []
+        self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "CoreBoundQueuesScheduler"
 
         self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirResults):
@@ -180,7 +184,7 @@ class Benchmark:
         threadstring = ""
         if (self._serverThreads > 0):
             threadstring = "--threads=%s" % self._serverThreads
-        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=CoreBoundQueuesScheduler", threadstring],
+        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, threadstring],
                                             cwd=self._dirBinary,
                                             env=env,
                                             stdout=open("/dev/null") if not self._stdout else None,
@@ -196,8 +200,8 @@ class Benchmark:
             sys.stdout.write("Running prepare queries... %i%%      \r" % ((i+1.0) / numQueries * 100))
             sys.stdout.flush()
             try:
-                self.fireQuery(self._queryDict[q], self._prepArgs)
-                self._session.post("http://%s:%s/" % (self._host, self._port), data={"query": queryString})
+                r = self.fireQuery(self._queryDict[q], self._prepArgs)
+                #self._session.post("http://%s:%s/" % (self._host, self._port), data={"query": queryString})
             except Exception:
                 print "Running prepare queries... %i%% --> Error" % ((i+1.0) / numQueries * 100)
         print "Running prepare queries... done"

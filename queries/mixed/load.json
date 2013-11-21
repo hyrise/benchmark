@@ -1,0 +1,24 @@
+{
+	"operators": {
+		"load_vbap" : {
+			"type" : "MySQLTableLoad",
+			"database": "%(db)s",
+			"table": "VBAP"
+			},
+		"load_vbak" : {
+			"type" : "MySQLTableLoad",
+			"database": "%(db)s",
+			"table": "VBAK"
+			},
+        "purge" : {
+            "type": "SimpleTableScan",
+            "predicates" : [
+                {"type": "LT", "in": 0, "f": "AEDAT", "value": 20060101}
+            ]
+        }
+	},
+	"edges": [
+	   ["load_vbak", "load_vbap"],
+       ["load_vbap", "purge"]
+	]
+}

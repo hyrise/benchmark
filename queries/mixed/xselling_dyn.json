@@ -1,0 +1,43 @@
+{
+    "priority": 2,
+    "operators": {
+        // Load the tables
+        "0": {
+            "type": "TableLoad",
+            "table": "vbap2000",
+            "filename" : "vbap_base_project500.tbl"  
+        },
+	"2" : {
+      	    "type" : "TableScan",
+      	    "expression": "hyrise::stringequal",
+      	    "column": 3,
+            "value": "M-07",
+	    "dynamic": true
+  	},
+	"3" : {
+      	    "type" : "TableScan",
+      	    "expression": "hyrise::stringequal",
+      	    "column": 3,
+            "value": "M-08",
+	    "dynamic": true
+  	},
+	"4": {
+            "type": "RadixJoin",
+            "bits1": 10,
+            "bits2": 5,
+	    "dynamic": "true",
+            "fields": [1,1] // "field_names": ["VBELN"], // Left and right
+        },
+	"5": {
+   	     "type": "NoOp"
+	}
+    },
+
+    "edges" : [
+        ["0","2"],
+        ["0","3"],
+        ["2","4"],
+        ["3","4"],
+	["4","5"]
+    ]
+}

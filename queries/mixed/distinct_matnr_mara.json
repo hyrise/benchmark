@@ -1,0 +1,24 @@
+{
+    "operators": {
+        "load" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "core" : 0,
+            "table": "MARA"
+            },
+        "distinct": {
+            "type": "Distinct",
+            "core" : 0,
+            "fields": ["MATNR"]
+        },
+        "project": {
+            "type" : "ProjectionScan",
+            "core" : 0,
+            "fields" : ["MATNR"]
+        }
+    },
+    "edges": [
+    ["load", "distinct"],
+    ["distinct", "project"]
+    ]
+}
