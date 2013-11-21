@@ -223,6 +223,8 @@ class Benchmark:
             print "done."
 
     def _signalHandler(self, signal, frame):
+        if(os.getppid() == self._pid):
+            return
         print "\n*** received SIGINT, initiating graceful shutdown"
         if self._build:
             self._build.unlink()
