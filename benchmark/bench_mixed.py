@@ -84,7 +84,7 @@ class MixedWLUser(User):
             "core": str(self._core), "db": self._db, "sessionId": str(self._userId), "priority": str(self._prio), "microsecs": str(self._microsecs)}
 
         result = self.fireQuery(query).json()
-        self._queries[queryid] += 1
+        #  self._queries[queryid] += 1
         #self._queryRowsFile.write("%s %d\n" % (queryid,  len(result[0]["rows"])))
         #return result[1]
         return result
@@ -115,18 +115,19 @@ class MixedWLUser(User):
         pass
 
     def formatLog(self, key, value):
-        logStr = "%s;%f;%f" % (value[0], value[1], value[2])
-        for op, opData in value[3].iteritems():
-            logStr += ";%s,%i,%f" % (op, opData["n"], opData["t"])
+        logStr = "%s;%f;%f;%s" % (value[0], value[1], value[2], value[3])
+       # for op, opData in value[3].iteritems():
+       #     logStr += ";%s,%i,%f" % (op, opData["n"], opData["t"])
         logStr += "\n"
         return logStr
 
     def addPerfData(self, perf):
         if perf:
-            for op in perf:
-                self.perf.setdefault(op["name"], {"n": 0, "t": 0.0})
-                self.perf[op["name"]]["n"] += 1
-                self.perf[op["name"]]["t"] += op["endTime"] - op["startTime"]
+          self.perf = perf
+     #      for op in perf:
+     #          self.perf.setdefault(op["name"], {"n": 0, "t": 0.0})
+     #          self.perf[op["name"]]["n"] += 1
+     #          self.perf[op["name"]]["t"] += op["endTime"] - op["startTime"]
 
 
     def stats(self):

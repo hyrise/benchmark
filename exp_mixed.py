@@ -3,10 +3,25 @@ import benchmark
 import os
 
 from benchmark.bench_mixed import MixedWLBenchmark
+from benchmark.mixedWLPlotter import MixedWLPlotter
+
+def runbenchmarks(groupId, s1, **kwargs):
+    output = ""
+    users = [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 30, 40, 50]
+    for i in users:
+        runId = str(i)
+        kwargs["numUsers"] = i
+        b1 = MixedWLBenchmark(groupId, runId, s1, **kwargs)
+        b1.run()
+    plotter = MixedWLPlotter(groupId)
+    output += groupId + "\n"
+    output += plotter.printStatistics()
+    return output
+
 
 
 aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')
-aparser.add_argument('--duration', default=300, type=int, metavar='D',
+aparser.add_argument('--duration', default=20, type=int, metavar='D',
                      help='How long to run the benchmark in seconds')
 aparser.add_argument('--clients', default=-1, type=int, metavar='N',
                      help='The number of blocking clients to fork (note: this overrides --clients-min/--clients-max')
@@ -21,7 +36,7 @@ aparser.add_argument('--no-execute', action='store_true',
 aparser.add_argument('--port', default=5001, type=int, metavar="P",
                      help='Port on which HYRISE should be run')
 aparser.add_argument('--threads', default=0, type=int, metavar="T",
-                     help='Number of server threadsto use')
+                     help='Number of server threads to use')
 aparser.add_argument('--warmup', default=5, type=int,
                      help='Warmuptime before logging is activated')
 aparser.add_argument('--manual', action='store_true',
@@ -45,10 +60,10 @@ s1 = benchmark.Settings("Standard", PERSISTENCY="NONE", COMPILER="autog++")
 kwargs = {
     "port"              : args["port"],
     "manual"            : args["manual"],
-    "warmuptime"        : args["warmup"],
-    "runtime"           : args["duration"],
-    "benchmarkQueries"  : ("xselling",),
-    "prepareQueries"    : ("preload_vbap",),
+    "warmuptime"        : 3,
+    "runtime"           : 30,
+    "benchmarkQueries"  : ("q7idx_vbak",),
+    "prepareQueries"    : ("create_vbak_index",),
     "showStdout"        : args["stdout"],
     "showStderr"        : args["stderr"],
     "rebuild"           : args["rebuild"],
@@ -59,37 +74,76 @@ kwargs = {
     "useJson"           : args["json"],
     "hyriseDBPath"      : "/home/Johannes.Wust/hyrise-benchmark/hyrise/test/",
     "scheduler"         : "CoreBoundQueuesScheduler",
-    "serverThreads"     : 22
+    "serverThreads"     : 11
 }
 
-runId = str(1)
-kwargs["numUsers"] = 30
-b1 = MixedWLBenchmark("MixedWLBenchmark", runId, s1, **kwargs)
-b1.run()
-plotter = benchmark.Plotter("MixedWLBenchmark")
-plotter.printStatistics()
+output = ""
+output += "OLTP 11 threads\n"
+output += "\n"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+kwargs["scheduler"] = "CentralScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+kwargs["scheduler"] = "ThreadPerTaskScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
 
-kwargs["scheduler"]="WSCoreBoundQueuesScheduler"
-runId = str(2)
-b2 = MixedWLBenchmark("MixedWLBenchmark", runId, s1, **kwargs)
-b2.run()
-plotter = benchmark.Plotter("MixedWLBenchmark")
-plotter.printStatistics()
+kwargs["serverThreads"] = 22
 
-kwargs["scheduler"]="CentralScheduler"
-runId = str(3)
-b3 = MixedWLBenchmark("MixedWLBenchmark", runId, s1, **kwargs)
-b3.run()
-plotter = benchmark.Plotter("MixedWLBenchmark")
-plotter.printStatistics()
+output = ""
+output += "OLTP 22 threads\n"
+output += "\n"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+kwargs["scheduler"] = "CentralScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+kwargs["scheduler"] = "ThreadPerTaskScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+
+kwargs["serverThreads"] = 11
+kwargs["benchmarkQueries"] = ("xselling",)
+kwargs["prepareQueries"] = ("preload_vbap",)
+
+output += "\n"
+output += "OLAP 11 threads\n"
+output += "\n"
+kwargs["scheduler"] = "CoreBoundQueuesScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+kwargs["scheduler"] = "CentralScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+kwargs["scheduler"] = "ThreadPerTaskScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
 
 
-kwargs["scheduler"]="ThreadPerTaskScheduler"
-runId = str(4)
-b4 = MixedWLBenchmark("MixedWLBenchmark", runId, s1, **kwargs)
-b4.run()
-plotter = benchmark.Plotter("MixedWLBenchmark")
-plotter.printStatistics()
+kwargs["serverThreads"] = 22
+
+
+output += "\n"
+output += "OLAP 22 threads\n"
+output += "\n"
+kwargs["scheduler"] = "CoreBoundQueuesScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+kwargs["scheduler"] = "CentralScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+kwargs["scheduler"] = "ThreadPerTaskScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+
+
+print output
+
+
+
+
+#plotter.plotResponseTimesVaryingUsers()
+#plotter.plotTransactionResponseTimes()
+#plotter.plotResponseTimeFrequencies()
+
+
 
 
 #num_clients = args["clients"]

@@ -12,7 +12,8 @@ PREPARE_QUERIES_SERVER = {
     #"distinct_matnr_mara" : "queries/mixed/vbap_mara_group.json",                                                                                                                                                  
     #"distinct_vbeln_vbak" : "queries/mixed/distinct_vbeln_vbak.json",                                                                                                                                              
     #"indices": "queries/mixed/create_indices.json" ,
-    "preload_vbap" : "queries/mixed/preload_vbap.json"                                                                                                                                                               
+    "preload_vbap" : "queries/mixed/preload_vbap.json",
+    "create_vbak_index" : "queries/mixed/create_vbak_index.json"                                                                                                                                                      
 }
 
 # locations for json query files sorted by OLTP (TPCC) and OLAP (TPC-H).                                                                                                                                      
