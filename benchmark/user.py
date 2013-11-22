@@ -19,7 +19,6 @@ class User(multiprocessing.Process):
         self._session           = requests.Session()
         self._dirOutput         = os.path.join(dirOutput, str(userId))
         self._queryDict         = queryDict
-        # self._queries           = kwargs["queries"] if kwargs.has_key("queries") else queries.QUERIES_ALL
         self._thinkTime         = kwargs["thinkTime"] if kwargs.has_key("thinkTime") else 0
         self._papi              = kwargs["papi"] if kwargs.has_key("papi") else "NO_PAPI"
         self._stopevent         = multiprocessing.Event()
@@ -61,17 +60,16 @@ class User(multiprocessing.Process):
         self._writeLogs()
         print "User runtime: ", self._totalTime, " User querytime: ", self._totalQueryTime
 
-
     def stop(self):
         self._stopevent.set()
 
 
     def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False, stored_procedure=None):
         if queryArgs: query = queryString % queryArgs
-        else: query = queryString
+        else:         query = queryString
         data = {"query": query}
-        if sessionContext: data["session_context"] = sessionContext
-        if autocommit: data["autocommit"] = "true"
+        if sessionContext:        data["session_context"] = sessionContext
+        if autocommit:            data["autocommit"] = "true"
         if self._collectPerfData: data["performance"] = "true"
         self._lastQuery = data
         tStart = time.time()
@@ -80,13 +78,13 @@ class User(multiprocessing.Process):
         else:
             result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
         self._totalQueryTime += time.time() - tStart
-        
-        if result.status_code != 200:
-            print "Rquest failed. Status code: ", result.status_code
-            print "Response: ", result.text
-            print "Query: ", query
-            raise RuntimeError("Request failed!")
-        return result
+
+        if result.status_code == 200:
+            return result
+        elif result.status_code == 501:
+            raise RuntimeWarning(result.text)
+        else:
+            raise RuntimeError("Request failed --> %s" % result.text)
 
     def startLogging(self):
         self._logevent.set()

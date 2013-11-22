@@ -61,9 +61,11 @@ class TPCCUser(User):
                 self.stopLogging()
                 os.kill(os.getppid(), signal.SIGINT)
             return
+        except RuntimeWarning, e:
+            # these are transaction errors, e.g. abort due to concurrent commits
+            return
         except RuntimeError, e:
-            print "TX ", txn
-            print e
+            print "%s: %s" % (txn, e)
             self.log("failed", [txn, tStart-self.userStartTime])
             return
         except AssertionError, e:
