@@ -35,6 +35,12 @@ aparser.add_argument('--no-execute', action='store_true',
                      help='Disable executing the workload')
 aparser.add_argument('--port', default=5001, type=int, metavar="P",
                      help='Port on which HYRISE should be run')
+aparser.add_argument('--host', default=127.0.0.1, type=str, metavar="H",
+                     help='IP on which HYRISE should be run remotely')
+aparser.add_argument('--remoteUser', default="hyrise", type=str, metavar="R",
+                     help='remote User for remote host on which HYRISE should be run remotely')
+aparser.add_argument('--remote', action='store_true',
+                     help='run hyrise server on a remote machine')
 aparser.add_argument('--threads', default=0, type=int, metavar="T",
                      help='Number of server threads to use')
 aparser.add_argument('--warmup', default=5, type=int,
@@ -74,7 +80,9 @@ kwargs = {
     "useJson"           : args["json"],
     "hyriseDBPath"      : "/home/Johannes.Wust/hyrise-benchmark/hyrise/test/",
     "scheduler"         : "CoreBoundQueuesScheduler",
-    "serverThreads"     : 11
+    "serverThreads"     : 11,
+    "remote"            : True,
+    "host"              : 192.168.30.42
 }
 
 output = ""
@@ -135,44 +143,3 @@ output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
 
 
 print output
-
-
-
-
-#plotter.plotResponseTimesVaryingUsers()
-#plotter.plotTransactionResponseTimes()
-#plotter.plotResponseTimeFrequencies()
-
-
-
-
-#num_clients = args["clients"]
-#minClients = args["clients_min"]
-#maxClients = args["clients_max"]
-#
-#
-#
-#
-#if args["clients"] > 0:
-#    minClients = args["clients"]
-#    maxClients = args["clients"]
-#
-#for num_clients in xrange(minClients, maxClients+1):
-#    runId = "numClients_%s" % num_clients
-#    kwargs["numUsers"] = num_clients
-#
-#    b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
-#    b2 = benchmark.TPCCBenchmark(groupId, runId, s2, **kwargs)
-#    #b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
-#
-#    b1.run()
-#    # b2.run()
-#    # b3.run()
-#
-#    if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
-#        os.remove("/mnt/pmfs/hyrise_tpcc")
-#
-##plotter = benchmark.Plotter(groupId)
-##plotter.printStatistics()
-#
-#

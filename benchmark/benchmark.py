@@ -53,6 +53,9 @@ class Benchmark:
         self._serverProc        = None
         self._users             = []
         self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "CoreBoundQueuesScheduler"
+        self._serverIP          = kwargs["serverIP"] if kwargs.has_key("serverIP") else "127.0.0.1"
+        self._remote            = kwargs["remote"] if kwargs.has_key("remote") else False
+        self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
 
         self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirResults):
@@ -70,7 +73,8 @@ class Benchmark:
         print "+------------------+\n"
 
         if not self._manual:
-            self._buildServer()
+            if not self._remote:
+                self._buildServer()
             self._startServer()
             print "---\nHYRISE server running on port %s\n---" % self._port
         else:
@@ -166,31 +170,68 @@ class Benchmark:
         print "done"
 
     def _startServer(self):
-        sys.stdout.write("Starting server for build '%s'... " % self._buildSettings.getName())
+        if not self._remote:
+            sys.stdout.write("Starting server for build '%s'... " % self._buildSettings.getName())
+            sys.stdout.flush()
+            env = {
+                "HYRISE_DB_PATH"    : self._dirHyriseDB,
+                "LD_LIBRARY_PATH"   : self._dirBinary+":/usr/local/lib64/",
+                "HYRISE_MYSQL_PORT" : str(self._mysqlPort),
+                "HYRISE_MYSQL_HOST" : self._mysqlHost,
+                "HYRISE_MYSQL_USER" : self._mysqlUser,
+                "HYRISE_MYSQL_PASS" : self._mysqlPass
+            }
+            if self._buildSettings.oldMode():
+                server = os.path.join(self._dirBinary, "hyrise_server")
+            else:
+                server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
+            logdef = os.path.join(self._dirBinary, "log.properties")
+            threadstring = ""
+            if (self._serverThreads > 0):
+                threadstring = "--threads=%s" % self._serverThreads
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, threadstring],
+                                                cwd=self._dirBinary,
+                                                env=env,
+                                                stdout=open("/dev/null") if not self._stdout else None,
+                                                stderr=open("/dev/null") if not self._stderr else None)
+        else: 
+            _startRemoteServer()
+
+        time.sleep(1)
+        print "done"
+
+
+    def _startRemoteServer(self):
+        sys.stdout.write("Starting server for build '%s'... remotely on '%s'" % (self._buildSettings.getName(), self._host))
         sys.stdout.flush()
-        env = {
-            "HYRISE_DB_PATH"    : self._dirHyriseDB,
-            "LD_LIBRARY_PATH"   : self._dirBinary+":/usr/local/lib64/",
-            "HYRISE_MYSQL_PORT" : str(self._mysqlPort),
-            "HYRISE_MYSQL_HOST" : self._mysqlHost,
-            "HYRISE_MYSQL_USER" : self._mysqlUser,
-            "HYRISE_MYSQL_PASS" : self._mysqlPass
-        }
+
+        env = "HYRISE_DB_PATH="+str(self._dirHyriseDB)+
+              ",LD_LIBRARY_PATH="+str(self._dirBinary)+":/usr/local/lib64/"
+              ",HYRISE_MYSQL_PORT="+str(self._mysqlPort)+
+              ",HYRISE_MYSQL_HOST="+str(self._mysqlHost)
+              ",HYRISE_MYSQL_USER="+str(self._mysqlUser),
+              ",HYRISE_MYSQL_PASS="+str(self._mysqlPass)
+
         if self._buildSettings.oldMode():
             server = os.path.join(self._dirBinary, "hyrise_server")
         else:
             server = os.path.join(self._dirBinary, "hyrise-server_%s" % self._buildSettings["BLD"])
+
         logdef = os.path.join(self._dirBinary, "log.properties")
+        
         threadstring = ""
+        
         if (self._serverThreads > 0):
             threadstring = "--threads=%s" % self._serverThreads
-        self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, threadstring],
-                                            cwd=self._dirBinary,
-                                            env=env,
-                                            stdout=open("/dev/null") if not self._stdout else None,
-                                            stderr=open("/dev/null") if not self._stderr else None)
-        time.sleep(1)
-        print "done"
+        
+        command_str = "cd " + str(_dirBinary) + "; env " + env + " ./" + server + " --port=%s" % self._port + " --logdef=%s" % logdef + " --scheduler=%s" % self._scheduler + " " + threadstring
+        self._ssh.command_exec(command_str);
+    #    self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, threadstring],
+    #                                        cwd=self._dirBinary,
+    #                                        env=env,
+    #                                        stdout=open("/dev/null") if not self._stdout else None,
+    #                                        stderr=open("/dev/null") if not self._stderr else None)
+
 
     def _runPrepareQueries(self):
         if self._prepQueries == None or len(self._prepQueries) == 0:
@@ -206,25 +247,30 @@ class Benchmark:
                 print "Running prepare queries... %i%% --> Error" % ((i+1.0) / numQueries * 100)
         print "Running prepare queries... done"
 
+
+
     def _createUsers(self):
         for i in range(self._numUsers):
             self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, **self._userArgs))
 
     def _stopServer(self):
-        if not self._manual and self._serverProc:
-            sys.stdout.write("Stopping server... ")
-            sys.stdout.flush()
-            self._serverProc.terminate()
-            time.sleep(0.5)
-            if self._serverProc.poll() is None:
-                #print "Server still running. Waiting 2 sec and forcing shutdown..."
-                time.sleep(2)
-                self._serverProc.kill()
-            time.sleep(0.5)
-            if self._serverProc.poll() is None:
-                subprocess.call("killall hyrise-server_release")
-            time.sleep(0.5)
-            print "done."
+        if not self._remote: 
+            if not self._manual and self._serverProc:
+                sys.stdout.write("Stopping server... ")
+                sys.stdout.flush()
+                self._serverProc.terminate()
+                time.sleep(0.5)
+                if self._serverProc.poll() is None:
+                    #print "Server still running. Waiting 2 sec and forcing shutdown..."
+                    time.sleep(2)
+                    self._serverProc.kill()
+                time.sleep(0.5)
+                if self._serverProc.poll() is None:
+                    subprocess.call("killall hyrise-server_release")
+                time.sleep(0.5)
+        else:
+            self._ssh.command_exec("killall -u %s %s" % (self._user, self._host));
+        print "done."
 
     def _signalHandler(self, signal, frame):
         print "\n*** received SIGINT, initiating graceful shutdown"
@@ -237,4 +283,12 @@ class Benchmark:
         for u in self._users:
             u.join()
         exit()
+
+    def startSSHConnection(self):
+        self._ssh = paramiko.SSHClient()
+        self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self._ssh.connect(self._host, username=self._username)
+
+    def stopSSHConnection(self):
+        self._ssh.close()
 
