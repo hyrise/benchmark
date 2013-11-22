@@ -83,13 +83,14 @@ kwargs = {
     "serverThreads"     : 11,
     "remote"            : True,
     "userRemote"        : "Johannes.Wust"
-    "host"              : 192.168.31.40
+    "host"              : 192.168.31.40,
 }
 
 output = ""
 output += "OLTP 11 threads\n"
 output += "\n"
 output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+
 #kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
 #output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
 #kwargs["scheduler"] = "CentralScheduler"
