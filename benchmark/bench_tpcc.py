@@ -63,6 +63,7 @@ class TPCCUser(User):
             return
         except RuntimeWarning, e:
             # these are transaction errors, e.g. abort due to concurrent commits
+            self.log("failed", [txn, tStart-self.userStartTime])
             return
         except RuntimeError, e:
             print "%s: %s" % (txn, e)
