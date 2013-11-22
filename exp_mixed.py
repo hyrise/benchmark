@@ -7,7 +7,7 @@ from benchmark.mixedWLPlotter import MixedWLPlotter
 
 def runbenchmarks(groupId, s1, **kwargs):
     output = ""
-    users = [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 30, 40, 50]
+    users = [1, 2] #2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 30, 40, 50]
     for i in users:
         runId = str(i)
         kwargs["numUsers"] = i
@@ -35,6 +35,12 @@ aparser.add_argument('--no-execute', action='store_true',
                      help='Disable executing the workload')
 aparser.add_argument('--port', default=5001, type=int, metavar="P",
                      help='Port on which HYRISE should be run')
+aparser.add_argument('--host', default=127.0.0.1, type=str, metavar="H",
+                     help='IP on which HYRISE should be run remotely')
+aparser.add_argument('--remoteUser', default="hyrise", type=str, metavar="R",
+                     help='remote User for remote host on which HYRISE should be run remotely')
+aparser.add_argument('--remote', action='store_true',
+                     help='run hyrise server on a remote machine')
 aparser.add_argument('--threads', default=0, type=int, metavar="T",
                      help='Number of server threads to use')
 aparser.add_argument('--warmup', default=5, type=int,
@@ -60,8 +66,8 @@ s1 = benchmark.Settings("Standard", PERSISTENCY="NONE", COMPILER="autog++")
 kwargs = {
     "port"              : args["port"],
     "manual"            : args["manual"],
-    "warmuptime"        : 3,
-    "runtime"           : 30,
+    "warmuptime"        : 1,
+    "runtime"           : 5,
     "benchmarkQueries"  : ("q7idx_vbak",),
     "prepareQueries"    : ("create_vbak_index",),
     "showStdout"        : args["stdout"],
@@ -74,105 +80,67 @@ kwargs = {
     "useJson"           : args["json"],
     "hyriseDBPath"      : "/home/Johannes.Wust/hyrise-benchmark/hyrise/test/",
     "scheduler"         : "CoreBoundQueuesScheduler",
-    "serverThreads"     : 11
+    "serverThreads"     : 11,
+    "remote"            : True,
+    "userRemote"        : "Johannes.Wust"
+    "host"              : 192.168.31.40
 }
 
 output = ""
 output += "OLTP 11 threads\n"
 output += "\n"
 output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-kwargs["scheduler"] = "CentralScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-kwargs["scheduler"] = "ThreadPerTaskScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-
-kwargs["serverThreads"] = 22
-
-output = ""
-output += "OLTP 22 threads\n"
-output += "\n"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-kwargs["scheduler"] = "CentralScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-kwargs["scheduler"] = "ThreadPerTaskScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-
-kwargs["serverThreads"] = 11
-kwargs["benchmarkQueries"] = ("xselling",)
-kwargs["prepareQueries"] = ("preload_vbap",)
-
-output += "\n"
-output += "OLAP 11 threads\n"
-output += "\n"
-kwargs["scheduler"] = "CoreBoundQueuesScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-kwargs["scheduler"] = "CentralScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-kwargs["scheduler"] = "ThreadPerTaskScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-
-
-kwargs["serverThreads"] = 22
-
-
-output += "\n"
-output += "OLAP 22 threads\n"
-output += "\n"
-kwargs["scheduler"] = "CoreBoundQueuesScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-kwargs["scheduler"] = "CentralScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-kwargs["scheduler"] = "ThreadPerTaskScheduler"
-output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#kwargs["scheduler"] = "CentralScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#kwargs["scheduler"] = "ThreadPerTaskScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#
+#kwargs["serverThreads"] = 22
+#
+#output = ""
+#output += "OLTP 22 threads\n"
+#output += "\n"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#kwargs["scheduler"] = "CentralScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#kwargs["scheduler"] = "ThreadPerTaskScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#
+#kwargs["serverThreads"] = 11
+#kwargs["benchmarkQueries"] = ("xselling",)
+#kwargs["prepareQueries"] = ("preload_vbap",)
+#
+#output += "\n"
+#output += "OLAP 11 threads\n"
+#output += "\n"
+#kwargs["scheduler"] = "CoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#kwargs["scheduler"] = "CentralScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#kwargs["scheduler"] = "ThreadPerTaskScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#
+#
+#kwargs["serverThreads"] = 22
+#
+#
+#output += "\n"
+#output += "OLAP 22 threads\n"
+#output += "\n"
+#kwargs["scheduler"] = "CoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#kwargs["scheduler"] = "CentralScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#kwargs["scheduler"] = "ThreadPerTaskScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
 
 
 print output
-
-
-
-
-#plotter.plotResponseTimesVaryingUsers()
-#plotter.plotTransactionResponseTimes()
-#plotter.plotResponseTimeFrequencies()
-
-
-
-
-#num_clients = args["clients"]
-#minClients = args["clients_min"]
-#maxClients = args["clients_max"]
-#
-#
-#
-#
-#if args["clients"] > 0:
-#    minClients = args["clients"]
-#    maxClients = args["clients"]
-#
-#for num_clients in xrange(minClients, maxClients+1):
-#    runId = "numClients_%s" % num_clients
-#    kwargs["numUsers"] = num_clients
-#
-#    b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
-#    b2 = benchmark.TPCCBenchmark(groupId, runId, s2, **kwargs)
-#    #b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
-#
-#    b1.run()
-#    # b2.run()
-#    # b3.run()
-#
-#    if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
-#        os.remove("/mnt/pmfs/hyrise_tpcc")
-#
-##plotter = benchmark.Plotter(groupId)
-##plotter.printStatistics()
-#
-#
