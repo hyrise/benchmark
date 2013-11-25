@@ -63,6 +63,7 @@ class User(multiprocessing.Process):
 
 
     def stop(self):
+        print "stop " + str(self._userId)
         self._stopevent.set()
 
 

@@ -7,7 +7,7 @@ from benchmark.mixedWLPlotter import MixedWLPlotter
 
 def runbenchmarks(groupId, s1, **kwargs):
     output = ""
-    users = [1, 2] #2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 30, 40, 50]
+    users = [2] #2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 30, 40, 50]
     for i in users:
         runId = str(i)
         kwargs["numUsers"] = i
@@ -35,7 +35,7 @@ aparser.add_argument('--no-execute', action='store_true',
                      help='Disable executing the workload')
 aparser.add_argument('--port', default=5001, type=int, metavar="P",
                      help='Port on which HYRISE should be run')
-aparser.add_argument('--host', default=127.0.0.1, type=str, metavar="H",
+aparser.add_argument('--host', default="127.0.0.1", type=str, metavar="H",
                      help='IP on which HYRISE should be run remotely')
 aparser.add_argument('--remoteUser', default="hyrise", type=str, metavar="R",
                      help='remote User for remote host on which HYRISE should be run remotely')
@@ -66,11 +66,11 @@ s1 = benchmark.Settings("Standard", PERSISTENCY="NONE", COMPILER="autog++")
 kwargs = {
     "port"              : args["port"],
     "manual"            : args["manual"],
-    "warmuptime"        : 1,
-    "runtime"           : 5,
+    "warmuptime"        : 10,
+    "runtime"           : 30,
     "benchmarkQueries"  : ("q7idx_vbak",),
     "prepareQueries"    : ("create_vbak_index",),
-    "showStdout"        : args["stdout"],
+    "showStdout"        : True,
     "showStderr"        : args["stderr"],
     "rebuild"           : args["rebuild"],
     "regenerate"        : args["regenerate"],
@@ -78,19 +78,19 @@ kwargs = {
     "serverThreads"     : args["threads"],
     "collectPerfData"   : args["perfdata"],
     "useJson"           : args["json"],
-    "hyriseDBPath"      : "/home/Johannes.Wust/hyrise-benchmark/hyrise/test/",
+    "dirBinary"         : "/home/Johannes.Wust/hyrise/build/",
+    "hyriseDBPath"      : "/home/Johannes.Wust/hyrise/test/",
     "scheduler"         : "CoreBoundQueuesScheduler",
     "serverThreads"     : 11,
     "remote"            : True,
-    "userRemote"        : "Johannes.Wust"
-    "host"              : 192.168.31.40,
+    "remoteUser"        : "Johannes.Wust",
+    "host"              : "127.0.0.1"
 }
 
 output = ""
 output += "OLTP 11 threads\n"
 output += "\n"
 output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-
 #kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
 #output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
 #kwargs["scheduler"] = "CentralScheduler"
