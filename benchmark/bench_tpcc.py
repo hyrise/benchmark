@@ -4,6 +4,7 @@ import logging
 import os
 import requests
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -58,11 +59,17 @@ class TPCCUser(User):
             if self.numErrors > 5:
                 print "*** TPCCUser %i: too many failed requests" % (self._userId)
                 self.stopLogging()
-                self.stop()
+                os.kill(os.getppid(), signal.SIGINT)
             return
-        except (RuntimeError, AssertionError), e:
-            print "TX ", txn
-            print e
+        except RuntimeWarning, e:
+            # these are transaction errors, e.g. abort due to concurrent commits
+            self.log("failed", [txn, tStart-self.userStartTime])
+            return
+        except RuntimeError, e:
+            print "%s: %s" % (txn, e)
+            self.log("failed", [txn, tStart-self.userStartTime])
+            return
+        except AssertionError, e:
             return
         self.numErrors = 0
         tEnd = time.time()
@@ -73,11 +80,16 @@ class TPCCUser(User):
         pass
 
     def formatLog(self, key, value):
-        logStr = "%s;%f;%f" % (value[0], value[1], value[2])
-        for op, opData in value[3].iteritems():
-            logStr += ";%s,%i,%f" % (op, opData["n"], opData["t"])
-        logStr += "\n"
-        return logStr
+        if key == "transactions":
+            logStr = "%s;%f;%f" % (value[0], value[1], value[2])
+            for op, opData in value[3].iteritems():
+                logStr += ";%s,%i,%f" % (op, opData["n"], opData["t"])
+            logStr += "\n"
+            return logStr
+        elif key == "failed":
+            return "%s;%f\n" % (value[0], value[1])
+        else:
+            return "%s\n" % str(value)
 
     def addPerfData(self, perf):
         if perf:
@@ -231,4 +243,4 @@ class TPCCBenchmark(Benchmark):
             "scaleParameters": self.scaleParameters,
             "config": config
         })
-        
+

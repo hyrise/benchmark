@@ -59,6 +59,8 @@ class Benchmark:
         self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
         if self._remote:
             self._ssh               = paramiko.SSHClient()             
+        self._exiting           = False
+
 
         self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirResults):
@@ -291,6 +293,9 @@ class Benchmark:
         print "done."
 
     def _signalHandler(self, signal, frame):
+        if os.getppid() == self._pid or self._exiting:
+            return
+        self._exiting = True
         print "\n*** received SIGINT, initiating graceful shutdown"
         if self._build:
             self._build.unlink()
