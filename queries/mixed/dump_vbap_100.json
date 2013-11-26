@@ -1,0 +1,26 @@
+{
+    "operators" : {
+        "load_vbak": {
+            "type": "TableLoad",
+            "table": "vbap100",
+            "filename" : "vbap_base_project100.tbl",
+	    "profiling": true
+        },
+      "getf" : {
+         "type" : "GetTable",
+         "name" : "vbap100"
+      },
+      "df" : {
+           "type" : "DumpTable",
+           "name" : "vbap100"
+      },
+      "nop" : {
+           "type" : "NoOp"
+      }
+    },
+    "edges": [
+       ["load_vbak", "getf"],
+       ["getf", "df"],
+       ["df", "nop"]
+    ]
+}

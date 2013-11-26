@@ -1,0 +1,24 @@
+{
+    "operators": {
+        "load" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "core" : 0,
+            "table": "KNA1"
+            },
+        "distinct": {
+            "type": "Distinct",
+            "core" : 0,
+            "fields": ["KUNNR"]
+        },
+        "project": {
+            "type" : "ProjectionScan",
+            "core" : 0,
+            "fields" : ["KUNNR"]
+        }
+    },
+    "edges": [
+    ["load", "distinct"],
+    ["distinct", "project"]
+    ]
+}

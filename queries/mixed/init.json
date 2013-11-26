@@ -1,0 +1,23 @@
+{
+    "priority": 2,
+    "sessionId": 3,
+    "operators": {
+        "load_adrc" : {
+            "type" : "MySQLTableLoad",
+            "database": "cbtr_2",
+            "table": "ADRC"
+            },
+	 "load_vbap": {
+            "type": "TableLoad",
+            "table": "vbap",
+            "filename" : "vbap_base_project500.tbl"
+        },
+	"nop":
+	{	
+	    "type": "NoOp"
+	}
+    },		
+    "edges": [
+    	     ["load_adrc", "load_vbap"],["load_vbap", "nop"]
+    ]
+}

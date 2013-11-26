@@ -1,0 +1,47 @@
+
+{
+    "priority": 2,
+    "sessionId": 1,
+    "operators": {
+        // Load the tables
+        "0": {
+            "type": "MySQLTableLoad",
+            "database": "cbtr_2",
+            "table": "VBAP"
+        },
+        "2": {
+            "type": "SimpleTableScan",
+   "instances": 32,
+            "predicates" : [
+                {"type": "EQ", "in": 0, "f": "MATNR", "value": "M-07", "vtype": 2}
+            ]
+        },
+        "3": {
+            "type": "SimpleTableScan",
+   "instances": 32,
+            "predicates" : [
+                {"type": "EQ", "in": 0, "f": "MATNR", "value": "M-08", "vtype": 2}
+            ]
+        },
+        "4": {
+            "type": "RadixJoin",
+            "bits1": 8,
+            "bits2": 4,
+            "hash_par":16,
+            "probe_par":16,
+            "join_par": 32,
+            "fields": [1,1] // "field_names": ["VBELN"], // Left and right
+        },
+"5": {
+   "type": "NoOp"
+}
+    },
+
+    "edges" : [
+        ["0","2"],
+        ["0","3"],
+        ["2","4"],
+        ["3","4"],
+["4","5"]
+    ]
+}

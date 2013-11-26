@@ -1,0 +1,25 @@
+{
+    "operators": {
+        "load" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "core" : 4,
+            "table": "VBAK",
+            "limit": 100000000
+            },
+        "distinct": {
+            "type": "Distinct",
+            "core" : 4,
+            "fields": ["VBELN"]
+        },
+        "project": {
+            "type" : "ProjectionScan",
+            "core" : 4,
+            "fields" : ["VBELN"]
+        }
+    },
+    "edges": [
+    ["load", "distinct"],
+    ["distinct", "project"]
+    ]
+}

@@ -1,0 +1,58 @@
+{
+    "papi": "%(papi)s",
+    "operators": {
+        "load_vbap" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "core" : %(core)s,
+            "table": "VBAP"
+            },
+        "load_vbak" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "core" : %(core)s,
+            "table": "VBAK"
+            },
+        "filter_aedat": {
+            "type": "SimpleTableScan",
+            "core" : %(core)s,
+            "predicates" : [
+                {"type": 2, "in": 0, "f": "AEDAT", "value": 20030101}
+            ]
+        },
+        "hash_header": {
+            "type": "HashBuild",
+            "core" : %(core)s,
+            "key": "join",
+            "fields": [1]
+        },
+        "join_header_item": {
+            "type": "HashJoinProbe",
+            "core" : %(core)s,
+            "fields" : ["VBELN"]
+        },
+        "hash_netwr" : {
+            "type": "HashBuild",
+            "core" : %(core)s,
+            "fields": ["KUNNR"], 
+            "key": "groupby"
+        },
+        "groupby" : {
+            "type" : "GroupByScan",
+            "core" : %(core)s,
+            "fields": ["KUNNR"],
+            "functions": [
+            {"type": "SUM", "field": "NETWR"}
+            ]
+        }
+    },
+    "edges": [
+    ["load_vbak", "filter_aedat"], 
+    ["filter_aedat", "hash_header"], 
+    ["hash_header", "join_header_item"],
+    ["load_vbap", "join_header_item"],
+    ["join_header_item", "hash_netwr"],
+    ["join_header_item", "groupby"],
+    ["hash_netwr", "groupby"]
+    ]
+}

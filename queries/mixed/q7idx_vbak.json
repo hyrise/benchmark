@@ -1,0 +1,26 @@
+{
+"priority": 1,
+    "operators": {
+        "load_vbak" : {
+            "type" : "TableLoad",
+            "filename": "vbak_base_project1.tbl",
+            "table": "vbak"
+            },
+        "filter_kunnr": {
+          "type": "IndexScan",
+          "vtype": 0,
+          "value": 70000069,
+          "index": "vbak_order_ix",
+          "fields": ["order_id"]
+        },
+        "mat": {
+	            "type": "MaterializingScan",
+            "memcpy": true
+
+        }
+    },
+    "edges": [
+    ["load_vbak", "filter_kunnr"],
+    ["filter_kunnr", "mat"]
+    ]
+}

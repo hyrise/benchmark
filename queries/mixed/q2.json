@@ -1,0 +1,27 @@
+{
+    "papi": "%(papi)s",
+    "operators": {
+        "load_kna1" : {
+            "type" : "MySQLTableLoad",
+            "core" : %(core)s,
+            "database": "%(db)s",
+            "table": "KNA1"
+            },
+        "filter_kunnr": {
+            "type": "SimpleTableScan",
+            "core" : %(core)s,
+            "predicates" : [
+                { "type": "EQ", "in": 0, "f": "KUNNR", "value": "%(kunnr)s", "vtype": 2}
+            ]
+        },
+        "mat": {
+            "type": "MaterializingScan",
+            "core" : %(core)s,
+            "memcpy": true
+        }
+    },
+    "edges": [
+    ["load_kna1", "filter_kunnr"],
+    ["filter_kunnr", "mat"]
+    ]
+}

@@ -1,0 +1,46 @@
+{
+    "priority": 3,
+    "operators": {
+	"0": {
+            "type": "MySQLTableLoad",
+            "database": "cbtr_2",
+            "table": "VBAP"
+        },
+	"1": {
+            "type": "MySQLTableLoad",
+            "database": "cbtr_2",
+            "table": "VBAK"
+        },
+	"2": {
+             "type": "SimpleTableScan",
+	     "instances":  128,
+             "predicates": [
+             {"type": 6},
+             {"type": 2, "in": 0, "f": "ERDAT", "vtype": 0, "value": 19990101},
+             {"type": 1, "in": 0, "f": "ERDAT", "vtype": 0, "value": 20200101}
+            ]
+        },
+	"3": {
+             "type": "SimpleTableScan",
+	     "instances":  128,
+             "predicates": [
+             {"type": 6},
+             {"type": 2, "in": 0, "f": "KWMENG", "vtype": 1, "value": 1},
+             {"type": 1, "in": 0, "f": "KWMENG", "vtype": 1, "value": 100000}
+            ]
+        },
+	"4": {
+            "type": "RadixJoin",
+            "bits1": 9,
+            "bits2": 8,
+            "hash_par":  32,
+            "probe_par": 32,
+            "join_par": 128,
+            "fields": [1,1] // "field_names": ["VBELN"], // Left and right
+        },
+	"5": {
+            "type": "NoOp"
+        }
+    },
+    "edges" : [["0", "3"], ["1", "2"],["2", "4"], ["3", "4"], ["4","5"]]
+}
