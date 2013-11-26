@@ -31,6 +31,8 @@ class Settings:
                 "WITH_MYSQL"           : None,
                 "VERBOSE_BUILD"        : None,
                 "PERSISTENCY"          : "NONE",
+                "WITH_GROUP_COMMIT"    : 0,
+                "GROUP_COMMIT_WINDOW"  : 10,
                 "NVRAM_MOUNTPOINT"     : None,
                 "NVRAM_FILENAME"       : None,
                 "NVRAM_FILESIZE"       : None,
