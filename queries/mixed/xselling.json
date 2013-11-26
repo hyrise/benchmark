@@ -11,7 +11,7 @@
       "type" : "TableScan",
       "expression": "hyrise::Store_FLV_F1_EQ_STRING",
       "f1": 3,
-      "instances": 11,
+      "instances": 31,
       "COMMENT": "value is in the dictionary for 10mill",
       "v_f1": "CP_5301" 
     },
@@ -21,14 +21,14 @@
       "f1": 3,
       "COMMENT": "value is in the dictionary for 10mill",
       "v_f1": "CP_5305",
-      "instances": 11
+      "instances": 31
     },	"4": {
             "type": "RadixJoin",
             "bits1": 10,
             "bits2": 5,
-	    "hash_par": 11,
-	    "probe_par": 11,
-	    "join_par": 11,
+	    "hash_par": 20,
+	    "probe_par": 20,
+	    "join_par": 31,
             "fields": [1,1] // "field_names": ["VBELN"], // Left and right
         },
 	"5": {

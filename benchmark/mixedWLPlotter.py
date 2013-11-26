@@ -20,10 +20,13 @@ class MixedWLPlotter:
 
     def printStatistics(self):
         logStr = ""
+        output = {}
         for runId, runData in self._runs.iteritems():
             stats = runData[runData.keys()[0]]["txStats"]["0"]
-            log = str(runData[runData.keys()[0]]["numUsers"]) + " " + str(stats["totalRuns"]) + " " + str(stats["rtAvg"]) + " " + str(stats["rtMed"]) + " " + str(stats["rtStd"]) + "\n"
-            logStr += log
+            output[runData[runData.keys()[0]]["numUsers"]] = str(stats["totalRuns"]) + " " + str(stats["rtAvg"]) + " " + str(stats["rtMed"]) + " " + str(stats["rtStd"]) + " " + str(stats["srtMin"]) + " " + str(stats["srtMax"]) + " " +str(stats["srtAvg"]) + " " + str(stats["srtMed"]) + " " + str(stats["srtStd"]) + "\n"
+
+        for users in sorted(output.iterkeys()):
+            logStr += "%s %s" % (str(users), output[users])
         #    numUsers = runData[runData.keys()[0]]["numUsers"]
         #    print "Run ID: %s [%s users]" % (runId, numUsers)
         #    print "=============================="
@@ -201,22 +204,29 @@ class MixedWLPlotter:
                                         "userTime":  0.0,
                                         "totalRuns": 0,
                                         "rtTuples":  [],
+                                        "srtTuples": [],
                                         "rtMin":     0.0,
                                         "rtMax":     0.0,
                                         "rtAvg":     0.0,
                                         "rtMed":     0.0,
-                                        "rtStd":     0.0
+                                        "rtStd":     0.0,
+                                        "srtMin":     0.0,
+                                        "srtMax":     0.0,
+                                        "srtAvg":     0.0,
+                                        "srtMed":     0.0,
+                                        "srtStd":     0.0
                                     })
                                     txStats[txId]["totalTime"] += runtime
                                     txStats[txId]["userTime"]  += runtime / float(numUsers)
                                     txStats[txId]["totalRuns"] += 1
                                     txStats[txId]["rtTuples"].append((starttime, runtime))
 
-                                   # if len(linedata) > 3:
-                                   #     opData = ast.literal_eval(linedata[3])
-                                   #     for op in opData:
-                                   #         pass
-                                   # #        opData = opStr.split(",")
+                                    if len(linedata) > 3:
+                                        opData = ast.literal_eval(linedata[3])
+                                        for op in opData:
+                                            if op["name"].encode('utf8') == "ResponseTask":
+                                                txStats[txId]["srtTuples"].append(float(op["endTime"]))
+                                     #        opData = opStr.split(",")
                                    #         opStats[txId].setdefault(op["name"], {
                                    #             "rtTuples":  [],
                                    #             "avgRuns":   0.0,
@@ -236,6 +246,16 @@ class MixedWLPlotter:
                             txStats[txId]["rtAvg"] = average(allRuntimes)
                             txStats[txId]["rtMed"] = median(allRuntimes)
                             txStats[txId]["rtStd"] = std(allRuntimes)
+
+                            allSRuntimes = txData["srtTuples"]
+                            
+                            if len(allSRuntimes):
+                                txStats[txId]["srtMin"] = amin(allSRuntimes)
+                                txStats[txId]["srtMax"] = amax(allSRuntimes)
+                                txStats[txId]["srtAvg"] = average(allSRuntimes)
+                                txStats[txId]["srtMed"] = median(allSRuntimes)
+                                txStats[txId]["srtStd"] = std(allSRuntimes)
+
                             for opId, opData in opStats[txId].iteritems():
                                 opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
                                 opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])

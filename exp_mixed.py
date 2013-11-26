@@ -1,18 +1,22 @@
 import argparse
 import benchmark
 import os
+import pprint
+import time
 
 from benchmark.bench_mixed import MixedWLBenchmark
 from benchmark.mixedWLPlotter import MixedWLPlotter
 
 def runbenchmarks(groupId, s1, **kwargs):
     output = ""
-    users = [2] #2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 30, 40, 50]
+    users = [1, 2, 4, 8, 16]#, 24, 32]#, 48, 64, 96, 128]
+#    users = [1, 32, 128]
     for i in users:
         runId = str(i)
         kwargs["numUsers"] = i
         b1 = MixedWLBenchmark(groupId, runId, s1, **kwargs)
         b1.run()
+        time.sleep(5)
     plotter = MixedWLPlotter(groupId)
     output += groupId + "\n"
     output += plotter.printStatistics()
@@ -66,8 +70,8 @@ s1 = benchmark.Settings("Standard", PERSISTENCY="NONE", COMPILER="autog++")
 kwargs = {
     "port"              : args["port"],
     "manual"            : args["manual"],
-    "warmuptime"        : 10,
-    "runtime"           : 30,
+    "warmuptime"        : 2,
+    "runtime"           : 20,
     "benchmarkQueries"  : ("q7idx_vbak",),
     "prepareQueries"    : ("create_vbak_index",),
     "showStdout"        : True,
@@ -78,70 +82,98 @@ kwargs = {
     "serverThreads"     : args["threads"],
     "collectPerfData"   : args["perfdata"],
     "useJson"           : args["json"],
-    "dirBinary"         : "/home/Johannes.Wust/hyrise/build/",
+    #"dirBinary"         : "/home/Johannes.Wust/hyrise/build/",
     "hyriseDBPath"      : "/home/Johannes.Wust/hyrise/test/",
     "scheduler"         : "CoreBoundQueuesScheduler",
     "serverThreads"     : 11,
-    "remote"            : True,
+    "remote"            : False,
     "remoteUser"        : "Johannes.Wust",
-    "host"              : "127.0.0.1"
+    #"host"              : "gaza"
 }
 
 output = ""
+output += "kwargs\n"
+output += str(kwargs)
+output += "\n"
+output += "\n"
 output += "OLTP 11 threads\n"
 output += "\n"
-output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-#kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-#kwargs["scheduler"] = "CentralScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
-#kwargs["scheduler"] = "ThreadPerTaskScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+kwargs["scheduler"] = "CentralScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+kwargs["scheduler"] = "ThreadPerTaskScheduler"
+output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+
+
+#kwargs["serverThreads"] = 62
+
+## write output to file
+#filename = "results_" + str(int(time.time()))
+#f = open(filename,'w')
+#f.write(output) # python will convert \n to os.linesep
+#f.close() # you can omit in most cases as the destructor will call if
 #
-#kwargs["serverThreads"] = 22
-#
-#output = ""
-#output += "OLTP 22 threads\n"
+#output += ""
+#output += "OLTP 62 threads\n"
 #output += "\n"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#kwargs["scheduler"] = "CoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 #kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 #kwargs["scheduler"] = "CentralScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 #kwargs["scheduler"] = "ThreadPerTaskScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLTP", s1, **kwargs)
+#output += runbenchmarks(kwargs["scheduler"] + "_OLTP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 #
-#kwargs["serverThreads"] = 11
+#
+## write output to file
+#filename = "results_" + str(int(time.time()))
+#f = open(filename,'w')
+#f.write(output) # python will convert \n to os.linesep
+#f.close() # you can omit in most cases as the destructor will call if
+#
+#kwargs["serverThreads"] = 31
 #kwargs["benchmarkQueries"] = ("xselling",)
 #kwargs["prepareQueries"] = ("preload_vbap",)
-#
 #output += "\n"
-#output += "OLAP 11 threads\n"
-#output += "\n"
-#kwargs["scheduler"] = "CoreBoundQueuesScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-#kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-#kwargs["scheduler"] = "CentralScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-#kwargs["scheduler"] = "ThreadPerTaskScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
-#
-#
-#kwargs["serverThreads"] = 22
-#
-#
-#output += "\n"
-#output += "OLAP 22 threads\n"
+#output += "OLAP 31 threads\n"
 #output += "\n"
 #kwargs["scheduler"] = "CoreBoundQueuesScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 #kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 #kwargs["scheduler"] = "CentralScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 #kwargs["scheduler"] = "ThreadPerTaskScheduler"
-#output += runbenchmarks(kwargs["scheduler"] + "_OLAP", s1, **kwargs)
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+#
+#
+## write output to file
+#filename = "results_" + str(int(time.time()))
+#f = open(filename,'w')
+#f.write(output) # python will convert \n to os.linesep
+#f.close() # you can omit in most cases as the destructor will call if
+#
+#
+#kwargs["serverThreads"] = 62
+#
+#output += "\n"
+#output += "OLAP 62 threads\n"
+#output += "\n"
+#kwargs["scheduler"] = "CoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+#kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+#kwargs["scheduler"] = "CentralScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
+#kwargs["scheduler"] = "ThreadPerTaskScheduler"
+#output += runbenchmarks(kwargs["scheduler"] + "_OLAP_" + str(kwargs["serverThreads"]), s1, **kwargs)
 
-
+# write output to file
+filename = "results_" + str(int(time.time()))
+f = open(filename,'w')
+f.write(output) # python will convert \n to os.linesep
+f.close() # you can omit in most cases as the destructor will call if
 print output

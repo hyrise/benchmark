@@ -57,7 +57,8 @@ class Benchmark:
         self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "CoreBoundQueuesScheduler"
         self._serverIP          = kwargs["serverIP"] if kwargs.has_key("serverIP") else "127.0.0.1"
         self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
-        self._ssh               = paramiko.SSHClient()             
+        if self._remote:
+            self._ssh               = paramiko.SSHClient()             
 
         self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirResults):
@@ -78,6 +79,7 @@ class Benchmark:
             self._startSSHConnection()
 
         if not self._manual:
+            # no support for building on remote machine yet
             if not self._remote:
                 self._buildServer()
             self._startServer()
@@ -236,17 +238,15 @@ class Benchmark:
         if (self._serverThreads > 0):
             threadstring = "--threads=%s" % self._serverThreads
           
-        # note: apparently there is an issue with large outputs of the the server command; either write to /dev/null on server machine of a file on server side
-        # otherwise, maybe try to get the transport and read from a channel
+        # note: there is an issue with large outputs of the server command;
+        # the remote command hangs, probably when the channel buffer is full
+        # either write to /dev/null on server machine of a file on server side
+        # otherwise, get the transport and read from a channel
         command_str = "cd " + str(self._dirBinary) + "; env " + env + " " + server + " --port=%s" % self._port + " --logdef=%s" % logdef + " --scheduler=%s" % self._scheduler + " " + threadstring + " &> /dev/null" 
         stdin, stdout, stderr = self._ssh.exec_command(command_str);
 
         time.sleep(1)
-    #    self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, threadstring],
-    #                                        cwd=self._dirBinary,
-    #                                        env=env,
-    #                                        stdout=open("/dev/null") if not self._stdout else None,
-    #                                        stderr=open("/dev/null") if not self._stderr else None)
+        print "done"
 
 
     def _runPrepareQueries(self):
@@ -304,8 +304,9 @@ class Benchmark:
 
     def _startSSHConnection(self):
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        print self._host + " "+ self._remoteUser
-        self._ssh.connect(self._host, username=self._remoteUser, password='Reacti0n')
+        # expects authentication per key on remote server
+        self._ssh.connect(self._host, username=self._remoteUser)
+        print "connected"
 
     def _stopSSHConnection(self):
         self._ssh.close()

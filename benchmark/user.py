@@ -63,7 +63,6 @@ class User(multiprocessing.Process):
 
 
     def stop(self):
-        print "stop " + str(self._userId)
         self._stopevent.set()
 
 
@@ -81,7 +80,7 @@ class User(multiprocessing.Process):
         else:
             result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
         self._totalQueryTime += time.time() - tStart
-        
+
         if result.status_code != 200:
             print "Rquest failed. Status code: ", result.status_code
             print "Response: ", result.text
