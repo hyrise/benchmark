@@ -1,0 +1,26 @@
+{
+    "priority": 5,
+    "sessionId": 3,
+    "operators": {
+        "load_adrc" : {
+            "type" : "MySQLTableLoad",
+            "database": "cbtr_2",
+            "table": "ADRC"
+            },
+        "filter_kunnr": {
+            "type": "SimpleTableScan",
+            "instances": 12,
+	    "predicates" : [
+                { "type": "EQ", "in": 0, "f": "ADDRNUMBER", "value": "0000000104", "vtype": 2}
+            ]
+        },
+        "mat": {
+            "type": "MaterializingScan",
+            "memcpy": true
+        }
+    },
+    "edges": [
+    ["load_adrc", "filter_kunnr"],
+    ["filter_kunnr", "mat"]
+    ]
+}

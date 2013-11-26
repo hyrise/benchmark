@@ -1,0 +1,20 @@
+{
+    "papi": "%(papi)s",
+    "operators": {
+        "load_vbap" : {
+            "type" : "MySQLTableLoad",
+            "core" : %(core)s,
+            "database": "%(db)s",
+            "table": "VBAP"
+            },
+        "mat": {
+            "type": "MaterializingScan",
+            "core" : %(core)s,
+            "samples": 100,
+            "memcpy": true
+        }
+    },
+    "edges": [
+    ["load_vbap", "mat"]
+    ]
+}

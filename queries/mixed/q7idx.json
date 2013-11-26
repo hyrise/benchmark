@@ -1,0 +1,25 @@
+{
+    "papi": "%(papi)s",
+    "operators": {
+        "load_vbak" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "table": "VBAK"
+            },
+        "filter_kunnr": {
+          "type": "IndexScan",
+          "vtype": 2,
+          "value": "%(vbeln)s",
+          "index": "vbak_idx_vbeln",
+          "fields": ["VBELN"]
+        },
+        "mat": {
+            "type": "MaterializingScan",
+            "memcpy": true
+        }
+    },
+    "edges": [
+    ["load_vbak", "filter_kunnr"],
+    ["filter_kunnr", "mat"]
+    ]
+}

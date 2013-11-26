@@ -1,0 +1,46 @@
+{
+  "priority": 3,
+  "operators": {
+    "0": {
+      "type": "GetTable",
+      "name": "vbak2000"
+    },
+    "1": {
+      "type": "GetTable",
+      "name": "vbap2000"
+    },
+    "2": {
+      "type": "TableScan",
+      "expression": "hyrise::intbetween",
+      "column" : 2,
+      "fromValue" : 19900101,
+      "toValue": 20200101,
+      "dynamic": true
+    },
+    "3": {
+      "type": "TableScan",
+      "expression": "hyrise::floatbetween",
+      "column": 5,
+      "fromValue": 1.0,
+      "toValue": 100000.0,
+      "dynamic": true
+    },
+    "4": {
+      "type": "RadixJoin",
+      "bits1": 10,
+      "bits2": 5,
+      "dynamic": true,
+      "fields": [1,1]
+    },
+    "5": {
+      "type": "NoOp"
+    }
+  },
+  "edges" : [
+    ["0", "2"],
+    ["1", "3"],
+    ["2", "4"],
+    ["3", "4"],
+    ["4","5"]
+  ]
+}

@@ -1,0 +1,54 @@
+{
+    "operators": {
+        "0": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "1": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "2": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "3": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "4": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "5": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "6": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "7": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "8": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        },
+
+        "9": {
+            "type": "BusyWait",
+	    "microseconds": 10000
+        }
+    },
+    "edges": [["0", "1"],["1", "2"], ["2", "3"], ["3", "4"], ["4", "5"], ["5", "6"], ["6", "7"], ["7", "8"], ["8", "9"]]
+}

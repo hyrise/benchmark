@@ -1,0 +1,18 @@
+{
+    "papi": "%(papi)s",
+    "limit": 30,
+    "operators": {
+        "load_vbak" : {
+            "type" : "MySQLTableLoad",
+            "database": "%(db)s",
+            "table": "VBAK"
+            },
+        "sort_vbeln": {
+            "type": "SortScan",
+            "fields": ["AEDAT"]
+        }
+    },
+    "edges": [
+        ["load_vbak", "filter_kunnr"]
+    ]
+}

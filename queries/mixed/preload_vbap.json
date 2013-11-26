@@ -1,0 +1,19 @@
+ {
+ "operators" : {
+      "setf" : {
+         "type" : "SetTable",
+         "name" : "vbap2000"
+      },
+     "loadf" : {
+        "type" : "LoadDumpedTable",
+        "name" : "vbap2000"
+      },
+     "nop": {
+     	"type" : "NoOp"
+     }
+  },
+  "edges" : [
+    ["loadf", "setf"],
+    ["setf", "nop"]
+  ]
+}

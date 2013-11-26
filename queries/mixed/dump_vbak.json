@@ -1,0 +1,25 @@
+{
+    "operators" : {
+        "load_vbak": {
+            "type": "TableLoad",
+            "table": "vbak2000",
+            "filename" : "vbak_base_project2000.tbl"
+        },
+      "getf" : {
+         "type" : "GetTable",
+         "name" : "vbak2000"
+      },
+      "df" : {
+           "type" : "DumpTable",
+           "name" : "vbak2000"
+      },
+      "nop" : {
+           "type" : "NoOp"
+      }
+    },
+    "edges": [
+       ["load_vbak", "getf"],
+       ["getf", "df"],
+       ["df", "nop"]
+    ]
+}

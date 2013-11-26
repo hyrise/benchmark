@@ -1,0 +1,21 @@
+ {
+ "operators" : {
+      "setf" : {
+         "type" : "SetTable",
+         "name" : "vbap100"
+      },
+     "loadf" : {
+        "type" : "LoadDumpedTable",
+        "name" : "vbap100",
+	"profiling": true
+
+      },
+     "nop": {
+     	"type" : "NoOp"
+     }
+  },
+  "edges" : [
+    ["loadf", "setf"],
+    ["setf", "nop"]
+  ]
+}
