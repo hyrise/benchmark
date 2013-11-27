@@ -1,6 +1,7 @@
 import argparse
 import benchmark
 import os
+import getpass
 
 
 aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')
@@ -20,6 +21,12 @@ aparser.add_argument('--no-load', action='store_true',
                      help='Disable loading the data')
 aparser.add_argument('--no-execute', action='store_true',
                      help='Disable executing the workload')
+aparser.add_argument('--host', default="localhost", type=str, metavar="H",
+                     help='IP on which HYRISE should be run remotely')
+aparser.add_argument('--remoteUser', default=getpass.getuser(), type=str, metavar="R",
+                     help='remote User for remote host on which HYRISE should be run remotely')
+aparser.add_argument('--remotePath', default="/home/" + getpass.getuser() +"/benchmark", type=str,
+                     help='path of benchmark folder on remote host')
 aparser.add_argument('--port', default=5001, type=int, metavar="P",
                      help='Port on which HYRISE should be run')
 aparser.add_argument('--threads', default=0, type=int, metavar="T",
@@ -47,6 +54,10 @@ s2 = benchmark.Settings("BufferedLogger", PERSISTENCY="BUFFEREDLOGGER")
 s3 = benchmark.Settings("NVRAM", PERSISTENCY="NVRAM", NVRAM_FILENAME="hyrise_tpcc")
 
 kwargs = {
+    "remoteUser"        : args["remoteUser"],
+    "remotePath"        : args["remotePath"],
+    "remote"            : args["host"] is not "localhost",
+    "host"              : args["host"],
     "port"              : args["port"],
     "manual"            : args["manual"],
     "warmuptime"        : args["warmup"],

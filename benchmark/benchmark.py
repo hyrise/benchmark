@@ -16,6 +16,10 @@ import queries
 class Benchmark:
 
     def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
+        if(kwargs.has_key("remote") and (kwargs.has_key("dirBinary") or kwargs.has_key("hyriseDBPath"))):
+            print "dirBinary and hyriseDBPath cannot be used with remote"
+            exit()
+
         self._pid               = os.getpid()
         self._id                = benchmarkGroupId
         self._runId             = benchmarkRunId
@@ -57,8 +61,11 @@ class Benchmark:
         self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "CoreBoundQueuesScheduler"
         self._serverIP          = kwargs["serverIP"] if kwargs.has_key("serverIP") else "127.0.0.1"
         self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
+        self._remotePath        = kwargs["remotePath"] if kwargs.has_key("remotePath") else "/home/" + kwargs["remoteUser"] + "/benchmark"
         if self._remote:
-            self._ssh               = paramiko.SSHClient()             
+            self._ssh               = paramiko.SSHClient()
+        else:
+            self._ssh           = None
         self._exiting           = False
 
 
@@ -70,6 +77,9 @@ class Benchmark:
         """ implement this in subclasses """
         pass
 
+    def preexec(self): # Don't forward signals.
+        os.setpgrp()
+
     def run(self):
         signal.signal(signal.SIGINT, self._signalHandler)
 
@@ -78,12 +88,19 @@ class Benchmark:
         print "+------------------+\n"
 
         if self._remote:
+            subprocess.call(["mkdir", "-p", "remotefs/" + self._host])
+            subprocess.call(["fusermount", "-u", "remotefs/127.0.0.1"])
+            subprocess.Popen(["sshfs", self._remoteUser + "@" + self._host + ":" + self._remotePath, "remotefs/" + self._host + "/"], preexec_fn = self.preexec)
+            self._olddir = os.getcwd()
+            os.chdir("remotefs/" + self._host + "/")
+            self._dirBinary         = os.path.join(os.getcwd(), "builds/%s" % self._buildSettings.getName())
+            self._dirHyriseDB       = os.path.join(os.getcwd(), "hyrise")
             self._startSSHConnection()
+
 
         if not self._manual:
             # no support for building on remote machine yet
-            if not self._remote:
-                self._buildServer()
+            self._buildServer()
             self._startServer()
             print "---\nHYRISE server running on port %s\n---" % self._port
         else:
@@ -136,6 +153,9 @@ class Benchmark:
         self._stopServer()
         print "all set"
 
+        if self._remote:
+            os.chdir(self._olddir)
+
 
     def addQuery(self, queryId, queryStr):
         if self._queryDict.has_key(queryId):
@@ -173,7 +193,7 @@ class Benchmark:
         sys.stdout.write("%suilding server for build '%s'... " % ("B" if not self._rebuild else "Reb", self._buildSettings.getName()))
         sys.stdout.flush()
         if self._build == None:
-            self._build = build.Build(settings=self._buildSettings)
+            self._build = build.Build(settings=self._buildSettings, ssh=self._ssh, remotePath = self._remotePath)
             if self._rebuild:
                 self._build.makeClean()
             self._build.makeAll()
@@ -218,8 +238,7 @@ class Benchmark:
 
 
     def _startRemoteServer(self):
-        sys.stdout.write("Starting server for build '%s'... remotely on '%s'" % (self._buildSettings.getName(), self._host))
-        sys.stdout.flush()
+        print("Starting server for build '%s'... remotely on '%s'" % (self._buildSettings.getName(), self._host))
 
         env = "HYRISE_DB_PATH="+str(self._dirHyriseDB)+\
               " LD_LIBRARY_PATH="+str(self._dirBinary)+":/usr/local/lib64/"+\
@@ -244,7 +263,8 @@ class Benchmark:
         # the remote command hangs, probably when the channel buffer is full
         # either write to /dev/null on server machine of a file on server side
         # otherwise, get the transport and read from a channel
-        command_str = "cd " + str(self._dirBinary) + "; env " + env + " " + server + " --port=%s" % self._port + " --logdef=%s" % logdef + " --scheduler=%s" % self._scheduler + " " + threadstring + " &> /dev/null" 
+        command_str = "cd " + str(self._dirBinary) + "; env " + env + " " + server + " --port=%s" % self._port + " --logdef=%s" % logdef + " --scheduler=%s" % self._scheduler + " " + threadstring + " 2&>1 &> ~/hyriselog"
+        command_str = command_str.replace(os.path.join(os.getcwd()), self._remotePath)
         stdin, stdout, stderr = self._ssh.exec_command(command_str);
 
         time.sleep(1)
@@ -288,7 +308,7 @@ class Benchmark:
                 time.sleep(0.5)
         else:
             print "kill server, close connection"
-            self._ssh.exec_command("killall -u %s %s" % (self._remoteUser , "hyrise-server_%s" % self._buildSettings["BLD"]));
+            self._ssh.exec_command("killall hyrise-server_release");
             self._stopSSHConnection()
         print "done."
 
