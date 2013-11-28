@@ -49,9 +49,12 @@ aparser.add_argument('--json', default=False, action='store_true',
                      help='Use JSON queries instead of stored procedures.')
 args = vars(aparser.parse_args())
 
-s1 = benchmark.Settings("NoLogger", PERSISTENCY="NONE")
-s2 = benchmark.Settings("BufferedLogger", PERSISTENCY="BUFFEREDLOGGER")
-s3 = benchmark.Settings("NVRAM", PERSISTENCY="NVRAM", NVRAM_FILENAME="hyrise_tpcc")
+s1 = benchmark.Settings("None", PERSISTENCY="NONE")
+s2 = benchmark.Settings("Logger_1ms", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW=1000)
+s3 = benchmark.Settings("Logger_10ms", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW=10000)
+s4 = benchmark.Settings("Logger_50ms", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW=50000)
+s5 = benchmark.Settings("Logger_unlimited", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW="unlimited")
+s6 = benchmark.Settings("NVRAM", PERSISTENCY="NVRAM", NVRAM_FILENAME="hyrise_tpcc")
 
 kwargs = {
     "remoteUser"        : args["remoteUser"],
@@ -75,10 +78,11 @@ kwargs = {
     "useJson"           : args["json"]
 }
 
-groupId = "tpcc"
+groupId = "tpcc_tmp"
 num_clients = args["clients"]
 minClients = args["clients_min"]
 maxClients = args["clients_max"]
+
 if args["clients"] > 0:
     minClients = args["clients"]
     maxClients = args["clients"]
@@ -89,12 +93,19 @@ for num_clients in xrange(minClients, maxClients+1):
 
     b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
     b2 = benchmark.TPCCBenchmark(groupId, runId, s2, **kwargs)
-    #b3 = TPCCBenchmark(groupId, runId, s3, **kwargs)
+    b3 = benchmark.TPCCBenchmark(groupId, runId, s3, **kwargs)
+    b4 = benchmark.TPCCBenchmark(groupId, runId, s4, **kwargs)
+    b5 = benchmark.TPCCBenchmark(groupId, runId, s5, **kwargs)
+    b6 = benchmark.TPCCBenchmark(groupId, runId, s6, **kwargs)
+    
 
     b1.run()
-    # b2.run()
-    # b3.run()
-
+    b2.run()
+    b3.run()
+    b4.run()
+    b5.run()
+    # b6.run()
+    
     if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
         os.remove("/mnt/pmfs/hyrise_tpcc")
 
