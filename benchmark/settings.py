@@ -21,6 +21,8 @@ class Settings:
                 "NVSIMULATOR_READ_NS"  : None,
                 "NVSIMULATOR_WRITE_NS" : None,
                 "COMPILER"             : None,
+                "WITH_GROUP_COMMIT"    : None,
+                "GROUP_COMMIT_WINDOW"  : None,
             }
         else:
             self._dict = {
@@ -40,6 +42,8 @@ class Settings:
                 "NVSIMULATOR_READ_NS"  : None,
                 "NVSIMULATOR_WRITE_NS" : None,
                 "COMPILER"             : None,
+                "WITH_GROUP_COMMIT"    : None,
+                "GROUP_COMMIT_WINDOW"  : None,
             }
         for k, v in kwargs.iteritems():
             self.__setitem__(k, v)
