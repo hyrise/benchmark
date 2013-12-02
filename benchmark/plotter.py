@@ -42,7 +42,7 @@ class Plotter:
                 totalRuns = 0.0
                 totalTime = 0.0
                 for txId, txData in buildData["txStats"].iteritems():
-                    totalRuns += txData["totalRuns"]
+                    totalRuns += txData["totalRuns"]*z
                     totalTime += txData["userTime"]
                 for txId, txData in buildData["txStats"].iteritems():
                     print "|     -------------------------------------------------------------------------------------------"
@@ -171,7 +171,7 @@ class Plotter:
             overall_x_max = 0
             overall_y_max = 0
             overall_y_min = 0
-            
+
             x_max_items = []
             y_max_items = []
 
@@ -192,7 +192,7 @@ class Plotter:
                 for txId, txData in runData[buildId]["txStats"].iteritems():
                     self.tick()
                     curPlt += 1
-                    
+
                     ax = fig.add_subplot(maxPlt, 1, curPlt)
                     plt.title("RT Frequency in %s (build '%s', run '%s')" % (txId, buildId, runId))
                     plt.xlabel("Response Time in ms")
@@ -207,7 +207,7 @@ class Plotter:
                     center = (bins[:-1] + bins[1:]) / 2
                     plt.bar(center, hist, align='center', width=width, color='#ffffff')
 
-                    
+
                     xs = linspace(txData["rtMin"]*0.8, txData["rtMax"]*1.05, 500)
                     ax.set_xticks(x2ticks, minor=True)
 
