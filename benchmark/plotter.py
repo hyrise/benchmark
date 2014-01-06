@@ -56,6 +56,7 @@ class Plotter:
                             print "|       {:25s}  {:05.2f}      {:05.2f}      {:05.2f}      {:05.2f}      {:05.2f}".format(opName, opData["avgRuns"], opData["rtMin"], opData["rtMax"], opData["rtAvg"], opData["rtMed"])
                 print "|     -------------------------------------------------------------------------------------------"
                 print "|     total:            %1.2f tps\n" % (totalRuns / totalTime)
+                print "totalRuns: %1.2f, totalTime: %1.2f" % (totalRuns, totalTime)
 
     def plotTotalThroughput(self):
         sys.stdout.write('plotTotalThroughput: ')
@@ -315,8 +316,12 @@ class Plotter:
                                         linedata = rawline.split(";")
                                         if len(linedata) < 2:
                                             continue
-                                        txId = linedata[0]
+                                        txId        = linedata[0]
+                                        runtime     = float(linedata[1]) * z # convert from s to ms
+                                        starttime   = float(linedata[2]) * z # convert from s to ms
                                         txStats[txId]["totalFail"] += 1
+                                        txStats[txId]["totalTime"] += runtime
+                                        txStats[txId]["userTime"]  += runtime / float(numUsers)
 
                         for txId, txData in txStats.iteritems():
                             allRuntimes = [a[1] for a in txData["rtTuples"]]

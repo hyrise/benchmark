@@ -63,11 +63,13 @@ class TPCCUser(User):
             return
         except RuntimeWarning, e:
             # these are transaction errors, e.g. abort due to concurrent commits
-            self.log("failed", [txn, tStart-self.userStartTime])
+            tEnd = time.time()
+            self.log("failed", [txn, tEnd-tStart, tStart-self.userStartTime])
             return
         except RuntimeError, e:
             print "%s: %s" % (txn, e)
-            self.log("failed", [txn, tStart-self.userStartTime])
+            tEnd = time.time()
+            self.log("failed", [txn, tEnd-tStart, tStart-self.userStartTime])
             return
         except AssertionError, e:
             return
@@ -87,7 +89,7 @@ class TPCCUser(User):
             logStr += "\n"
             return logStr
         elif key == "failed":
-            return "%s;%f\n" % (value[0], value[1])
+            return "%s;%f;%f\n" % (value[0], value[1], value[2])
         else:
             return "%s\n" % str(value)
 
