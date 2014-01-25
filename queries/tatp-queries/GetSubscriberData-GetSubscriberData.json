@@ -1,0 +1,23 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "SUBSCRIBER"
+    },
+    "select": {
+       "type": "SimpleTableScan",
+       "tablename": "SUBSCRIBER",
+       "predicates": [
+          {"type": "EQ", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d}
+       ]
+    },
+    "validate" : {
+      "type" : "ValidatePositions"
+    },
+    "project": {
+       "type": "ProjectionScan",
+       "fields": ["S_ID", "SUB_NBR" ,"BIT_1", "BIT_2", "BIT_3", "BIT_4", "BIT_5", "BIT_6", "BIT_7", "BIT_8", "BIT_9", "BIT_10", "HEX_1", "HEX_2", "HEX_3", "HEX_4", "HEX_5", "HEX_6", "HEX_7", "HEX_8", "HEX_9", "HEX_10", "BYTE2_1", "BYTE2_2", "BYTE2_3", "BYTE2_4", "BYTE2_5", "BYTE2_6", "BYTE2_7", "BYTE2_8", "BYTE2_9", "BYTE2_10", "MSC_LOCATION", "VLR_LOCATION"]
+    }
+  },
+  "edges": [["load", "select"], ["select","validate"],["validate","project"]]
+}
