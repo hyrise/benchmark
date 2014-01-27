@@ -3,6 +3,13 @@ import random
 
 import constants
 
+class TATPRollback(Exception):
+    def __init__(self, errormsg):
+        self.msg = errormsg
+
+    def __str__(self):
+        return self.msg
+
 class HyriseDriver(object):
 
     queries = {}
@@ -36,7 +43,7 @@ class HyriseDriver(object):
                 A = 65535
             elif self.population <= 10000000:
                 A = 1048575
-            return self.NURand(A, 0, self.population)
+            return self.NURand(A, 1, self.population)
 
     def NURand(self, A, x, y):
         return ((random.randrange(A+1) | random.randint(x, y+1))) % (y - x + 1) + x
@@ -65,6 +72,7 @@ class HyriseDriver(object):
         x = random.randrange(100)
         params = None
         txn = None
+        """
         if x < 35: ## 35%
             txn, params = (constants.TransactionTypes.GET_SUBSCRIBER_DATA, self.generateGetSubscriberDataParams())
         elif x < 35 + 10: ## 10%
@@ -80,6 +88,8 @@ class HyriseDriver(object):
         else: ## 2%
             assert x >= 100 - 2
             txn, params = (constants.TransactionTypes.DELETE_CALL_FORWARDING, self.generateDeleteCallForwardingParams())
+        """
+        txn, params = (constants.TransactionTypes.INSERT_CALL_FORWARDING, self.generateInsertCallForwardingParams())
 
         return (txn, params)
 
@@ -117,6 +127,9 @@ class HyriseDriver(object):
 
         result = []
         self.conn.query(q["GetNewDestination"], params)
+        if not self.conn.fetchone():
+            self.conn.rollback()
+            raise TATPRollback("GET_NEW_DESTINATION should return a row to succeed.")
         self.conn.commit()
         return result
 
@@ -126,6 +139,9 @@ class HyriseDriver(object):
 
         result = []
         self.conn.query(q["GetAccessData"], params)
+        if not self.conn.fetchone():
+            self.conn.rollback()
+            raise TATPRollback("GET_ACCESS_DATA should return a row to succeed.")
         self.conn.commit()
         return result
 
@@ -134,6 +150,9 @@ class HyriseDriver(object):
 
         result = []
         self.conn.query(q["UpdateSubscriberData"], params)
+        if self.conn.affectedRows == 0:
+            self.conn.rollback()
+            raise TATPRollback("UPDATE_SUBSCRIBER_DATA should update a row in the SPECIAL_FACILITY table to succeed.")
         self.conn.commit()
         return result
 
@@ -149,13 +168,13 @@ class HyriseDriver(object):
         q = self.queries["INSERT_CALL_FORWARDING"]
 
         result = []
+        # always returns a row
+        #print "GetSubscriberId"
         self.conn.query(q["GetSubscriberId"], params)
-        temp_res = self.conn.fetchone_as_dict()
+        s_id = self.conn.fetchone_as_dict()['S_ID']
 
-        if not temp_res:
-            return []
-
-        s_id = temp_res['S_ID']
+        # returns 1,2,3 or 4 rows as result
+        #print "GetFacilityType"
         self.conn.query(q["GetFacilityType"], {'s_id':s_id})
 
         # Even though the previous query project the SF_TYPE as result,
@@ -166,6 +185,24 @@ class HyriseDriver(object):
         #sf_type = self.conn.fetchone_as_dict['sf_type']
         sf_type = params['sf_type']
 
+        #print "CheckPrimaryKeys"
+        self.conn.query(q["CheckPrimaryKeys"],
+            {'s_id':s_id,
+            'sf_type':sf_type,
+            'start_time':params['start_time']})
+        if self.conn.fetchone():
+            self.conn.rollback()
+            raise TATPRollback("INSERT_CALL_FORWARDING tried to insert a row that violates primary key constraints of the CALL FORWARDING table.")
+
+        #print "CheckForeignKeys"
+        self.conn.query(q["CheckForeignKeys"],
+            {'s_id':s_id,
+            'sf_type':sf_type})
+        if self.conn.fetchone():
+            self.conn.rollback()
+            raise TATPRollback("INSERT_CALL_FORWARDING tried to insert a row that violates foreign key constraints of the SPECIAL FACILITY table.")
+
+        #print "InsertCallForwarding"
         self.conn.query(q["InsertCallForwarding"],
             {'s_id':s_id,
             'sf_type':sf_type,
@@ -180,19 +217,17 @@ class HyriseDriver(object):
         q = self.queries["DELETE_CALL_FORWARDING"]
 
         result = []
+        # always returns a row
         self.conn.query(q["GetSubscriberId"], params)
-        temp_res = self.conn.fetchone_as_dict()
-
-        if not temp_res:
-            return []
-
-        s_id = temp_res['S_ID']
+        s_id = self.conn.fetchone_as_dict()['S_ID']
 
         self.conn.query(q["DeleteCallForwarding"],
             {'s_id':s_id,
-            'sf_type':sf_type,
+            'sf_type': params['sf_type'],
             'start_time':params['start_time']})
-
+        if self.conn.affectedRows == 0:
+            self.conn.rollback()
+            raise TATPRollback("DELETE_CALL_FORWARDING should have deleted at least one row to succeed.")
 
         self.conn.commit()
         return result
@@ -220,19 +255,19 @@ class HyriseDriver(object):
                 }
 
     def generateUpdateLocationParams(self):
-        return {'sub_nbr': "{0:015d}".format(self.get_sid()+1),
+        return {'sub_nbr': "{0:015d}".format(self.get_sid()),
                 'vlr_location': random.randrange(4294967295)+1
                 }
     def generateInsertCallForwardingParams(self):
-        return {'sub_nbr': "{0:015d}".format(self.get_sid()+1),
+        return {'sub_nbr': "{0:015d}".format(self.get_sid()),
                 'sf_type': random.randrange(4)+1,
                 'start_time': random.choice([0,8,16]),
                 'end_time': random.randrange(24)+1,
-                'numberx': "{0:015d}".format(self.get_sid()+1)
+                'numberx': "{0:015d}".format(self.get_sid())
                 }
 
     def generateDeleteCallForwardingParams(self):
-        return {'sub_nbr': "{0:015d}".format(self.get_sid()+1),
+        return {'sub_nbr': "{0:015d}".format(self.get_sid()),
                 'sf_type': random.randrange(4)+1,
                 'start_time': random.choice([0,8,16])
                 }

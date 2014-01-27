@@ -4,7 +4,7 @@ import logging
 import time
 import requests
 # include tatp files
-from py_tatp.hyrisedriver import HyriseDriver
+from py_tatp.hyrisedriver import HyriseDriver, TATPRollback
 from py_tatp import constants
 #sys.path.insert(0, os.path.join(os.getcwd(), "benchmark", "bench-tatp"))
 #from util import *
@@ -21,6 +21,7 @@ from user import User
 
 
 logging.getLogger("requests").setLevel(logging.WARNING)
+
 
 class TATPUser(User):
 
@@ -56,6 +57,11 @@ class TATPUser(User):
                 print "*** TATP %i: too many failed requests" % (self._userId)
                 self.stopLogging()
                 os.kill(os.getppid(), signal.SIGINT)
+            return
+        except TATPRollback, e:
+            # these are rollbacks triggered from the client because the results didn't match the expectation
+            tEnd = time.time()
+            self.log("failed", [txn, tEnd-tStart, tStart-self.userStartTime])
             return
         except RuntimeWarning, e:
             # these are transaction errors, e.g. abort due to concurrent commits
@@ -116,10 +122,13 @@ class TATPUser(User):
                 elif v == False: v = 0;
 
         result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit).json()
+        #print result
 
         self.lastResult = result.get("rows", None)
         self.lastHeader = result.get("header", None)
-        self.lastAffected = result.get("affectedRows", None)
+        self.affectedRows = result.get("affectedRows", None)
+
+        #print self.lastResult
 
         # check session context to make sure we are in the correct transaction
         new_session_context = result.get("session_context", None)
@@ -223,6 +232,25 @@ class TATPBenchmark(Benchmark):
             tableload_filename = os.path.abspath(os.path.join(dirQueries, constants.LOAD_FILE))
             with open(tableload_filename, 'r') as loadfile:
                 self.fireQuery(loadfile.read(), autocommit=True)
+            #test = self.fireQuery("""{
+            """  "operators": {
+                "load": {
+                   "type": "TableLoad",
+                   "table": "SUBSCRIBER"
+                    },
+                    "validate" : {
+                      "type": "ValidatePositions"
+                    },
+                    "project": {
+                       "type": "ProjectionScan",
+                       "fields": ["S_ID", "SUB_NBR"]
+                    }
+                  },
+                  "edges": [["load", "validate"], ["validate","project"]]
+                }
+                """
+                #""", autocommit=True)
+                #            import pdb; pdb.set_trace()
             print "done"
 
         self.setUserArgs({

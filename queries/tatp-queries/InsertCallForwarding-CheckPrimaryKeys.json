@@ -1,0 +1,24 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "CALL_FORWARDING"
+    },
+    "select": {
+       "type": "SimpleTableScan",
+       "tablename": "CALL_FORWARDING",
+       "predicates": [
+          {"type": "AND"},
+          {"type": "EQ", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d},
+          {"type": "AND"},
+          {"type": "EQ", "in": 0, "f": "SF_TYPE", "vtype": 0 /*Int*/, "value": %(sf_type)d},
+          {"type": "EQ", "in": 0, "f": "START_TIME", "vtype": 0 /*Int*/, "value": %(start_time)d}
+       ]
+    },
+    "project": {
+       "type": "ProjectionScan",
+       "fields": ["S_ID"]
+    }
+  },
+  "edges": [["load", "select"],["select","project"]]
+}
