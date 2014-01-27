@@ -119,6 +119,7 @@ class TATPUser(User):
 
         self.lastResult = result.get("rows", None)
         self.lastHeader = result.get("header", None)
+        self.lastAffected = result.get("affectedRows", None)
 
         # check session context to make sure we are in the correct transaction
         new_session_context = result.get("session_context", None)
@@ -188,7 +189,6 @@ class TATPBenchmark(Benchmark):
         # make sure the TPC-C query and table directories are present
         dirTables   = os.path.join(self._dirHyriseDB, "test", "tatp", "tables")
         dirQueries = os.path.join("queries", "tatp-queries")
-        import pdb; pdb.set_trace()
 
         sys.stdout.write("Checking for table files... ")
         sys.stdout.flush()

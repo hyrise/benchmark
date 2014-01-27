@@ -5,7 +5,7 @@ import getpass
 
 
 aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')
-aparser.add_argument('--scalefactor', default=1, type=float, metavar='SF',
+aparser.add_argument('--scalefactor', default=1, type=int, metavar='SF',
                      help='Benchmark scale factor')
 aparser.add_argument('--duration', default=20, type=int, metavar='D',
                      help='How long to run the benchmark in seconds')
@@ -76,7 +76,8 @@ kwargs = {
     "serverThreads"     : args["threads"],
     "collectPerfData"   : args["perfdata"],
     "useJson"           : args["json"],
-    "uniformSubIds"     : args["uniform"]
+    "uniformSubIds"     : args["uniform"],
+    "scalefactor"       : args["scalefactor"]
 }
 
 groupId = "tatp_tmp"
@@ -88,10 +89,20 @@ if args["clients"] > 0:
     minClients = args["clients"]
     maxClients = args["clients"]
 
-for num_clients in xrange(minClients, maxClients+1):
-    runId = "numClients_%s" % num_clients
+minThreads = 1
+maxThreads = 80
+
+client_steps = [minClients]
+client_steps.extend([i for i in xrange(10, maxClients+1, 10)])
+if client_steps[-1] < maxClients: client_steps.append(maxClients)
+
+#for num_threads in xrange(minThreads, maxThreads+1):
+for num_clients in client_steps:
+    #runId = "numClients_%s_numThreads_%s" % (num_clients, num_threads)
+    runId = "numClients_%s" % (num_clients)
     kwargs["numUsers"] = num_clients
 
+    #kwargs['serverThreads']=num_threads
     b1 = benchmark.TATPBenchmark(groupId, runId, s1, **kwargs)
     #b2 = benchmark.TPCCBenchmark(groupId, runId, s2, **kwargs)
     #b3 = benchmark.TPCCBenchmark(groupId, runId, s3, **kwargs)
@@ -109,6 +120,6 @@ for num_clients in xrange(minClients, maxClients+1):
     if os.path.exists("/mnt/pmfs/hyrise_tatp"):
         os.remove("/mnt/pmfs/hyrise_tatp")
 
-#plotter = benchmark.Plotter(groupId)
-#plotter.printStatistics()
+plotter = benchmark.Plotter(groupId)
+plotter.printStatistics()
 
