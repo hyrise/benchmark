@@ -11,24 +11,24 @@
     },
 
     "select_facility" : {
-        "type": "SimpleTableScan",
+        "type": "IndexAwareTableScan",
         "tablename": "SPECIAL_FACILITY",
         "predicates" : [
          {"type": "AND"},
-         {"type": "EQ", "in": 0, "f": "S_ID", "vtype": 0, "value": %(s_id)d},
+         {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0, "value": %(s_id)d},
          {"type": "AND"},
-         {"type": "EQ", "in": 0, "f": "SF_TYPE", "vtype": 0, "value": %(sf_type)d},
-         {"type": "EQ", "in": 0, "f": "IS_ACTIVE", "vtype": 0, "value": 1}
+         {"type": "EQ_V", "in": 0, "f": "SF_TYPE", "vtype": 0, "value": %(sf_type)d},
+         {"type": "EQ_V", "in": 0, "f": "IS_ACTIVE", "vtype": 0, "value": 1}
          ]
     },
 
     "select_forwarding" : {
-        "type" : "SimpleTableScan",
+        "type" : "IndexAwareTableScan",
         "tablename" : "CALL_FORWARDING",
         "predicates" : [
          {"type": "AND"},
-         {"type": "LTE", "in": 0, "f": "START_TIME", "vtype": 0, "value": %(start_time)d},
-         {"type": "GT", "in": 0, "f": "END_TIME", "vtype": 0, "value": %(end_time)d}
+         {"type": "LTE_V", "in": 0, "f": "START_TIME", "vtype": 0, "value": %(start_time)d},
+         {"type": "GT_V", "in": 0, "f": "END_TIME", "vtype": 0, "value": %(end_time)d}
         ]
     },
     "validate_facility" : {

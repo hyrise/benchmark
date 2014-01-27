@@ -5,12 +5,12 @@
        "table": "SPECIAL_FACILITY"
     },
     "select": {
-       "type": "SimpleTableScan",
+       "type": "IndexAwareTableScan",
        "tablename": "SPECIAL_FACILITY",
        "predicates": [
           {"type": "AND"},
-          {"type": "EQ", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d},
-          {"type": "EQ", "in": 0, "f": "SF_TYPE", "vtype": 0 /*Int*/, "value": %(sf_type)d}
+          {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d},
+          {"type": "EQ_V", "in": 0, "f": "SF_TYPE", "vtype": 0 /*Int*/, "value": %(sf_type)d}
        ]
     },
     "project": {

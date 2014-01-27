@@ -1,4 +1,4 @@
-BASE_POPULATION = 10
+BASE_POPULATION = 100000
 #BASE_POPULATION = 100
 SCALEFACTORS = [1,2,5,10,20,50]
 
@@ -58,8 +58,8 @@ QUERY_FILES = {
         'DeleteCallForwarding':'DeleteCallForwarding-DeleteCallForwarding.json'}
 }
 
-LOAD_FILE = 'Load-Load.json'
-#LOAD_FILE = 'Load-LoadWithIndizes.json'
+#LOAD_FILE = 'Load-Load.json'
+LOAD_FILE = 'Load-LoadWithIndizes.json'
 
 # Transaction Types
 def enum(*sequential, **named):

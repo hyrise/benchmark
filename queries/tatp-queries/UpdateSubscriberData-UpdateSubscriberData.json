@@ -5,10 +5,10 @@
        "table": "SUBSCRIBER"
     },
     "select_subscriber": {
-       "type": "SimpleTableScan",
+       "type": "IndexAwareTableScan",
        "tablename": "SUBSCRIBER",
        "predicates": [
-          {"type": "EQ", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d}
+          {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d}
        ]
     },
     "validate_subscriber" : {
@@ -25,12 +25,12 @@
        "table": "SPECIAL_FACILITY"
     },
     "select_facility": {
-       "type": "SimpleTableScan",
+       "type": "IndexAwareTableScan",
        "tablename": "SUBSCRIBER",
        "predicates": [
           {"type": "AND"},
-          {"type": "EQ", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d},
-          {"type": "EQ", "in": 0, "f": "SF_TYPE", "vtype": 0 /*Int*/, "value": %(sf_type)d}
+          {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d},
+          {"type": "EQ_V", "in": 0, "f": "SF_TYPE", "vtype": 0 /*Int*/, "value": %(sf_type)d}
        ]
     },
     "validate_facility" : {

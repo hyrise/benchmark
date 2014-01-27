@@ -5,7 +5,7 @@
        "table": "SUBSCRIBER"
     },
     "select": {
-       "type": "SimpleTableScan",
+       "type": "IndexAwareTableScan",
        "tablename": "SUBSCRIBER",
        "predicates": [
           {"type": "EQ_V", "in": 0, "f": "SUB_NBR", "vtype": 2 /*Str*/, "value": "%(sub_nbr)s"}
