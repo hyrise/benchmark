@@ -20,10 +20,6 @@
           "BIT_1": %(bit_1)d
        }
     },
-    "NoOp_subscriber": {
-      "type": "NoOp"
-    },
-
     "load_facility": {
        "type": "TableLoad",
        "table": "SPECIAL_FACILITY"
@@ -43,10 +39,10 @@
     "update_facility": {
        "type": "PosUpdateScan",
        "data": {
-          "DATA_A": "%(data_a)d"
+          "DATA_A": %(data_a)d
        }
     },
-    "NoOp_facility": {
+    "noop": {
       "type": "NoOp"
     }
   },
@@ -54,11 +50,11 @@
       ["load_subscriber", "select_subscriber"],
       ["select_subscriber", "validate_subscriber"],
       ["validate_subscriber", "update_subscriber"],
-      ["update_subscriber","NoOp_subscriber"],
+      ["update_subscriber","noop"],
 
       ["load_facility", "select_facility"],
       ["select_facility", "validate_facility"],
       ["validate_facility", "update_facility"],
-      ["update_facility","NoOp_facility"]
+      ["update_facility","noop"]
       ]
 }

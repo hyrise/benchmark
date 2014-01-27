@@ -27,7 +27,7 @@
         "tablename" : "CALL_FORWARDING",
         "predicates" : [
          {"type": "AND"},
-         {"type": "LT", "in": 0, "f": "START_TIME", "vtype": 0, "value": %(start_time)d},
+         {"type": "LTE", "in": 0, "f": "START_TIME", "vtype": 0, "value": %(start_time)d},
          {"type": "GT", "in": 0, "f": "END_TIME", "vtype": 0, "value": %(end_time)d}
         ]
     },

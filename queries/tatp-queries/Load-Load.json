@@ -19,6 +19,8 @@
       "type": "TableLoad",
       "table": "CALL_FORWARDING",
       "filename": "test/tatp/tables/CALL_FORWARDING.tbl"
-    }
-  }
+    },
+    "noop": {"type" : "NoOp"}
+  },
+  "edges": [["0l","noop"],["1l","noop"],["2l","noop"],["3l","noop"]]
 }
