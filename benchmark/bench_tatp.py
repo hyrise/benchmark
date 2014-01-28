@@ -4,7 +4,7 @@ import logging
 import time
 import requests
 # include tatp files
-from py_tatp.hyrisedriver import HyriseDriver, TATPRollback
+from py_tatp.hyrisedriver import HyriseDriver, TATPFailedAccordingToSpec, TATPAcceptableError
 from py_tatp import constants
 #sys.path.insert(0, os.path.join(os.getcwd(), "benchmark", "bench-tatp"))
 #from util import *
@@ -58,10 +58,15 @@ class TATPUser(User):
                 self.stopLogging()
                 os.kill(os.getppid(), signal.SIGINT)
             return
-        except TATPRollback, e:
+        except TATPFailedAccordingToSpec, e:
             # these are rollbacks triggered from the client because the results didn't match the expectation
             tEnd = time.time()
             self.log("failed", [txn, tEnd-tStart, tStart-self.userStartTime])
+            return
+        except TATPAcceptableError, e:
+            # these are rollbacks triggered from the client because the results didn't match the expectation
+            tEnd = time.time()
+            self.log("failed_acceptably", [txn, tEnd-tStart, tStart-self.userStartTime])
             return
         except RuntimeWarning, e:
             # these are transaction errors, e.g. abort due to concurrent commits

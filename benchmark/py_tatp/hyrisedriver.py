@@ -3,7 +3,23 @@ import random
 
 import constants
 
-class TATPRollback(Exception):
+class TATPFailedAccordingToSpec(Exception):
+    """
+    This error class is used to let the benchmark framework know, when a transaction has failed according to the specs and needs to be recorded as such (and included in the time data collection and the calculation of the Mean Qualified Throughput (MQT)).
+    """
+    def __init__(self, errormsg):
+        self.msg = errormsg
+
+    def __str__(self):
+        return self.msg
+
+class TATPAcceptableError(Exception):
+    """
+    This error class is used to let the benchmark framework know when a Transaction failed with an, according to specification, acceptable error. A transaction returning a predefined acceptable non-fatal error is not included in the Mean Qualified Throughput nor the collected response time data.
+    The following are acceptable errors from the TATP perspective:
+        A UNIQUE constraint violation error encountered in the INSERT CALL FORWARDING transaction (an effort to insert a duplicate primary key).
+        A foreign key constraint violation error in the update and insert transactions, when an effort is made to insert a foreign key value that does no match a corresponding value in the referenced table.
+    """
     def __init__(self, errormsg):
         self.msg = errormsg
 
@@ -72,7 +88,7 @@ class HyriseDriver(object):
         x = random.randrange(100)
         params = None
         txn = None
-        """
+        #"""
         if x < 35: ## 35%
             txn, params = (constants.TransactionTypes.GET_SUBSCRIBER_DATA, self.generateGetSubscriberDataParams())
         elif x < 35 + 10: ## 10%
@@ -88,8 +104,8 @@ class HyriseDriver(object):
         else: ## 2%
             assert x >= 100 - 2
             txn, params = (constants.TransactionTypes.DELETE_CALL_FORWARDING, self.generateDeleteCallForwardingParams())
-        """
-        txn, params = (constants.TransactionTypes.INSERT_CALL_FORWARDING, self.generateInsertCallForwardingParams())
+        #"""
+        #txn, params = (constants.TransactionTypes.INSERT_CALL_FORWARDING, self.generateInsertCallForwardingParams())
 
         return (txn, params)
 
@@ -127,10 +143,9 @@ class HyriseDriver(object):
 
         result = []
         self.conn.query(q["GetNewDestination"], params)
-        if not self.conn.fetchone():
-            self.conn.rollback()
-            raise TATPRollback("GET_NEW_DESTINATION should return a row to succeed.")
         self.conn.commit()
+        if not self.conn.fetchone():
+            raise TATPFailedAccordingToSpec("GET_NEW_DESTINATION should return a row to succeed.")
         return result
 
 
@@ -139,10 +154,9 @@ class HyriseDriver(object):
 
         result = []
         self.conn.query(q["GetAccessData"], params)
-        if not self.conn.fetchone():
-            self.conn.rollback()
-            raise TATPRollback("GET_ACCESS_DATA should return a row to succeed.")
         self.conn.commit()
+        if not self.conn.fetchone():
+            raise TATPFailedAccordingToSpec("GET_ACCESS_DATA should return a row to succeed.")
         return result
 
     def doUpdateSubscriberData(self, params, use_stored_procedure=True):
@@ -151,8 +165,9 @@ class HyriseDriver(object):
         result = []
         self.conn.query(q["UpdateSubscriberData"], params)
         if self.conn.affectedRows == 0:
+            #rollback necessary due to updates in two tables
             self.conn.rollback()
-            raise TATPRollback("UPDATE_SUBSCRIBER_DATA should update a row in the SPECIAL_FACILITY table to succeed.")
+            raise TATPFailedAccordingToSpec("UPDATE_SUBSCRIBER_DATA should update a row in the SPECIAL_FACILITY table to succeed.")
         self.conn.commit()
         return result
 
@@ -191,16 +206,16 @@ class HyriseDriver(object):
             'sf_type':sf_type,
             'start_time':params['start_time']})
         if self.conn.fetchone():
-            self.conn.rollback()
-            raise TATPRollback("INSERT_CALL_FORWARDING tried to insert a row that violates primary key constraints of the CALL FORWARDING table.")
+            self.conn.commit()
+            raise TATPAcceptableError("INSERT_CALL_FORWARDING tried to insert a row that violates primary key constraints of the CALL FORWARDING table.")
 
         #print "CheckForeignKeys"
         self.conn.query(q["CheckForeignKeys"],
             {'s_id':s_id,
             'sf_type':sf_type})
         if self.conn.fetchone():
-            self.conn.rollback()
-            raise TATPRollback("INSERT_CALL_FORWARDING tried to insert a row that violates foreign key constraints of the SPECIAL FACILITY table.")
+            self.conn.commit()
+            raise TATPAcceptableError("INSERT_CALL_FORWARDING tried to insert a row that violates foreign key constraints of the SPECIAL FACILITY table.")
 
         #print "InsertCallForwarding"
         self.conn.query(q["InsertCallForwarding"],
@@ -227,7 +242,7 @@ class HyriseDriver(object):
             'start_time':params['start_time']})
         if self.conn.affectedRows == 0:
             self.conn.rollback()
-            raise TATPRollback("DELETE_CALL_FORWARDING should have deleted at least one row to succeed.")
+            raise TATPFailedAccordingToSpec("DELETE_CALL_FORWARDING should have deleted at least one row to succeed.")
 
         self.conn.commit()
         return result
