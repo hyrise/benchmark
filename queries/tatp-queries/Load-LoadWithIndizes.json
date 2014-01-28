@@ -17,12 +17,12 @@
                 "fields" : ["SUB_NBR"]
                 },
             "0_idx0_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__SUBSCRIBER__S_ID",
                 "fields" : ["S_ID"]
                 },
             "0_idx1_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__SUBSCRIBER__SUB_NBR",
                 "fields" : ["SUB_NBR"]
                 },
@@ -43,12 +43,12 @@
                 "fields" : ["AI_TYPE"]
                 },
             "1_idx0_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__ACCESS_INFO__S_ID",
                 "fields" : ["S_ID"]
                 },
             "1_idx1_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__ACCESS_INFO__AI_TYPE",
                 "fields" : ["AI_TYPE"]
                 },
@@ -74,17 +74,17 @@
                 "fields" : ["IS_ACTIVE"]
                 },
             "2_idx0_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__SPECIAL_FACILITY__S_ID",
                 "fields" : ["S_ID"]
                 },
             "2_idx1_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__SPECIAL_FACILITY__SF_TYPE",
                 "fields" : ["SF_TYPE"]
                 },
             "2_idx2_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__SPECIAL_FACILITY__IS_ACTIVE",
                 "fields" : ["IS_ACTIVE"]
                 },
@@ -115,22 +115,22 @@
                 "fields" : ["END_TIME"]
                 },
             "3_idx0_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__CALL_FORWARDING__S_ID",
                 "fields" : ["S_ID"]
                 },
             "3_idx1_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__CALL_FORWARDING__SF_TYPE",
                 "fields" : ["SF_TYPE"]
                 },
             "3_idx2_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__CALL_FORWARDING__START_TIME",
                 "fields" : ["START_TIME"]
                 },
             "3_idx3_delta": {
-                "type": "CreateGroupkeyIndex",
+                "type": "CreateDeltaIndex",
                 "index_name" : "idx_delta__CALL_FORWARDING__END_TIME",
                 "fields" : ["END_TIME"]
                 },
