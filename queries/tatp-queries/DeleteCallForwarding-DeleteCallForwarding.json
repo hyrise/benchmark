@@ -20,7 +20,10 @@
     },
     "delete": {
        "type": "Delete"
+    },
+    "noop": {
+      "type":"NoOp"
     }
   },
-  "edges": [["load", "select"], ["select", "validate"], ["validate", "delete"]]
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "delete"], ["delete","noop"]]
 }

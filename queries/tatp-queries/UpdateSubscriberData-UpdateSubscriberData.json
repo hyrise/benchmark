@@ -26,7 +26,7 @@
     },
     "select_facility": {
        "type": "IndexAwareTableScan",
-       "tablename": "SUBSCRIBER",
+       "tablename": "SPECIAL_FACILITY",
        "predicates": [
           {"type": "AND"},
           {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d},
