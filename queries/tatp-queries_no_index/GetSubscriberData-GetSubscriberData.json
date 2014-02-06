@@ -5,12 +5,11 @@
        "table": "SUBSCRIBER"
     },
     "select": {
-       "type": "IndexAwareTableScan",
+       "type": "SimpleTableScan",
        "tablename": "SUBSCRIBER",
        "predicates": [
           {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d}
-       ],
-        "validate": "True"
+       ]
     },
     "validate" : {
       "type" : "ValidatePositions"

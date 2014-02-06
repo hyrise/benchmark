@@ -1,0 +1,16 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "CALL_FORWARDING"
+    },
+    "insert": {
+       "type": "InsertScan",
+       "data" : [[1, 1, 0, 1, "00000000000001"]]
+    },
+    "NoOp": {
+      "type": "NoOp"
+    }
+  },
+  "edges": [["load", "insert"],["insert","NoOp"]]
+}

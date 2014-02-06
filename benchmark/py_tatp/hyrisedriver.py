@@ -88,7 +88,7 @@ class HyriseDriver(object):
         x = random.randrange(100)
         params = None
         txn = None
-        #"""
+        """
         if x < 35: ## 35%
             txn, params = (constants.TransactionTypes.GET_SUBSCRIBER_DATA, self.generateGetSubscriberDataParams())
         elif x < 35 + 10: ## 10%
@@ -105,7 +105,8 @@ class HyriseDriver(object):
             assert x >= 100 - 2
             txn, params = (constants.TransactionTypes.DELETE_CALL_FORWARDING, self.generateDeleteCallForwardingParams())
         #"""
-        #txn, params = (constants.TransactionTypes.INSERT_CALL_FORWARDING, self.generateInsertCallForwardingParams())
+        print self.generateGetNewDestinationParams()
+        txn, params = (constants.TransactionTypes.GET_NEW_DESTINATION, self.generateGetNewDestinationParams())
 
         return (txn, params)
 
@@ -143,8 +144,9 @@ class HyriseDriver(object):
 
         result = []
         self.conn.query(q["GetNewDestination"], params)
+        res = self.conn.fetchone()
         self.conn.commit()
-        if not self.conn.fetchone():
+        if None == res:
             raise TATPFailedAccordingToSpec("GET_NEW_DESTINATION should return a row to succeed.")
         return result
 
@@ -154,8 +156,9 @@ class HyriseDriver(object):
 
         result = []
         self.conn.query(q["GetAccessData"], params)
+        res = self.conn.fetchone()
         self.conn.commit()
-        if not self.conn.fetchone():
+        if None == res:
             raise TATPFailedAccordingToSpec("GET_ACCESS_DATA should return a row to succeed.")
         return result
 

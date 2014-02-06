@@ -1,0 +1,166 @@
+{
+  "operators":{
+    "0l": {
+      "type": "TableLoad",
+      "table": "SUBSCRIBER",
+      "filename": "test/tatp/tables/SUBSCRIBER.tbl"
+    },
+    /* Indices for table SUBSCRIBER */
+            "0_idx0": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__SUBSCRIBER__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "0_idx1": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__SUBSCRIBER__SUB_NBR",
+                "fields" : ["SUB_NBR"]
+                },
+            "0_idx0_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__SUBSCRIBER__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "0_idx1_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__SUBSCRIBER__SUB_NBR",
+                "fields" : ["SUB_NBR"]
+                },
+    "1l": {
+      "type": "TableLoad",
+      "table": "ACCESS_INFO",
+      "filename": "test/tatp/tables/ACCESS_INFO.tbl"
+    },
+    /* Indices for table ACCESS_INFO */
+            "1_idx0": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__ACCESS_INFO__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "1_idx1": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__ACCESS_INFO__AI_TYPE",
+                "fields" : ["AI_TYPE"]
+                },
+            "1_idx0_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__ACCESS_INFO__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "1_idx1_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__ACCESS_INFO__AI_TYPE",
+                "fields" : ["AI_TYPE"]
+                },
+    "2l": {
+      "type": "TableLoad",
+      "table": "SPECIAL_FACILITY",
+      "filename": "test/tatp/tables/SPECIAL_FACILITY.tbl"
+    },
+    /* Indices for table SPECIAL_FACILITY */
+            "2_idx0": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__SPECIAL_FACILITY__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "2_idx1": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__SPECIAL_FACILITY__SF_TYPE",
+                "fields" : ["SF_TYPE"]
+                },
+            "2_idx2": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__SPECIAL_FACILITY__IS_ACTIVE",
+                "fields" : ["IS_ACTIVE"]
+                },
+            "2_idx0_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__SPECIAL_FACILITY__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "2_idx1_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__SPECIAL_FACILITY__SF_TYPE",
+                "fields" : ["SF_TYPE"]
+                },
+            "2_idx2_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__SPECIAL_FACILITY__IS_ACTIVE",
+                "fields" : ["IS_ACTIVE"]
+                },
+    "3l": {
+      "type": "TableLoad",
+      "table": "CALL_FORWARDING",
+      "filename": "test/tatp/tables/CALL_FORWARDING.tbl"
+    },
+    /* Indices for table CALL_FORWARDING */
+            "3_idx0": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__CALL_FORWARDING__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "3_idx1": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__CALL_FORWARDING__SF_TYPE",
+                "fields" : ["SF_TYPE"]
+                },
+            "3_idx2": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__CALL_FORWARDING__START_TIME",
+                "fields" : ["START_TIME"]
+                },
+            "3_idx3": {
+                "type": "CreateGroupkeyIndex",
+                "index_name" : "idx__CALL_FORWARDING__END_TIME",
+                "fields" : ["END_TIME"]
+                },
+            "3_idx0_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__CALL_FORWARDING__S_ID",
+                "fields" : ["S_ID"]
+                },
+            "3_idx1_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__CALL_FORWARDING__SF_TYPE",
+                "fields" : ["SF_TYPE"]
+                },
+            "3_idx2_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__CALL_FORWARDING__START_TIME",
+                "fields" : ["START_TIME"]
+                },
+            "3_idx3_delta": {
+                "type": "CreateDeltaIndex",
+                "index_name" : "idx_delta__CALL_FORWARDING__END_TIME",
+                "fields" : ["END_TIME"]
+                },
+    "noop": {"type" : "NoOp"}
+  },
+  "edges": [
+        ["0l","0_idx0"],["0_idx0","noop"],
+        ["0l","0_idx1"],["0_idx1","noop"],
+        ["0l","0_idx0_delta"],["0_idx0_delta","noop"],
+        ["0l","0_idx1_delta"],["0_idx1_delta","noop"],
+
+        ["1l","1_idx0"],["1_idx0","noop"],
+        ["1l","1_idx1"],["1_idx1","noop"],
+        ["1l","1_idx0_delta"],["1_idx0_delta","noop"],
+        ["1l","1_idx1_delta"],["1_idx1_delta","noop"],
+
+        ["2l","2_idx0"],["2_idx0","noop"],
+        ["2l","2_idx1"],["2_idx1","noop"],
+        ["2l","2_idx2"],["2_idx2","noop"],
+        ["2l","2_idx0_delta"],["2_idx0_delta","noop"],
+        ["2l","2_idx1_delta"],["2_idx1_delta","noop"],
+        ["2l","2_idx2_delta"],["2_idx2_delta","noop"],
+
+        ["3l","3_idx0"],["3_idx0","noop"],
+        ["3l","3_idx1"],["3_idx1","noop"],
+        ["3l","3_idx2"],["3_idx2","noop"],
+        ["3l","3_idx3"],["3_idx3","noop"],
+        ["3l","3_idx0_delta"],["3_idx0_delta","noop"],
+        ["3l","3_idx1_delta"],["3_idx1_delta","noop"],
+        ["3l","3_idx2_delta"],["3_idx2_delta","noop"],
+        ["3l","3_idx3_delta"],["3_idx3_delta","noop"]
+  ]
+}

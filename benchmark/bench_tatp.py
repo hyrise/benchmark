@@ -203,6 +203,7 @@ class TATPBenchmark(Benchmark):
         # make sure the TPC-C query and table directories are present
         dirTables   = os.path.join(self._dirHyriseDB, "test", "tatp", "tables")
         dirQueries = os.path.join("queries", "tatp-queries")
+        #dirQueries = os.path.join("queries", "tatp-queries_no_index")
 
         sys.stdout.write("Checking for table files... ")
         sys.stdout.flush()

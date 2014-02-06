@@ -1,0 +1,76 @@
+{
+  "operators": {
+    "load_facility": {
+       "type": "TableLoad",
+       "table": "SPECIAL_FACILITY"
+    },
+
+    "load_forwarding": {
+       "type": "TableLoad",
+       "table": "CALL_FORWARDING"
+    },
+
+    "select_facility" : {
+        "type": "IndexAwareTableScan",
+        "tablename": "SPECIAL_FACILITY",
+        "predicates" : [
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0, "value": 1},
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "SF_TYPE", "vtype": 0, "value": 1},
+         {"type": "EQ_V", "in": 0, "f": "IS_ACTIVE", "vtype": 0, "value": 1}
+         ]
+    },
+
+    "select_forwarding" : {
+        "type" : "IndexAwareTableScan",
+        "tablename" : "CALL_FORWARDING",
+        "predicates" : [
+         {"type": "AND"},
+         {"type": "LTE_V", "in": 0, "f": "START_TIME", "vtype": 0, "value": 0},
+         {"type": "GT_V", "in": 0, "f": "END_TIME", "vtype": 0, "value": 1}
+        ]
+    },
+    "validate_facility" : {
+      "type" : "ValidatePositions"
+    },
+    "validate_forwarding" : {
+      "type" : "ValidatePositions"
+    },
+
+    "join": {
+       "type": "JoinScan",
+        "predicates" : [
+                { "type" : 0 },
+                {
+                "type" : 3, /* EXP_EQ */
+                "input_left" : 0,
+                "field_left" : "S_ID",
+                "input_right" : 1,
+                "field_right" : "S_ID"
+                },
+                {
+                "type" : 3, /* EXP_EQ */
+                "input_left" : 0,
+                "field_left" : "SF_TYPE",
+                "input_right" : 1,
+                "field_right" : "SF_TYPE"
+                }]
+    },
+    "project": {
+      "type": "ProjectionScan",
+      "fields": ["NUMBERX"]
+    }
+  },
+  "edges": [
+    ["load_facility", "select_facility"],
+    ["select_facility", "validate_facility"],
+    ["validate_facility", "join"],
+
+    ["load_forwarding", "select_forwarding"],
+    ["select_forwarding", "validate_forwarding"],
+    ["validate_forwarding", "join"],
+
+    ["join","project"]
+    ]
+}

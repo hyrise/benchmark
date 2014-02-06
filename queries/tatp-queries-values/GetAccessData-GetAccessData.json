@@ -1,0 +1,26 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "ACCESS_INFO"
+    },
+
+    "select" : {
+        "type": "IndexAwareTableScan",
+        "tablename": "ACCESS_INFO",
+        "predicates" : [
+         {"type": "AND"},
+         {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0, "value": 1},
+         {"type": "EQ_V", "in": 0, "f": "AI_TYPE", "vtype": 0, "value": 1}
+         ]
+    },
+    "validate" : {
+      "type" : "ValidatePositions"
+    },
+    "project": {
+       "type": "ProjectionScan",
+       "fields": ["DATA1", "DATA2", "DATA3", "DATA4"]
+    }
+  },
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "project"]]
+}

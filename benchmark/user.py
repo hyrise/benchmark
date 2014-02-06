@@ -4,6 +4,7 @@ import random
 import requests
 import multiprocessing
 import time
+import cProfile
 
 class User(multiprocessing.Process):
     """
@@ -51,23 +52,38 @@ class User(multiprocessing.Process):
     def run(self):
         self._prepare()
         self.prepareUser()
+        cProfile.runctx('self.runWorkload()', globals(), locals(), 'cProfileUser%s.prof' % self._userId)
+        self.stopUser()
+        self._writeLogs()
+        print "User runtime: ", self._totalTime, " User querytime: ", self._totalQueryTime
+
+    def runWorkload(self):
         while not self._stopevent.is_set():
             tStart = time.time()
             self.runUser()
             self._totalTime += time.time() - tStart
             self._totalRuns += 1
-        self.stopUser()
-        self._writeLogs()
-        print "User runtime: ", self._totalTime, " User querytime: ", self._totalQueryTime
+        return
+
 
     def stop(self):
         self._stopevent.set()
 
 
     def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False, stored_procedure=None):
+        #try:
+        #    if queryArgs: query = queryString % queryArgs
+        #    else:         query = queryString
+        #except ValueError:
+        #    print queryArgs
+        #    print queryString
+        #    import sys
+        #    sys.exit(0)
         if queryArgs: query = queryString % queryArgs
         else:         query = queryString
         data = {"query": query}
+        #print "User self.context: %s\n" % self.context
+        #print "Session context is: %s\n" % sessionContext
         if sessionContext:        data["session_context"] = sessionContext
         if autocommit:            data["autocommit"] = "true"
         if self._collectPerfData: data["performance"] = "true"

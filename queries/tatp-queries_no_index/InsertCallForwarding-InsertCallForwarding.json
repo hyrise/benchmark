@@ -1,0 +1,16 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "CALL_FORWARDING"
+    },
+    "insert": {
+       "type": "InsertScan",
+       "data" : [[%(s_id)d, %(sf_type)d, %(start_time)d, %(end_time)d, %(numberx)s]]
+    },
+    "NoOp": {
+      "type": "NoOp"
+    }
+  },
+  "edges": [["load", "insert"],["insert","NoOp"]]
+}

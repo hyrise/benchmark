@@ -1,0 +1,26 @@
+{
+  "operators":{
+    "0l": {
+      "type": "TableLoad",
+      "table": "SUBSCRIBER",
+      "filename": "test/tatp/tables/SUBSCRIBER.tbl"
+    },
+    "1l": {
+      "type": "TableLoad",
+      "table": "ACCESS_INFO",
+      "filename": "test/tatp/tables/ACCESS_INFO.tbl"
+    },
+    "2l": {
+      "type": "TableLoad",
+      "table": "SPECIAL_FACILITY",
+      "filename": "test/tatp/tables/SPECIAL_FACILITY.tbl"
+    },
+    "3l": {
+      "type": "TableLoad",
+      "table": "CALL_FORWARDING",
+      "filename": "test/tatp/tables/CALL_FORWARDING.tbl"
+    },
+    "noop": {"type" : "NoOp"}
+  },
+  "edges": [["0l","noop"],["1l","noop"],["2l","noop"],["3l","noop"]]
+}

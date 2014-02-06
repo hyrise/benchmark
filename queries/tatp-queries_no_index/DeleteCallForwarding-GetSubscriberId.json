@@ -1,0 +1,23 @@
+{
+  "operators": {
+    "load": {
+       "type": "TableLoad",
+       "table": "SUBSCRIBER"
+    },
+    "select": {
+       "type": "SimpleTableScan",
+       "tablename": "SUBSCRIBER",
+       "predicates": [
+          {"type": "EQ_V", "in": 0, "f": "SUB_NBR", "vtype": 2 /*Str*/, "value": "%(sub_nbr)s"}
+       ]
+    },
+    "validate" : {
+      "type" : "ValidatePositions"
+    },
+    "project": {
+       "type": "ProjectionScan",
+       "fields": ["S_ID"]
+    }
+  },
+  "edges": [["load", "select"], ["select","validate"],["validate","project"]]
+}

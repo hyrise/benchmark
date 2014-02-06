@@ -1,0 +1,60 @@
+{
+  "operators": {
+    "load_subscriber": {
+       "type": "TableLoad",
+       "table": "SUBSCRIBER"
+    },
+    "select_subscriber": {
+       "type": "SimpleTableScan",
+       "tablename": "SUBSCRIBER",
+       "predicates": [
+          {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d}
+       ]
+    },
+    "validate_subscriber" : {
+      "type" : "ValidatePositions"
+    },
+    "update_subscriber": {
+       "type": "PosUpdateScan",
+       "data": {
+          "BIT_1": %(bit_1)d
+       }
+    },
+    "load_facility": {
+       "type": "TableLoad",
+       "table": "SPECIAL_FACILITY"
+    },
+    "select_facility": {
+       "type": "SimpleTableScan",
+       "tablename": "SPECIAL_FACILITY",
+       "predicates": [
+          {"type": "AND"},
+          {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d},
+          {"type": "EQ_V", "in": 0, "f": "SF_TYPE", "vtype": 0 /*Int*/, "value": %(sf_type)d}
+       ]
+    },
+    "validate_facility" : {
+      "type" : "ValidatePositions"
+    },
+    "update_facility": {
+       "type": "PosUpdateScan",
+       "data": {
+          "DATA_A": %(data_a)d
+       }
+    },
+    "noop": {
+      "type": "NoOp"
+    }
+  },
+  "edges": [
+      ["load_subscriber", "select_subscriber"],
+      ["select_subscriber", "validate_subscriber"],
+      ["validate_subscriber", "update_subscriber"],
+      ["update_subscriber","noop"],
+
+      ["load_facility", "select_facility"],
+      ["select_facility", "validate_facility"],
+      ["validate_facility", "update_facility"],
+      ["update_facility","noop"]
+      ]
+}
