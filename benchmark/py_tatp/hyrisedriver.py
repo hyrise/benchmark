@@ -6,6 +6,7 @@ import constants
 class TATPFailedAccordingToSpec(Exception):
     """
     This error class is used to let the benchmark framework know, when a transaction has failed according to the specs and needs to be recorded as such (and included in the time data collection and the calculation of the Mean Qualified Throughput (MQT)).
+i       self.conn.commit()dddd
     """
     def __init__(self, errormsg):
         self.msg = errormsg
@@ -116,16 +117,22 @@ class HyriseDriver(object):
         if constants.TransactionTypes.GET_SUBSCRIBER_DATA == txn:
             result = self.doGetSubscriberData(params, use_stored_procedure)
         elif constants.TransactionTypes.GET_NEW_DESTINATION == txn:
+            #print "GET_NEW_DESTINATION"
             result = self.doGetNewDestination(params, use_stored_procedure)
         elif constants.TransactionTypes.GET_ACCESS_DATA == txn:
+            #print "GET_ACCESS_DATA"
             result = self.doGetAccessData(params, use_stored_procedure)
         elif constants.TransactionTypes.UPDATE_SUBSCRIBER_DATA == txn:
+            #print "UPDATE_SUBSCRIBER_DATA"
             result = self.doUpdateSubscriberData(params, use_stored_procedure)
         elif constants.TransactionTypes.UPDATE_LOCATION == txn:
+            #print "UPDATE_LOCATION"
             result = self.doUpdateLocation(params, use_stored_procedure)
         elif constants.TransactionTypes.INSERT_CALL_FORWARDING == txn:
+            #print "INSERT_CALL_FORWARDING"
             result = self.doInsertCallForwarding(params, use_stored_procedure)
         elif constants.TransactionTypes.DELETE_CALL_FORWARDING == txn:
+            #print "DELETE_CALL_FORWARDING"
             result = self.doDeleteCallForwarding(params, use_stored_procedure)
         else:
             assert False, "Unexpected TransactionType: " + txn
@@ -135,18 +142,16 @@ class HyriseDriver(object):
         q = self.queries["GET_SUBSCRIBER_DATA"]
 
         result = []
-        self.conn.query(q["GetSubscriberData"], params)
-        self.conn.commit()
+        self.conn.query(q["GetSubscriberData"], params, commit=True)
         return result
 
     def doGetNewDestination(self, params, use_stored_procedure=True):
         q = self.queries["GET_NEW_DESTINATION"]
 
         result = []
-        self.conn.query(q["GetNewDestination"], params)
-        res = self.conn.fetchone()
-        self.conn.commit()
-        if None == res:
+        self.conn.query(q["GetNewDestination"], params, commit=True)
+        temp = self.conn.fetchone()
+        if not temp:
             raise TATPFailedAccordingToSpec("GET_NEW_DESTINATION should return a row to succeed.")
         return result
 
@@ -155,10 +160,9 @@ class HyriseDriver(object):
         q = self.queries["GET_ACCESS_DATA"]
 
         result = []
-        self.conn.query(q["GetAccessData"], params)
-        res = self.conn.fetchone()
-        self.conn.commit()
-        if None == res:
+        self.conn.query(q["GetAccessData"], params, commit=True)
+        temp = self.conn.fetchone()
+        if not temp:
             raise TATPFailedAccordingToSpec("GET_ACCESS_DATA should return a row to succeed.")
         return result
 
@@ -178,8 +182,7 @@ class HyriseDriver(object):
         q = self.queries["UPDATE_LOCATION"]
 
         result = []
-        self.conn.query(q["UpdateLocation"] , params)
-        self.conn.commit()
+        self.conn.query(q["UpdateLocation"] , params, commit=True)
         return result
 
     def doInsertCallForwarding(self, params, use_stored_procedure=True):
@@ -226,9 +229,8 @@ class HyriseDriver(object):
             'sf_type':sf_type,
             'start_time':params['start_time'],
             'end_time':params['end_time'],
-            'numberx':params['numberx']})
+            'numberx':params['numberx']}, commit=True)
 
-        self.conn.commit()
         return result
 
     def doDeleteCallForwarding(self, params, use_stored_procedure=True):

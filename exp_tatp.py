@@ -3,6 +3,7 @@ import benchmark
 from benchmark.plotter_tatp import Plotter as TATPPlotter
 import os
 import getpass
+from benchmark.plotter_tatp import Plotter as TATPPlotter
 
 
 aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')
@@ -82,7 +83,6 @@ kwargs = {
 }
 
 groupId = "tatp_tmp"
-num_clients = args["clients"]
 minClients = args["clients_min"]
 maxClients = args["clients_max"]
 
@@ -90,12 +90,9 @@ if args["clients"] > 0:
     minClients = args["clients"]
     maxClients = args["clients"]
 
-#minThreads = 1
-#maxThreads = 80
-
-#client_steps = [minClients]
-#client_steps.extend([i for i in xrange(10, maxClients+1, 10)])
-#if client_steps[-1] < maxClients: client_steps.append(maxClients)
+client_steps = set([minClients])
+client_steps.update([i for i in xrange(10, maxClients+1, 10)])
+if max(client_steps) < maxClients: client_steps.add(maxClients)
 
 #for num_threads in xrange(minThreads, maxThreads+1):
 for num_clients in xrange(minClients, maxClients+1):

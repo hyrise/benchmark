@@ -89,7 +89,7 @@ def generate_facility_and_forwarding_data(subscribers, tbldir):
     for s_id in xrange(subscribers):
         for i in random.sample([1,2,3,4],random.randint(1,4)):
             sf_type = i
-            is_active = 0 if random.random() <= 0.84 else 1
+            is_active = 1 if random.random() <= 0.84 else 0
             error_cntrl = random.randrange(256)
             data_a = random.randrange(256)
             data_b = ''.join(random.choice(string.ascii_uppercase) for i in range(5))

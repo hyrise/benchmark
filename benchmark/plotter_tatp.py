@@ -130,6 +130,8 @@ class Plotter:
                     if runData[buildId]["txStats"].has_key(txId):
                         plotX.append(runData[buildId]["numUsers"])
                         plotY.append(runData[buildId]["txStats"][txId]["rtAvg"])
+                if not (plotX and plotY):
+                    continue
                 plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
                 plt.plot(plotX, plotY, DEFAULT_FORMAT, label=buildId)
             plt.legend(loc='upper left', prop={'size':10})
