@@ -17,8 +17,8 @@
          {"type": "AND"},
          {"type": "EQ_V", "in": 0, "f": "OL_D_ID", "vtype": 0, "value": %(d_id)d},
          {"type": "AND"},
-         {"type": "GT_V", "in": 0, "f": "OL_O_ID", "vtype": 0, "value": %(o_id2)d},
-         {"type": "LT_V", "in": 0, "f": "OL_O_ID", "vtype": 0, "value": %(o_id1)d}
+         {"type": "GTE_V", "in": 0, "f": "OL_O_ID", "vtype": 0, "value": %(o_id2)d},
+         {"type": "LTE_V", "in": 0, "f": "OL_O_ID", "vtype": 0, "value": %(o_id1)d}
         ]
     },
     "validate_orderline" : {
