@@ -31,6 +31,8 @@ class User(multiprocessing.Process):
         self._totalRuns         = 0
         self._totalTime         = 0
         self._totalQueryTime    = 0
+        self._queryfile         = None
+        self._write_to_file     = None # set filename here to generate queries into file
 
     def prepareUser(self):
         """ implement this in subclasses """
@@ -63,7 +65,6 @@ class User(multiprocessing.Process):
     def stop(self):
         self._stopevent.set()
 
-
     def fireQuery(self, queryString, queryArgs={"papi": "NO_PAPI"}, sessionContext=None, autocommit=False, stored_procedure=None):
         if queryArgs: query = queryString % queryArgs
         else:         query = queryString
@@ -74,7 +75,11 @@ class User(multiprocessing.Process):
         self._lastQuery = data
         tStart = time.time()
         if stored_procedure:
-            result = self._session.post("http://%s:%s/%s/" % (self._host, self._port, stored_procedure), data=data, timeout=100000)
+            if self._write_to_file:
+                self.write_request_to_file(query, stored_procedure, self.write_to_file)
+                return
+            else:
+                result = self._session.post("http://%s:%s/%s/" % (self._host, self._port, stored_procedure), data=data, timeout=100000)
         else:
             result = self._session.post("http://%s:%s/" % (self._host, self._port), data=data, timeout=100000)
         self._totalQueryTime += time.time() - tStart
@@ -85,6 +90,19 @@ class User(multiprocessing.Process):
             raise RuntimeWarning(result.text)
         else:
             raise RuntimeError("Request failed --> %s" % result.text)
+
+    def write_request_to_file(self, query, stored_procedure, filename):
+        if self._queryfile == None:
+            self._queryfile = open(filename, 'w+')
+        postdata = "procedure=" + stored_procedure + "&query="+query
+        postlen = len(postdata) + 4
+        request = "POST /procedure/ HTTP/1.0\r\nConnection: Keep-Alive\r\nContent-length: %s\r\nContent-type: application/x-www-form-urlencoded\r\nHost: 127.0.0.1:5000\r\nUser-Agent: ApacheBench/2.3\r\nAccept: */*\r\n\r\n" % postlen
+        requestlen = len(request)
+        self._queryfile.write('{:04d}'.format(requestlen)+'\0')
+        self._queryfile.write('{:04d}'.format(postlen)+'\0')
+        self._queryfile.write(request)
+        self._queryfile.write(postdata)
+        self._queryfile.write("\r\n\r\n")
 
     def startLogging(self):
         self._logevent.set()
