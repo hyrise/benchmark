@@ -12,6 +12,7 @@ from HyriseConnection import HyriseConnection
 
 #SKIP = True
 SKIP = False
+CHECK_RESULTS = False
 
 QUERY_FILES = {
   'DELIVERY': {'deleteNewOrder': 'Delivery-deleteNewOrder.json',
@@ -284,6 +285,9 @@ class HyriseDriver(AbstractDriver):
                 items.append({"I_ID": i_ids[i], "I_W_ID": i_w_ids[i], "quantity": i_qtys[i]})
 
             r = self.conn.stored_procedure("TPCC-NewOrder", self.queries["STORED_PROCEDURES"]['newOrder'], {"w_id": w_id, "d_id": d_id, "c_id": c_id, "items": json.dumps(items)})
+
+            if not CHECK_RESULTS:
+                return []
 
             customer_info = {"C_CREDIT": r["C_CREDIT"], "C_DISCOUNT": r["C_DISCOUNT"], "C_LAST": r["C_LAST"]}
             misc = [ (r["W_TAX"], r["D_TAX"], r["D_NEXT_O_ID"], r["total-amount"]) ]

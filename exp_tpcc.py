@@ -47,6 +47,9 @@ aparser.add_argument('--perfdata', default=False, action='store_true',
                      help='Collect additional performance data. Slows down benchmark.')
 aparser.add_argument('--json', default=False, action='store_true',
                      help='Use JSON queries instead of stored procedures.')
+aparser.add_argument('--ab', default=None,
+                     help='Queryfile with prepared requests. If specified ab tool is used to fire queries.')
+
 args = vars(aparser.parse_args())
 
 s1 = benchmark.Settings("None", PERSISTENCY="NONE")
@@ -75,7 +78,8 @@ kwargs = {
     "noLoad"            : args["no_load"],
     "serverThreads"     : args["threads"],
     "collectPerfData"   : args["perfdata"],
-    "useJson"           : args["json"]
+    "useJson"           : args["json"],
+    "abQueryFile"       : args["ab"]
 }
 
 groupId = "tpcc_tmp"
@@ -92,18 +96,18 @@ for num_clients in xrange(minClients, maxClients+1):
     kwargs["numUsers"] = num_clients
 
     b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
-    b2 = benchmark.TPCCBenchmark(groupId, runId, s2, **kwargs)
-    b3 = benchmark.TPCCBenchmark(groupId, runId, s3, **kwargs)
-    b4 = benchmark.TPCCBenchmark(groupId, runId, s4, **kwargs)
-    b5 = benchmark.TPCCBenchmark(groupId, runId, s5, **kwargs)
-    b6 = benchmark.TPCCBenchmark(groupId, runId, s6, **kwargs)
+    # b2 = benchmark.TPCCBenchmark(groupId, runId, s2, **kwargs)
+    # b3 = benchmark.TPCCBenchmark(groupId, runId, s3, **kwargs)
+    # b4 = benchmark.TPCCBenchmark(groupId, runId, s4, **kwargs)
+    # b5 = benchmark.TPCCBenchmark(groupId, runId, s5, **kwargs)
+    # b6 = benchmark.TPCCBenchmark(groupId, runId, s6, **kwargs)
     
 
     b1.run()
-    b2.run()
-    b3.run()
-    b4.run()
-    b5.run()
+    # b2.run()
+    # b3.run()
+    # b4.run()
+    # b5.run()
     # b6.run()
     
     if os.path.exists("/mnt/pmfs/hyrise_tpcc"):

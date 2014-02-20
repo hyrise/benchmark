@@ -62,6 +62,7 @@ class Benchmark:
         self._serverIP          = kwargs["serverIP"] if kwargs.has_key("serverIP") else "127.0.0.1"
         self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
         self._remotePath        = kwargs["remotePath"] if kwargs.has_key("remotePath") else "/home/" + kwargs["remoteUser"] + "/benchmark"
+        self._abQueryFile       = kwargs["abQueryFile"] if kwargs.has_key("abQueryFile") else None
         if self._remote:
             self._ssh               = paramiko.SSHClient()
         else:
@@ -111,44 +112,52 @@ class Benchmark:
         print "Preparing benchmark..."
         self.benchPrepare()
 
-        self._createUsers()
-        sys.stdout.write("Starting %s user(s)...\r" % self._numUsers)
-        sys.stdout.flush()
-        for i in range(self._numUsers):
-            sys.stdout.write("Starting %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
+        if self._abQueryFile != None:
+            print "---"
+            print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
+            print "---"
+            ab = subprocess.Popen(["./ab/ab", "-l", "2", "-v", "0", "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+            ab.wait()
+        else:
+            self._createUsers()
+            sys.stdout.write("Starting %s user(s)...\r" % self._numUsers)
             sys.stdout.flush()
-            self._users[i].start()
-        print "Starting %s user(s)... done     " % self._numUsers
+            for i in range(self._numUsers):
+                sys.stdout.write("Starting %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
+                sys.stdout.flush()
+                self._users[i].start()
+            print "Starting %s user(s)... done     " % self._numUsers
 
-        for i in range(self._warmuptime):
-            sys.stdout.write("Warming up... %i   \r" % (self._warmuptime - i))
-            sys.stdout.flush()
-            time.sleep(1)
-        print "Warming up... done     "
+            for i in range(self._warmuptime):
+                sys.stdout.write("Warming up... %i   \r" % (self._warmuptime - i))
+                sys.stdout.flush()
+                time.sleep(1)
+            print "Warming up... done     "
 
-        sys.stdout.write("Logging results for %i seconds... \r" % self._runtime)
-        sys.stdout.flush()
-        for i in range(self._numUsers):
-            self._users[i].startLogging()
-        for i in range(self._runtime):
-            sys.stdout.write("Logging results for %i seconds... \r" % (self._runtime - i))
+            sys.stdout.write("Logging results for %i seconds... \r" % self._runtime)
             sys.stdout.flush()
-            time.sleep(1)
-        #time.sleep(self._runtime)
-        for i in range(self._numUsers):
-            self._users[i].stopLogging()
-        print "Logging results for %i seconds... done" % self._runtime
+            for i in range(self._numUsers):
+                self._users[i].startLogging()
+            for i in range(self._runtime):
+                sys.stdout.write("Logging results for %i seconds... \r" % (self._runtime - i))
+                sys.stdout.flush()
+                time.sleep(1)
+            #time.sleep(self._runtime)
+            for i in range(self._numUsers):
+                self._users[i].stopLogging()
+            print "Logging results for %i seconds... done" % self._runtime
 
-        sys.stdout.write("Stopping %s user(s)...\r" % self._numUsers)
-        sys.stdout.flush()
-        for i in range(self._numUsers):
-            self._users[i].stop()
-        print "users stopped"
-        time.sleep(2)
-        for i in range(self._numUsers):
-            sys.stdout.write("Stopping %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
+            sys.stdout.write("Stopping %s user(s)...\r" % self._numUsers)
             sys.stdout.flush()
-            self._users[i].join()
+            for i in range(self._numUsers):
+                self._users[i].stop()
+            print "users stopped"
+            time.sleep(2)
+            for i in range(self._numUsers):
+                sys.stdout.write("Stopping %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
+                sys.stdout.flush()
+                self._users[i].join()
+        
         print "Stopping %s user(s)... done     " % self._numUsers
         self._stopServer()
         print "all set"

@@ -108,10 +108,13 @@ class TPCCUser(User):
                 if v == True:    v = 1;
                 elif v == False: v = 0;
 
-        result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure).json()
-        self.addPerfData(result.get("performanceData", None))
-        return result
-
+        query_result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure)
+        if query_result != None:
+            result = query_result.json()
+            self.addPerfData(result.get("performanceData", None))
+            return result
+        else:
+            return None
 
     def query(self, querystr, paramlist=None, commit=False):
         if paramlist:

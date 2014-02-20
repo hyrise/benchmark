@@ -10,3 +10,6 @@ logs/
 results/
 saved/
 pytpcc/pytpcc/tables
+
+ab/ab
+ab_queries/
