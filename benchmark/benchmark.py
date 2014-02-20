@@ -63,6 +63,8 @@ class Benchmark:
         self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
         self._remotePath        = kwargs["remotePath"] if kwargs.has_key("remotePath") else "/home/" + kwargs["remoteUser"] + "/benchmark"
         self._abQueryFile       = kwargs["abQueryFile"] if kwargs.has_key("abQueryFile") else None
+        self._abCore            = kwargs["abCore"] if kwargs.has_key("abCore") else 2
+        self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 0
         if self._remote:
             self._ssh               = paramiko.SSHClient()
         else:
@@ -116,7 +118,7 @@ class Benchmark:
             print "---"
             print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
             print "---"
-            ab = subprocess.Popen(["./ab/ab", "-l", "2", "-v", "0", "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+            ab = subprocess.Popen(["./ab/ab", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
             ab.wait()
         else:
             self._createUsers()
