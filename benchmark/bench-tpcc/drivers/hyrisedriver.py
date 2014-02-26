@@ -192,9 +192,15 @@ class HyriseDriver(AbstractDriver):
         sys.stdout.write('.')
         sys.stdout.flush()
 
-    def executeStart(self):
-        loadjson = self.generateTableloadJson()
+    def executeStart(self, tabledir):
+        loadjson = self.generateTableloadBinaryJson(tabledir)
         self.conn.query(loadjson)
+
+    def executeLoadCSVExportBinary(self, import_path, export_path):
+        loadcsvjson = self.generateTableloadCSVJson(import_path)
+        self.conn.query(loadcsvjson)
+        exportbinaryjson = self.generateTableloadBinaryExportJson(export_path)
+        self.conn.query(exportbinaryjson)
 
     def executeFinish(self):
         """Callback after the execution phase finishes"""
@@ -579,10 +585,22 @@ class HyriseDriver(AbstractDriver):
             #self.conn.commit()
             return int(result[0]) if result else 0
 
-    def generateTableloadJson(self):
-        filename = "Load-Load.json"
+    def generateTableloadBinaryJson(self, path):
+        filename = "Load-LoadFromBinary.json"
         with open(os.path.abspath(os.path.join(self.query_directory, filename)), 'r') as jsonfile:
             loadstr = jsonfile.read()
-        return loadstr
+        return loadstr.replace("$PATH$", path)
+
+    def generateTableloadCSVJson(self, path):
+        filename = "Load-LoadFromCSV.json"
+        with open(os.path.abspath(os.path.join(self.query_directory, filename)), 'r') as jsonfile:
+            loadstr = jsonfile.read()
+        return loadstr.replace("$PATH$", path)
+
+    def generateTableloadBinaryExportJson(self, path):
+        filename = "Load-ExportTables.json"
+        with open(os.path.abspath(os.path.join(self.query_directory, filename)), 'r') as jsonfile:
+            loadstr = jsonfile.read()
+        return loadstr.replace("$PATH$", path)
 
 ## CLAS

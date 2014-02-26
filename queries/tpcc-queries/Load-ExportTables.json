@@ -1,0 +1,67 @@
+{
+    "operators" : {
+
+        "0l": {
+            "type": "PersistTable",
+            "tablename": "CUSTOMER",
+            "path" : "$PATH$"
+            },
+        "1l": {
+            "type": "PersistTable",
+            "tablename": "DISTRICT",
+            "path" : "$PATH$"
+            },
+        "2l": {
+            "type": "PersistTable",
+            "tablename": "HISTORY",
+            "path" : "$PATH$"
+            },
+        "3l": {
+            "type": "PersistTable",
+            "tablename": "STOCK",
+            "path" : "$PATH$"
+            },
+        "4l": {
+            "type": "PersistTable",
+            "tablename": "ITEM",
+            "path" : "$PATH$"
+            },
+        "5l": {
+            "type": "PersistTable",
+            "tablename": "NEW_ORDER",
+            "path" : "$PATH$"
+            },
+        "6l": {
+            "type": "PersistTable",
+            "tablename": "ORDER_LINE",
+            "path" : "$PATH$"
+            },
+
+        "7l": {
+            "type": "PersistTable",
+            "tablename": "ORDERS",
+            "path" : "$PATH$"
+            },
+
+        "8l": {
+            "type": "PersistTable",
+            "tablename": "WAREHOUSE",
+            "path" : "$PATH$"
+            },
+
+        "noop": {"type" : "NoOp"}
+    },
+
+    "edges": [
+        ["0l","noop"],
+        ["1l","noop"],
+        ["2l","noop"],
+        ["3l","noop"],
+        ["4l","noop"],
+        ["5l","noop"],
+        ["6l","noop"],
+        ["7l","noop"],
+        ["8l","noop"]
+    ]
+}
+

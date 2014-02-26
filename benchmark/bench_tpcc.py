@@ -192,31 +192,43 @@ class TPCCBenchmark(Benchmark):
         self.scaleParameters = scaleparameters.makeWithScaleFactor(self.warehouses, self.scalefactor)
         self.regenerate      = False
         self.noLoad          = kwargs["noLoad"] if kwargs.has_key("noLoad") else False
+        self.table_dir       = os.path.join(kwargs["tabledir"],"bin") if kwargs.has_key("tabledir") else None
+
         self.setUserClass(TPCCUser)
+
+    def generateTables(self, path):
+        dirPyTPCC   = os.path.join(os.getcwd(), "pytpcc", "pytpcc")
+        dirTables   = path
+        
+        if not os.path.exists(dirTables):
+            os.makedirs(dirTables)
+        
+        rand.setNURand(nurand.makeForLoad())   
+        sys.stdout.write("generating... ")
+        sys.stdout.flush()
+        self.driver.deleteExistingTablefiles(dirTables)
+        self.driver.createFilesWithHeader(dirTables)
+        generator = loader.Loader(self.driver, self.scaleParameters, range(1,self.warehouses+1), True)
+        generator.execute()
+        print "done"
+
+    def createBinaryTableExport(self, import_path, export_path):
+        self._buildServer()
+        self._startServer()
+
+        sys.stdout.write("createBinaryTableExport... ")
+        sys.stdout.flush()
+        if not os.path.exists(export_path):
+            os.makedirs(export_path)
+        self.driver.executeLoadCSVExportBinary(import_path, export_path)
+        print "done"
+
 
     def benchPrepare(self):
         # make sure the TPC-C query and table directories are present
         dirPyTPCC   = os.path.join(os.getcwd(), "pytpcc", "pytpcc")
         dirTables   = os.path.join(self._dirHyriseDB, "test", "tpcc", "tables")
 
-        sys.stdout.write("Checking for table files... ")
-        sys.stdout.flush()
-        generate = False
-        if not os.path.isdir(dirTables):
-            print "no table files found"
-            generate = True
-            os.makedirs(dirTables)
-        elif self.regenerate:
-            print "table file regeneration requested"
-            generate = True
-        else:
-            for t in self.driver.tables:
-                if not os.path.isfile(os.path.join(dirTables, "%s.tbl" % t)): #or not os.path.isfile(os.path.join(dirTables, "%s.hdr" % t)):
-                    print "table files incomplete"
-                    generate = True
-                    break
-
-        rand.setNURand(nurand.makeForLoad())
         defaultConfig = self.driver.makeDefaultConfig()
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
         config["querylog"] = None
@@ -225,27 +237,18 @@ class TPCCBenchmark(Benchmark):
         config["hyrise_builddir"] = self._dirHyriseDB
         config["table_location"] = dirTables
         config["query_location"] = os.path.join("queries", "tpcc-queries")
-        self.driver.loadConfig(config)
-
-        if generate:
-            sys.stdout.write("regenerating... ")
-            sys.stdout.flush()
-            self.driver.deleteExistingTablefiles(dirTables)
-            self.driver.createFilesWithHeader(dirTables)
-            generator = loader.Loader(self.driver, self.scaleParameters, range(1,self.warehouses+1), True)
-            generator.execute()
-        print "done"
-
-        if self.noLoad:
-            print "Skipping table load"
-        else:
-            sys.stdout.write("Importing tables into HYRISE... ")
-            sys.stdout.flush()
-            self.driver.executeStart()
-            print "done"
+        self.driver.loadConfig(config)        
 
         self.setUserArgs({
             "scaleParameters": self.scaleParameters,
             "config": config
         })
 
+    def loadTables(self):
+        if self.noLoad:
+            print "Skipping table load"
+        else:
+            sys.stdout.write("Importing tables into HYRISE... ")
+            sys.stdout.flush()
+            self.driver.executeStart(self.table_dir)
+            print "done"
