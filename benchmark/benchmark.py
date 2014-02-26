@@ -113,12 +113,14 @@ class Benchmark:
 
         print "Preparing benchmark..."
         self.benchPrepare()
+        self.loadTables()
 
         if self._abQueryFile != None:
             print "---"
             print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
+            print "Output File: ", self._dirResults + "/ab.log"
             print "---"
-            ab = subprocess.Popen(["./ab/ab", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+            ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
             ab.wait()
         else:
             self._createUsers()

@@ -14,11 +14,17 @@ z = 1000
 
 class Plotter:
 
-    def __init__(self, benchmarkGroupId):
+    def __init__(self, benchmarkGroupId, use_ab = False):
         self._groupId = benchmarkGroupId
         self._dirOutput = os.path.join(os.getcwd(), "plots", str(self._groupId))
         self._varyingParameter = None
-        self._runs = self._collect()
+        self._use_ab = use_ab
+
+        if use_ab:
+            self._runs = self._collect_ab()
+        else:
+            self._runs = self._collect()
+
         self._buildIds = self._runs[self._runs.keys()[0]].keys()
 
         if not os.path.isdir(self._dirOutput):
@@ -231,6 +237,101 @@ class Plotter:
                 plt.savefig(fname)
                 plt.close()
         sys.stdout.write('\n')
+
+    def _collect_ab(self):
+        runs = {}
+        dirResults = os.path.join(os.getcwd(), "results", self._groupId)
+        if not os.path.isdir(dirResults):
+            raise Exception("Group result directory '%s' not found!" % dirResults)
+
+        sys.stdout.write('_collect from ab: ')
+        # --- Runs --- #
+        for run in os.listdir(dirResults):
+            dirRun = os.path.join(dirResults, run)
+            if os.path.isdir(dirRun):
+                runs[run] = {}
+
+                # --- Builds --- #
+                for build in os.listdir(dirRun):
+                    numUsers = int(dirRun.split("numClients_")[1])
+                    self.tick()
+                    dirBuild = os.path.join(dirRun, build)
+                    if os.path.isdir(dirBuild):
+                        #runs[run][build] = []
+                        txStats = {}
+                        opStats = {}
+                        hasOpData = False
+
+                        if not os.path.isfile(os.path.join(dirBuild, "ab.log")):
+                            print "WARNING: no transaction log found in %s!" % dirBuild
+                            continue
+
+                        for rawline in open(os.path.join(dirBuild, "ab.log")):
+
+                            if rawline.startswith("starttime"):
+                                continue
+
+                            rawline = rawline.strip('\n')
+                            linedata = rawline.split("\t")
+
+                            if len(linedata) < 2:
+                                continue
+
+                            txId        = int(linedata[6])
+                            runtime     = float(linedata[4]) / 1000 # convert from usec to ms
+                            starttime   = float(linedata[1]) / 1000
+                            txStatus    = int(linedata[7])
+
+                            if (txId == 1):
+                                txId = "NEW_ORDER"
+                            else:
+                                print "Error: unknown TX id", txId
+
+                            opStats.setdefault(txId, {})
+                            txStats.setdefault(txId,{
+                                "totalTime": 0.0,
+                                "userTime":  0.0,
+                                "totalRuns": 0,
+                                "totalFail": 0,
+                                "rtTuples":  [],
+                                "rtMin":     0.0,
+                                "rtMax":     0.0,
+                                "rtAvg":     0.0,
+                                "rtMed":     0.0,
+                                "rtStd":     0.0
+                            })
+                            txStats[txId]["totalTime"] += runtime
+                            txStats[txId]["userTime"]  += runtime / float(numUsers)
+
+                            if txStatus >= 200 and txStatus < 300:
+                                txStats[txId]["totalRuns"] += 1
+                                txStats[txId]["rtTuples"].append((starttime, runtime))
+                            else:
+                                txStats[txId]["totalFail"] += 1
+
+                        for txId, txData in txStats.iteritems():
+                            allRuntimes = [a[1] for a in txData["rtTuples"]]
+                            txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
+                            txStats[txId]["rtRaw"] = allRuntimes
+                            txStats[txId]["rtMin"] = amin(allRuntimes)
+                            txStats[txId]["rtMax"] = amax(allRuntimes)
+                            txStats[txId]["rtAvg"] = average(allRuntimes)
+                            txStats[txId]["rtMed"] = median(allRuntimes)
+                            txStats[txId]["rtStd"] = std(allRuntimes)
+                            for opId, opData in opStats[txId].iteritems():
+                                opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtMax"] = amax([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtAvg"] = average([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtMed"] = median([a[1] for a in opData["rtTuples"]])
+                                opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
+                            txStats[txId]["operators"] = opStats[txId]
+
+                        if txStats != {}:
+                            runs[run][build] = {"txStats": txStats, "numUsers": numUsers}
+        sys.stdout.write('\n')
+        return runs
+
 
     def _collect(self):
         runs = {}
