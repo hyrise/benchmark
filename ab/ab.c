@@ -149,7 +149,6 @@
 #include <apr_portable.h>
 #include <apr_poll.h>
 #include "ap_release.h"
-
 #include <sched.h>
 
 #define APR_WANT_STRFUNC
@@ -273,11 +272,13 @@ struct data {
     apr_interval_time_t waittime; /* between request and reading response */
     apr_interval_time_t ctime;    /* time to connect */
     apr_interval_time_t time;     /* time for connection */
+    char respcode[4];
 };
 
 #define ap_min(a,b) ((a)<(b))?(a):(b)
 #define ap_max(a,b) ((a)>(b))?(a):(b)
-#define ap_round_ms(a) ((apr_time_t)((a) + 500)/1000)
+// #define ap_round_ms(a) ((apr_time_t)((a) + 500)/1000)
+#define ap_round_ms(a) ((apr_time_t)a)
 #define ap_double_ms(a) ((double)(a)/1000.0)
 #define MAX_CONCURRENCY 20000
 
@@ -1037,17 +1038,18 @@ static void output_results(int sig)
                 perror("Cannot open gnuplot output file");
                 exit(1);
             }
-            fprintf(out, "starttime\tseconds\tctime\tdtime\tttime\twait\n");
+            fprintf(out, "starttime\tseconds\tctime\tdtime\tttime\twait\ttx_type\tstatus\n");
             for (i = 0; i < done; i++) {
                 (void) apr_ctime(tmstring, stats[i].starttime);
+                stats[i].respcode[3] = '\0';
                 fprintf(out, "%s\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
                                "\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
-                               "\t%" APR_TIME_T_FMT "\n", tmstring,
+                               "\t%" APR_TIME_T_FMT "\t%d\t%s\n", tmstring,
                         apr_time_sec(stats[i].starttime),
                         ap_round_ms(stats[i].ctime),
                         ap_round_ms(stats[i].time - stats[i].ctime),
                         ap_round_ms(stats[i].time),
-                        ap_round_ms(stats[i].waittime));
+                        ap_round_ms(stats[i].waittime), 1, stats[i].respcode);
             }
             fclose(out);
         }
@@ -1559,6 +1561,7 @@ static void read_connection(struct connection * c)
             s->ctime     = ap_max(0, c->connect - c->start);
             s->time      = ap_max(0, c->done - c->start);
             s->waittime  = ap_max(0, c->beginread - c->endwrite);
+            strcpy(s->respcode, respcode);
             if (heartbeatres && !(done % heartbeatres)) {
                 fprintf(stderr, "Completed %d requests\n", done);
                 fflush(stderr);
