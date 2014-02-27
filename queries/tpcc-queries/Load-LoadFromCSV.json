@@ -40,13 +40,13 @@
             /* Indices for table DISTRICT */
             "1_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__DISTRICT__main__D_ID__D_W_ID",
-                "fields" : ["D_ID", "D_W_ID"]
+                "index_name" : "mcidx__DISTRICT__main__D_W_ID__D_ID",
+                "fields" : ["D_W_ID","D_ID"]
                 },
             "1_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__DISTRICT__delta__D_ID__D_W_ID",
-                "fields" : ["D_ID", "D_W_ID"]
+                "index_name" : "mcidx__DISTRICT__delta__D_W_ID__D_ID",
+                "fields" : ["D_W_ID","D_ID"]
                 },
 
         "2l": {
