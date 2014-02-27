@@ -40,7 +40,7 @@
             "path" : "$PATH$"
             },
 
-            /* Indices for table DISTRICT */
+            /* PK Index for table DISTRICT */
             "1_idx0": {
                 "type": "CreateGroupkeyIndex",
                 "index_name" : "mcidx__DISTRICT__main__D_W_ID__D_ID",
@@ -86,22 +86,13 @@
             },
 
             /* Indices for table NEW_ORDER */
+
             "4_idx0": {
-                "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__NEW_ORDER__main__NO_W_ID__NO_D_ID",
-                "fields" : ["NO_W_ID", "NO_D_ID"]
-                },
-            "4_idx0_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__NEW_ORDER__delta__NO_W_ID__NO_D_ID",
-                "fields" : ["NO_W_ID", "NO_D_ID"]
-                },
-            "4_idx1": {
                 "type": "CreateGroupkeyIndex",
                 "index_name" : "mcidx__NEW_ORDER__main__NO_W_ID__NO_D_ID__NO_O_ID",
                 "fields" : ["NO_W_ID", "NO_D_ID", "NO_O_ID"]
                 },
-            "4_idx1_delta": {
+            "4_idx0_delta": {
                 "type": "CreateDeltaIndex",
                 "index_name" : "mcidx__NEW_ORDER__delta__NO_W_ID__NO_D_ID__NO_O_ID",
                 "fields" : ["NO_W_ID", "NO_D_ID", "NO_O_ID"]
@@ -273,11 +264,10 @@
         ["3l","3_idx0"],["3_idx0","noop"],
         ["3l","3_idx0_delta"],["3_idx0_delta","noop"],
 
-        /*  NEW_ORDER + 2 Indices */
+        /*  NEW_ORDER + PK Index */
         ["4l","4_idx0"],["4_idx0","noop"],
-        ["4l","4_idx1"],["4_idx1","noop"],
         ["4l","4_idx0_delta"],["4_idx0_delta","noop"],
-        ["4l","4_idx1_delta"],["4_idx1_delta","noop"],
+
 
         /*  ORDER_LINE + 1 Index */
         ["5l","5_idx0"],["5_idx0","noop"],
