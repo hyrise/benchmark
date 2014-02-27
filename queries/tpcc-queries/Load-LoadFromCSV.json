@@ -11,13 +11,13 @@
             /* Indices for table CUSTOMER */
             "0_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__CUSTOMER__main__C_ID__C_W_ID__C_D_ID",
-                "fields" : ["C_ID", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__main__C_W_ID__C_ID__C_D_ID",
+                "fields" : ["C_W_ID", "C_ID", "C_D_ID"]
                 },
             "0_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__CUSTOMER__delta__C_ID__C_W_ID__C_D_ID",
-                "fields" : ["C_ID", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__delta__C_W_ID__C_ID__C_D_ID",
+                "fields" : ["C_W_ID", "C_ID",  "C_D_ID"]
                 },
             "0_idx1": {
                 "type": "CreateGroupkeyIndex",
