@@ -32,7 +32,7 @@ class User(multiprocessing.Process):
         self._totalTime         = 0
         self._totalQueryTime    = 0
         self._queryfile         = None
-        self._write_to_file     = None # set filename here to generate queries into file
+        self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
 
     def prepareUser(self):
         """ implement this in subclasses """
@@ -76,7 +76,7 @@ class User(multiprocessing.Process):
         tStart = time.time()
         if stored_procedure:
             if self._write_to_file:
-                self.write_request_to_file(query, stored_procedure, self.write_to_file)
+                self.write_request_to_file(query, stored_procedure, self._write_to_file)
                 return
             else:
                 result = self._session.post("http://%s:%s/%s/" % (self._host, self._port, stored_procedure), data=data, timeout=100000)

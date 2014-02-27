@@ -4,96 +4,95 @@
         "0l": {
             "type": "TableLoad",
             "table": "CUSTOMER",
-            "filename" : "test/tpcc/tables/CUSTOMER.tbl"
+            "filename" : "CUSTOMER.tbl",
+            "path" : "$PATH$"
             },
 
             /* Indices for table CUSTOMER */
+            /* Primary Key */
             "0_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__CUSTOMER__main__C_ID__C_W_ID__C_D_ID",
-                "fields" : ["C_ID", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__main__C_W_ID__C_ID__C_D_ID",
+                "fields" : ["C_W_ID", "C_ID", "C_D_ID"]
                 },
             "0_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__CUSTOMER__delta__C_ID__C_W_ID__C_D_ID",
-                "fields" : ["C_ID", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__delta__C_W_ID__C_ID__C_D_ID",
+                "fields" : ["C_W_ID", "C_ID",  "C_D_ID"]
                 },
+            /* Secondary Index */
             "0_idx1": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__CUSTOMER__main__C_LAST__C_W_ID__C_D_ID",
-                "fields" : ["C_LAST", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__main__C_W_ID__C_D_ID__C_LAST",
+                "fields" : [ "C_W_ID", "C_D_ID", "C_LAST"]
+
                 },
             "0_idx1_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__CUSTOMER__delta__C_LAST__C_W_ID__C_D_ID",
-                "fields" : ["C_LAST", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__delta__C_W_ID__C_D_ID__C_LAST",
+                "fields" : ["C_W_ID", "C_D_ID", "C_LAST"]
                 },
 
         "1l": {
             "type": "TableLoad",
             "table": "DISTRICT",
-            "filename" : "test/tpcc/tables/DISTRICT.tbl"
+            "filename" : "DISTRICT.tbl",
+            "path" : "$PATH$"
             },
 
-            /* Indices for table DISTRICT */
+            /* PK Index for table DISTRICT */
             "1_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__DISTRICT__main__D_ID__D_W_ID",
-                "fields" : ["D_ID", "D_W_ID"]
+                "index_name" : "mcidx__DISTRICT__main__D_W_ID__D_ID",
+                "fields" : ["D_W_ID","D_ID"]
                 },
             "1_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__DISTRICT__delta__D_ID__D_W_ID",
-                "fields" : ["D_ID", "D_W_ID"]
+                "index_name" : "mcidx__DISTRICT__delta__D_W_ID__D_ID",
+                "fields" : ["D_W_ID","D_ID"]
                 },
 
         "2l": {
             "type": "TableLoad",
             "table": "HISTORY",
-            "filename" : "test/tpcc/tables/HISTORY.tbl"
+            "filename" : "HISTORY.tbl",
+            "path" : "$PATH$"
             },
 
         "3l": {
             "type": "TableLoad",
             "table": "ITEM",
-            "filename" : "test/tpcc/tables/ITEM.tbl"
+            "filename" : "ITEM.tbl",
+            "path" : "$PATH$"
             },
 
             /* Indices for table ITEM */
             "3_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__ITEM__I_ID",
+                "index_name" : "mcidx__ITEM__main__I_ID",
                 "fields" : ["I_ID"]
                 },
             "3_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__ITEM__I_ID",
+                "index_name" : "mcidx__ITEM__delta__I_ID",
                 "fields" : ["I_ID"]
                 },
 
         "4l": {
             "type": "TableLoad",
             "table": "NEW_ORDER",
-            "filename" : "test/tpcc/tables/NEW_ORDER.tbl"
+            "filename" : "NEW_ORDER.tbl",
+            "path" : "$PATH$"
             },
 
             /* Indices for table NEW_ORDER */
+
             "4_idx0": {
-                "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__NEW_ORDER__main__NO_W_ID__NO_D_ID",
-                "fields" : ["NO_W_ID", "NO_D_ID"]
-                },
-            "4_idx0_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__NEW_ORDER__delta__NO_W_ID__NO_D_ID",
-                "fields" : ["NO_W_ID", "NO_D_ID"]
-                },
-            "4_idx1": {
                 "type": "CreateGroupkeyIndex",
                 "index_name" : "mcidx__NEW_ORDER__main__NO_W_ID__NO_D_ID__NO_O_ID",
                 "fields" : ["NO_W_ID", "NO_D_ID", "NO_O_ID"]
                 },
-            "4_idx1_delta": {
+            "4_idx0_delta": {
                 "type": "CreateDeltaIndex",
                 "index_name" : "mcidx__NEW_ORDER__delta__NO_W_ID__NO_D_ID__NO_O_ID",
                 "fields" : ["NO_W_ID", "NO_D_ID", "NO_O_ID"]
@@ -102,37 +101,38 @@
         "5l": {
             "type": "TableLoad",
             "table": "ORDER_LINE",
-            "filename" : "test/tpcc/tables/ORDER_LINE.tbl"
+            "filename" : "ORDER_LINE.tbl",
+            "path" : "$PATH$"
             },
 
             "5_idx0": {
                  "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__ORDER_LINE__OL_O_ID",
+                "index_name" : "mcidx__ORDER_LINE__main__OL_O_ID",
                 "fields" : ["OL_O_ID"]
                 },
             "5_idx1": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__ORDER_LINE__OL_W_ID",
+                "index_name" : "mcidx__ORDER_LINE__main__OL_W_ID",
                 "fields" : ["OL_W_ID"]
                 },
             "5_idx2": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__ORDER_LINE__OL_D_ID",
+                "index_name" : "mcidx__ORDER_LINE__main__OL_D_ID",
                 "fields" : ["OL_D_ID"]
                 },
             "5_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__ORDER_LINE__OL_O_ID",
+                "index_name" : "mcidx__ORDER_LINE__delta__OL_O_ID",
                 "fields" : ["OL_O_ID"]
                 },
             "5_idx1_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__ORDER_LINE__OL_W_ID",
+                "index_name" : "mcidx__ORDER_LINE__delta__OL_W_ID",
                 "fields" : ["OL_W_ID"]
                 },
             "5_idx2_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__ORDER_LINE__OL_D_ID",
+                "index_name" : "mcidx__ORDER_LINE__delta__OL_D_ID",
                 "fields" : ["OL_D_ID"]
             },
             "5_idx3": {
@@ -149,7 +149,8 @@
         "6l": {
             "type": "TableLoad",
             "table": "ORDERS",
-            "filename" : "test/tpcc/tables/ORDERS.tbl"
+            "filename" : "ORDERS.tbl",
+            "path" : "$PATH$"
             },
 
             /* Indices for table ORDERS */
@@ -177,38 +178,39 @@
         "7l": {
             "type": "TableLoad",
             "table": "STOCK",
-            "filename" : "test/tpcc/tables/STOCK.tbl"
+            "filename" : "STOCK.tbl",
+            "path" : "$PATH$"
             },
 
             /* Indices for table STOCK */
              "7_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__STOCK__S_I_ID",
+                "index_name" : "mcidx__STOCK__main__S_I_ID",
                 "fields" : ["S_I_ID"]
                 },
             "7_idx1": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__STOCK__S_W_ID",
+                "index_name" : "mcidx__STOCK__main__S_W_ID",
                 "fields" : ["S_W_ID"]
                 },
             "7_idx2": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__STOCK__S_QUANTITY",
+                "index_name" : "mcidx__STOCK__main__S_QUANTITY",
                 "fields" : ["S_QUANTITY"]
                 },
             "7_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__STOCK__S_I_ID",
+                "index_name" : "mcidx__STOCK__delta__S_I_ID",
                 "fields" : ["S_I_ID"]
                 },
             "7_idx1_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__STOCK__S_W_ID",
+                "index_name" : "mcidx__STOCK__delta__S_W_ID",
                 "fields" : ["S_W_ID"]
                 },
             "7_idx2_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__STOCK__S_QUANTITY",
+                "index_name" : "mcidx__STOCK__delta__S_QUANTITY",
                 "fields" : ["S_QUANTITY"]
                 },
            "7_idx3": {
@@ -225,18 +227,19 @@
         "8l": {
             "type": "TableLoad",
             "table": "WAREHOUSE",
-            "filename" : "test/tpcc/tables/WAREHOUSE.tbl"
+            "filename" : "WAREHOUSE.tbl",
+            "path" : "$PATH$"
             },
 
             /* Indices for table WAREHOUSE */
             "8_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "idx__WAREHOUSE__W_ID",
+                "index_name" : "mcidx__WAREHOUSE__main__W_ID",
                 "fields" : ["W_ID"]
                 },
             "8_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "idx_delta__WAREHOUSE__W_ID",
+                "index_name" : "mcidx__WAREHOUSE__delta__W_ID",
                 "fields" : ["W_ID"]
                 },
 
@@ -261,11 +264,10 @@
         ["3l","3_idx0"],["3_idx0","noop"],
         ["3l","3_idx0_delta"],["3_idx0_delta","noop"],
 
-        /*  NEW_ORDER + 2 Indices */
+        /*  NEW_ORDER + PK Index */
         ["4l","4_idx0"],["4_idx0","noop"],
-        ["4l","4_idx1"],["4_idx1","noop"],
         ["4l","4_idx0_delta"],["4_idx0_delta","noop"],
-        ["4l","4_idx1_delta"],["4_idx1_delta","noop"],
+
 
         /*  ORDER_LINE + 1 Index */
         ["5l","5_idx0"],["5_idx0","noop"],

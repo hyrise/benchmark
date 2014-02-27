@@ -65,6 +65,7 @@ class Benchmark:
         self._abQueryFile       = kwargs["abQueryFile"] if kwargs.has_key("abQueryFile") else None
         self._abCore            = kwargs["abCore"] if kwargs.has_key("abCore") else 2
         self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 0
+        self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
         if self._remote:
             self._ssh               = paramiko.SSHClient()
         else:
@@ -113,12 +114,14 @@ class Benchmark:
 
         print "Preparing benchmark..."
         self.benchPrepare()
+        self.loadTables()
 
         if self._abQueryFile != None:
             print "---"
             print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
+            print "Output File: ", self._dirResults + "/ab.log"
             print "---"
-            ab = subprocess.Popen(["./ab/ab", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+            ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
             ab.wait()
         else:
             self._createUsers()
@@ -300,7 +303,7 @@ class Benchmark:
 
     def _createUsers(self):
         for i in range(self._numUsers):
-            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, **self._userArgs))
+            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, write_to_file=self._write_to_file, **self._userArgs))
 
     def _stopServer(self):
         if not self._remote: 

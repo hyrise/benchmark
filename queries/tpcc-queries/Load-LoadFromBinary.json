@@ -1,0 +1,67 @@
+{
+    "operators" : {
+
+        "0l": {
+            "type": "RecoverTable",
+            "tablename": "CUSTOMER",
+            "path" : "$PATH$"
+            },
+        "1l": {
+            "type": "RecoverTable",
+            "tablename": "DISTRICT",
+            "path" : "$PATH$"
+            },
+        "2l": {
+            "type": "RecoverTable",
+            "tablename": "HISTORY",
+            "path" : "$PATH$"
+            },
+        "3l": {
+            "type": "RecoverTable",
+            "tablename": "STOCK",
+            "path" : "$PATH$"
+            },
+        "4l": {
+            "type": "RecoverTable",
+            "tablename": "ITEM",
+            "path" : "$PATH$"
+            },
+        "5l": {
+            "type": "RecoverTable",
+            "tablename": "NEW_ORDER",
+            "path" : "$PATH$"
+            },
+        "6l": {
+            "type": "RecoverTable",
+            "tablename": "ORDER_LINE",
+            "path" : "$PATH$"
+            },
+
+        "7l": {
+            "type": "RecoverTable",
+            "tablename": "ORDERS",
+            "path" : "$PATH$"
+            },
+
+        "8l": {
+            "type": "RecoverTable",
+            "tablename": "WAREHOUSE",
+            "path" : "$PATH$"
+            },
+
+        "noop": {"type" : "NoOp"}
+    },
+
+    "edges": [
+        ["0l","noop"],
+        ["1l","noop"],
+        ["2l","noop"],
+        ["3l","noop"],
+        ["4l","noop"],
+        ["5l","noop"],
+        ["6l","noop"],
+        ["7l","noop"],
+        ["8l","noop"]
+    ]
+}
+

@@ -7,9 +7,11 @@ if __name__ == "__main__":
 	                     help='Group ID for benchmark results to be plotted')
 	aparser.add_argument('--stats', action='store_true',
 	                     help='Print run statistics and exit')
+	aparser.add_argument('--ab', action='store_true',
+	                     help='Use to plot results measured with ab.')
 	args = vars(aparser.parse_args())
 
-	plotter = benchmark.Plotter(args["groupId"])
+	plotter = benchmark.Plotter(args["groupId"], use_ab = args["ab"])
 
 	if args["stats"]:
 		plotter.printStatistics()

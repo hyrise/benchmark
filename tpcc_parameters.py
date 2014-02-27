@@ -17,6 +17,8 @@ aparser.add_argument('--clients-min', default=1, type=int, metavar='N',
                      help='The minimum number of blocking clients to fork')
 aparser.add_argument('--clients-max', default=1, type=int, metavar='N',
                      help='The maximum number of blocking clients to fork')
+aparser.add_argument('--clients-step', default=1, type=int, metavar='N',
+                     help='The step-width for the number of clients to fork')
 aparser.add_argument('--no-load', action='store_true',
                      help='Disable loading the data')
 aparser.add_argument('--no-execute', action='store_true',
@@ -53,8 +55,17 @@ aparser.add_argument('--verbose', default=0,
                      help='Verbose output level.')
 aparser.add_argument('--abCore', default=2,
                      help='Core to bind ab to.')
+aparser.add_argument('--tabledir', default=None, type=str, metavar="T",
+                     help='Directory for TPCC tables to use.')
 
 args = vars(aparser.parse_args())
+
+if args["tabledir"] == None:
+    print "Please specify a table directory."
+    exit(0)
+else:
+    args["tabledir"] = os.path.abspath(args["tabledir"])
+    print "Using table directory:", args["tabledir"]
 
 s1 = benchmark.Settings("None", PERSISTENCY="NONE")
 s2 = benchmark.Settings("Logger_1ms", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW=1000)
@@ -85,40 +96,6 @@ kwargs = {
     "useJson"           : args["json"],
     "abQueryFile"       : args["ab"],
     "abCore"            : args["abCore"],
-    "verbose"           : args["verbose"]
+    "verbose"           : args["verbose"],
+    "tabledir"          : args["tabledir"]
 }
-
-groupId = "tpcc_tmp"
-num_clients = args["clients"]
-minClients = args["clients_min"]
-maxClients = args["clients_max"]
-
-if args["clients"] > 0:
-    minClients = args["clients"]
-    maxClients = args["clients"]
-
-for num_clients in xrange(minClients, maxClients+1):
-    runId = "numClients_%s" % num_clients
-    kwargs["numUsers"] = num_clients
-
-    b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
-    # b2 = benchmark.TPCCBenchmark(groupId, runId, s2, **kwargs)
-    # b3 = benchmark.TPCCBenchmark(groupId, runId, s3, **kwargs)
-    # b4 = benchmark.TPCCBenchmark(groupId, runId, s4, **kwargs)
-    # b5 = benchmark.TPCCBenchmark(groupId, runId, s5, **kwargs)
-    # b6 = benchmark.TPCCBenchmark(groupId, runId, s6, **kwargs)
-    
-
-    b1.run()
-    # b2.run()
-    # b3.run()
-    # b4.run()
-    # b5.run()
-    # b6.run()
-    
-    if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
-        os.remove("/mnt/pmfs/hyrise_tpcc")
-
-#plotter = benchmark.Plotter(groupId)
-#plotter.printStatistics()
-
