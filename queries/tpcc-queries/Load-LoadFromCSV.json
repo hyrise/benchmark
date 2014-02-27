@@ -85,7 +85,7 @@
             "path" : "$PATH$"
             },
 
-            /* Indices for table NEW_ORDER */
+            /* PK Index for table NEW_ORDER */
 
             "4_idx0": {
                 "type": "CreateGroupkeyIndex",
@@ -105,36 +105,6 @@
             "path" : "$PATH$"
             },
 
-            "5_idx0": {
-                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__ORDER_LINE__main__OL_O_ID",
-                "fields" : ["OL_O_ID"]
-                },
-            "5_idx1": {
-                "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__ORDER_LINE__main__OL_W_ID",
-                "fields" : ["OL_W_ID"]
-                },
-            "5_idx2": {
-                "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__ORDER_LINE__main__OL_D_ID",
-                "fields" : ["OL_D_ID"]
-                },
-            "5_idx0_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__ORDER_LINE__delta__OL_O_ID",
-                "fields" : ["OL_O_ID"]
-                },
-            "5_idx1_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__ORDER_LINE__delta__OL_W_ID",
-                "fields" : ["OL_W_ID"]
-                },
-            "5_idx2_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__ORDER_LINE__delta__OL_D_ID",
-                "fields" : ["OL_D_ID"]
-            },
             "5_idx3": {
                 "type": "CreateGroupkeyIndex",
                 "index_name" : "mcidx__ORDER_LINE__main__OL_W_ID__OL_D_ID__OL_O_ID",
@@ -153,16 +123,16 @@
             "path" : "$PATH$"
             },
 
-            /* Indices for table ORDERS */
+            /* Indices for table ORDERS PK + secondary index*/
             "6_idx0": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__ORDERS__main__O_ID__O_W_ID__O_D_ID",
-                "fields" : ["O_ID", "O_W_ID", "O_D_ID"]
+                "index_name" : "mcidx__ORDERS__main__O_W_ID__O_D_ID__O_ID",
+                "fields" : ["O_W_ID", "O_D_ID", "O_ID"]
                 },
             "6_idx0_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__ORDERS__delta__O_ID__O_W_ID__O_D_ID",
-                "fields" : ["O_ID", "O_W_ID", "O_D_ID"]
+                "index_name" : "mcidx__ORDERS__delta__O_W_ID__O_D_ID__O_ID",
+                "fields" : ["O_W_ID", "O_D_ID", "O_ID"]
                 },
             "6_idx1": {
                 "type": "CreateGroupkeyIndex",
@@ -247,7 +217,7 @@
     },
 
     "edges": [
-        /* CUSTOMER + 4 Indices */
+        /* CUSTOMER + PK + secondary index */
         ["0l","0_idx0"],["0_idx0","noop"],
         ["0l","0_idx1"],["0_idx1","noop"],
         ["0l","0_idx0_delta"],["0_idx0_delta","noop"],
@@ -269,17 +239,11 @@
         ["4l","4_idx0_delta"],["4_idx0_delta","noop"],
 
 
-        /*  ORDER_LINE + 1 Index */
-        ["5l","5_idx0"],["5_idx0","noop"],
-        ["5l","5_idx1"],["5_idx1","noop"],
-        ["5l","5_idx2"],["5_idx2","noop"],
+        /*  ORDER_LINE + 1 Index TODO: Whats about OL_NUMBER, which is part of the primary key.. */
         ["5l","5_idx3"],["5_idx3","noop"],
-        ["5l","5_idx0_delta"],["5_idx0_delta","noop"],
-        ["5l","5_idx1_delta"],["5_idx1_delta","noop"],
-        ["5l","5_idx2_delta"],["5_idx2_delta","noop"],
         ["5l","5_idx3_delta"],["5_idx3_delta","noop"],
 
-        /*  ORDERS + 4 Indices */
+        /*  ORDERS + 2 Indices */
         ["6l","6_idx0"],["6_idx0","noop"],
         ["6l","6_idx0_delta"],["6_idx0_delta","noop"],
         ["6l","6_idx1"],["6_idx1","noop"],
