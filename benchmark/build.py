@@ -82,7 +82,8 @@ class Build:
             os.rename(self._dirBuildBak, self._dirBuild)
         if os.path.isdir(self._dirHiddenBuildBak):
             os.rename(self._dirHiddenBuildBak, self._dirHiddenBuild)
-        os.remove(settingsFile)
+        if os.path.isfile(settingsFile):
+            os.remove(settingsFile)
         if os.path.isfile(settingsFile+".bak"):
             os.rename(settingsFile+".bak", settingsFile)
 

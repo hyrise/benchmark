@@ -273,6 +273,7 @@ struct data {
     apr_interval_time_t ctime;    /* time to connect */
     apr_interval_time_t time;     /* time for connection */
     char respcode[4];
+    char txname[20];
 };
 
 #define ap_min(a,b) ((a)<(b))?(a):(b)
@@ -1038,18 +1039,18 @@ static void output_results(int sig)
                 perror("Cannot open gnuplot output file");
                 exit(1);
             }
-            fprintf(out, "starttime\tseconds\tctime\tdtime\tttime\twait\ttx_type\tstatus\n");
+            fprintf(out, "starttime\tseconds\tctime\tdtime\tttime\twait\ttxname\tstatus\n");
             for (i = 0; i < done; i++) {
                 (void) apr_ctime(tmstring, stats[i].starttime);
                 stats[i].respcode[3] = '\0';
                 fprintf(out, "%s\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
                                "\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
-                               "\t%" APR_TIME_T_FMT "\t%d\t%s\n", tmstring,
+                               "\t%" APR_TIME_T_FMT "\t%s\t%s\n", tmstring,
                         apr_time_sec(stats[i].starttime),
                         ap_round_ms(stats[i].ctime),
                         ap_round_ms(stats[i].time - stats[i].ctime),
                         ap_round_ms(stats[i].time),
-                        ap_round_ms(stats[i].waittime), 1, stats[i].respcode);
+                        ap_round_ms(stats[i].waittime), stats[i].txname, stats[i].respcode);
             }
             fclose(out);
         }
@@ -1418,9 +1419,8 @@ static void read_connection(struct connection * c)
     }
     c->read += r;
 
-
+    char *s;
     if (!c->gotheader) {
-        char *s;
         int l = 4;
         apr_size_t space = CBUFFSIZE - c->cbx - 1; /* -1 allows for \0 term */
         int tocopy = (space < r) ? space : r;
@@ -1540,6 +1540,7 @@ static void read_connection(struct connection * c)
         c->bread += r;
         totalbread += r;
     }
+    char * body_data = s+1;
 
     if (c->keepalive && (c->bread >= c->length)) {
         /* finished a keep-alive connection */
@@ -1562,6 +1563,29 @@ static void read_connection(struct connection * c)
             s->time      = ap_max(0, c->done - c->start);
             s->waittime  = ap_max(0, c->beginread - c->endwrite);
             strcpy(s->respcode, respcode);
+
+            if (respcode[0] == '2') {
+              // find and cpy tx name from buffer
+              char * return_part = strstr(body_data, "{");
+              if (return_part != NULL) {
+                int i = 0;
+                while (1) {
+                  if (i == 19 || (return_part[2+i] == '"' && return_part[2+i+1] == '}')) {
+                    s->txname[i] = '\0';
+                    break;
+                  }
+                  s->txname[i] = return_part[2+i];
+                  i++;
+                }
+              } else {
+                printf("Error parsing response.\n");
+                strcpy(s->txname, "ERROR");  
+              }
+            } else {
+              printf("Error: No 2xx response.\n");
+              strcpy(s->txname, "ERROR");
+            }
+
             if (heartbeatres && !(done % heartbeatres)) {
                 fprintf(stderr, "Completed %d requests\n", done);
                 fflush(stderr);
@@ -1612,7 +1636,7 @@ static void test(void)
     }
 
     con = calloc(concurrency, sizeof(struct connection));
-
+    
     stats = calloc(requests, sizeof(struct data));
 
     if ((status = apr_pollset_create(&readbits, concurrency, cntxt,

@@ -65,6 +65,7 @@ class Benchmark:
         self._abQueryFile       = kwargs["abQueryFile"] if kwargs.has_key("abQueryFile") else None
         self._abCore            = kwargs["abCore"] if kwargs.has_key("abCore") else 2
         self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 0
+        self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
         if self._remote:
             self._ssh               = paramiko.SSHClient()
         else:
@@ -302,7 +303,7 @@ class Benchmark:
 
     def _createUsers(self):
         for i in range(self._numUsers):
-            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, **self._userArgs))
+            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, write_to_file=self._write_to_file, **self._userArgs))
 
     def _stopServer(self):
         if not self._remote: 
