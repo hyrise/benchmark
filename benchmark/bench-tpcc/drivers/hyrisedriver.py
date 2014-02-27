@@ -141,6 +141,15 @@ class HyriseDriver(AbstractDriver):
                 if e.errno == 2: #FileNotFound
                     print 'Trying to delete {}. File not found. Skipping.'.format(tblname)
 
+    def setTableLocation(self, path):
+        self.table_location = path
+
+    def printInfo(self):
+        print "HyriseDriver"
+        print "\tTable location:", self.table_location
+        print "\tHyrise Builddir:", self.hyrise_builddir
+        print "\tQuery Dictionary:", self.query_directory
+
     def loadConfig(self, config):
         for key in HyriseDriver.DEFAULT_CONFIG.keys():
             assert key in config, "Missing parameter '%s' in %s configuration" % (key, self.name)
@@ -182,7 +191,6 @@ class HyriseDriver(AbstractDriver):
 
     def loadTuples(self, tableName, tuples):
         if len(tuples) == 0: return
-
         filename = os.path.join(self.table_location, tableName + '.tbl')
         with open(filename, 'a') as tblfile:
             for t in tuples:

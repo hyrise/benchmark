@@ -206,6 +206,7 @@ class TPCCBenchmark(Benchmark):
         rand.setNURand(nurand.makeForLoad())   
         sys.stdout.write("generating... ")
         sys.stdout.flush()
+        self.driver.setTableLocation(dirTables)
         self.driver.deleteExistingTablefiles(dirTables)
         self.driver.createFilesWithHeader(dirTables)
         generator = loader.Loader(self.driver, self.scaleParameters, range(1,self.warehouses+1), True)

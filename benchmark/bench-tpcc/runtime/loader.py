@@ -44,6 +44,7 @@ class Loader:
     
     def __init__(self, handle, scaleParameters, w_ids, needLoadItems):
         self.handle = handle
+        handle.printInfo()
         self.scaleParameters = scaleParameters
         self.w_ids = w_ids
         self.needLoadItems = needLoadItems
