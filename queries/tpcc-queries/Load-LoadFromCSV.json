@@ -9,6 +9,7 @@
             },
 
             /* Indices for table CUSTOMER */
+            /* Primary Key */
             "0_idx0": {
                 "type": "CreateGroupkeyIndex",
                 "index_name" : "mcidx__CUSTOMER__main__C_W_ID__C_ID__C_D_ID",
@@ -19,15 +20,17 @@
                 "index_name" : "mcidx__CUSTOMER__delta__C_W_ID__C_ID__C_D_ID",
                 "fields" : ["C_W_ID", "C_ID",  "C_D_ID"]
                 },
+            /* Secondary Index */
             "0_idx1": {
                 "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__CUSTOMER__main__C_LAST__C_W_ID__C_D_ID",
-                "fields" : ["C_LAST", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__main__C_W_ID__C_D_ID__C_LAST",
+                "fields" : [ "C_W_ID", "C_D_ID", "C_LAST"]
+
                 },
             "0_idx1_delta": {
                 "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__CUSTOMER__delta__C_LAST__C_W_ID__C_D_ID",
-                "fields" : ["C_LAST", "C_W_ID", "C_D_ID"]
+                "index_name" : "mcidx__CUSTOMER__delta__C_W_ID__C_D_ID__C_LAST",
+                "fields" : ["C_W_ID", "C_D_ID", "C_LAST"]
                 },
 
         "1l": {
