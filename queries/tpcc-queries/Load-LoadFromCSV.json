@@ -124,6 +124,7 @@
             },
 
             /* Indices for table ORDERS PK + secondary index*/
+            /*  PK should have OL_NUMBER as well and Secodary should have O_ID see https://github.com/hyrise/hyrise_nvm/issues/40*/
             "6_idx0": {
                 "type": "CreateGroupkeyIndex",
                 "index_name" : "mcidx__ORDERS__main__O_W_ID__O_D_ID__O_ID",
@@ -153,42 +154,12 @@
             },
 
             /* Indices for table STOCK */
-             "7_idx0": {
-                "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__STOCK__main__S_I_ID",
-                "fields" : ["S_I_ID"]
-                },
-            "7_idx1": {
-                "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__STOCK__main__S_W_ID",
-                "fields" : ["S_W_ID"]
-                },
-            "7_idx2": {
-                "type": "CreateGroupkeyIndex",
-                "index_name" : "mcidx__STOCK__main__S_QUANTITY",
-                "fields" : ["S_QUANTITY"]
-                },
-            "7_idx0_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__STOCK__delta__S_I_ID",
-                "fields" : ["S_I_ID"]
-                },
-            "7_idx1_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__STOCK__delta__S_W_ID",
-                "fields" : ["S_W_ID"]
-                },
-            "7_idx2_delta": {
-                "type": "CreateDeltaIndex",
-                "index_name" : "mcidx__STOCK__delta__S_QUANTITY",
-                "fields" : ["S_QUANTITY"]
-                },
-           "7_idx3": {
+           "7_idx0": {
                 "type": "CreateGroupkeyIndex",
                 "index_name" : "mcidx__STOCK__main__S_W_ID__S_I_ID",
                 "fields" : ["S_W_ID", "S_I_ID"]
                 },
-            "7_idx3_delta": {
+            "7_idx0_delta": {
                 "type": "CreateDeltaIndex",
                 "index_name" : "mcidx__STOCK__delta__S_W_ID__S_I_ID",
                 "fields" : ["S_W_ID", "S_I_ID"]
@@ -249,15 +220,9 @@
         ["6l","6_idx1"],["6_idx1","noop"],
         ["6l","6_idx1_delta"],["6_idx1_delta","noop"],
 
-        /*  STOCK + 2 Indices */
+        /*  STOCK + PK Index */
         ["7l","7_idx0"],["7_idx0","noop"],
-        ["7l","7_idx1"],["7_idx1","noop"],
-        ["7l","7_idx2"],["7_idx2","noop"],
-        ["7l","7_idx3"],["7_idx3","noop"],
         ["7l","7_idx0_delta"],["7_idx0_delta","noop"],
-        ["7l","7_idx1_delta"],["7_idx1_delta","noop"],
-        ["7l","7_idx2_delta"],["7_idx2_delta","noop"],
-        ["7l","7_idx3_delta"],["7_idx3_delta","noop"],
 
         /*  WAREHOUSE + 1 Indices */
         ["8l","8_idx0"],["8_idx0","noop"],
