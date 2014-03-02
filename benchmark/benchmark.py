@@ -66,6 +66,8 @@ class Benchmark:
         self._abCore            = kwargs["abCore"] if kwargs.has_key("abCore") else 2
         self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 0
         self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
+        self._write_to_file_count = kwargs["write_to_file_count"] if kwargs.has_key("write_to_file_count") else None
+
         if self._remote:
             self._ssh               = paramiko.SSHClient()
         else:
@@ -84,8 +86,19 @@ class Benchmark:
     def preexec(self): # Don't forward signals.
         os.setpgrp()
 
+    def allUsersFinished(self):
+        for user in self._users:
+            if user.is_alive():
+                return False
+        print "All users have terminated."
+        return True
+
     def run(self):
-        signal.signal(signal.SIGINT, self._signalHandler)
+
+        try:
+            signal.signal(signal.SIGINT, self._signalHandler)
+        except:
+            print "Could not add signal handler."
 
         print "+------------------+"
         print "| HYRISE benchmark |"
@@ -136,6 +149,8 @@ class Benchmark:
             for i in range(self._warmuptime):
                 sys.stdout.write("Warming up... %i   \r" % (self._warmuptime - i))
                 sys.stdout.flush()
+                if self.allUsersFinished():
+                    break
                 time.sleep(1)
             print "Warming up... done     "
 
@@ -146,6 +161,8 @@ class Benchmark:
             for i in range(self._runtime):
                 sys.stdout.write("Logging results for %i seconds... \r" % (self._runtime - i))
                 sys.stdout.flush()
+                if self.allUsersFinished():
+                    break
                 time.sleep(1)
             #time.sleep(self._runtime)
             for i in range(self._numUsers):
@@ -303,7 +320,7 @@ class Benchmark:
 
     def _createUsers(self):
         for i in range(self._numUsers):
-            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, write_to_file=self._write_to_file, **self._userArgs))
+            self._users.append(self._userClass(userId=i, host=self._host, port=self._port, dirOutput=self._dirResults, queryDict=self._queryDict, collectPerfData=self._collectPerfData, useJson=self._useJson, write_to_file=self._write_to_file, write_to_file_count=self._write_to_file_count, **self._userArgs))
 
     def _stopServer(self):
         if not self._remote: 
