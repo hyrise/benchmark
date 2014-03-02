@@ -1582,7 +1582,7 @@ static void read_connection(struct connection * c)
                 strcpy(s->txname, "ERROR");  
               }
             } else {
-              printf("Error: No 2xx response.\n");
+              // printf("Error: No 2xx response.\n");
               strcpy(s->txname, "ERROR");
             }
 
