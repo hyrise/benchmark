@@ -231,6 +231,7 @@ class TPCCBenchmark(Benchmark):
         dirTables   = os.path.join(self._dirHyriseDB, "test", "tpcc", "tables")
 
         defaultConfig = self.driver.makeDefaultConfig()
+        rand.setNURand(nurand.makeForLoad())
         config = dict(map(lambda x: (x, defaultConfig[x][1]), defaultConfig.keys()))
         config["querylog"] = None
         config["print_load"] = False

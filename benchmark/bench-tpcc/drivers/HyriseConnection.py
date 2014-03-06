@@ -67,7 +67,7 @@ class HyriseConnection(object):
         if commit:
             payload["autocommit"] = "true"
         result = requests.post(self._url + "query/",
-                               data = payload, timeout=500)
+                               data = payload, timeout=3600)
         return result.text
 
     def commit(self):
