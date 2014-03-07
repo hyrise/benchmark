@@ -1578,7 +1578,7 @@ static void read_connection(struct connection * c)
                   i++;
                 }
               } else {
-                printf("Error parsing response.\n");
+                printf("ERROR parsing response:\n%s\n", body_data);
                 strcpy(s->txname, "ERROR");  
               }
             } else {
