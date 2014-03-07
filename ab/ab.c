@@ -1564,7 +1564,7 @@ static void read_connection(struct connection * c)
             s->waittime  = ap_max(0, c->beginread - c->endwrite);
             strcpy(s->respcode, respcode);
 
-            if (respcode[0] == '2') {
+            if (respcode[0] == '2' || respcode[0] == '5') {
               // find and cpy tx name from buffer
               char * return_part = strstr(body_data, "{");
               if (return_part != NULL) {
@@ -1582,7 +1582,7 @@ static void read_connection(struct connection * c)
                 strcpy(s->txname, "ERROR");  
               }
             } else {
-              printf("Error: No 2xx response.\n");
+              // printf("Error: No 2xx and no 5xx response");
               strcpy(s->txname, "ERROR");
             }
 

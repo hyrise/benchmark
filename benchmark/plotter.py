@@ -47,12 +47,17 @@ class Plotter:
                 print "|     Transaction       tps      min(ms)    max(ms)   avg(ms)    median(ms)"
                 totalRuns = 0.0
                 totalTime = 0.0
+                print "consolidating:"
+                # consolidate all transactions
                 for txId, txData in buildData["txStats"].iteritems():
-                    totalRuns += txData["totalRuns"]*z
-                    totalTime += txData["userTime"]
+                    print txId, txData["totalTime"]
+                    totalRuns += txData["totalRuns"]
+                    totalTime = max(txData["totalTime"], totalTime)
+                print "---->", txId, totalTime
+
                 for txId, txData in buildData["txStats"].iteritems():
                     print "|     -------------------------------------------------------------------------------------------"
-                    print "|     TX: {:14s} tps: {:05.2f}, min: {:05.2f}, max: {:05.2f}, avg: {:05.2f}, med: {:05.2f} (all in ms)".format(txId, float(txData["totalRuns"])*z / totalTime, txData["rtMin"], txData["rtMax"], txData["rtAvg"], txData["rtMed"])
+                    print "|     TX: {:14s} tps: {:05.2f}, min: {:05.2f}, max: {:05.2f}, avg: {:05.2f}, med: {:05.2f} (all in ms)".format(txId, float(txData["totalRuns"]) / totalTime, txData["rtMin"], txData["rtMax"], txData["rtAvg"], txData["rtMed"])
                     print "|                        succeeded: {:d}, failed: {:d}, ratio: {:1.3f}".format(txData["totalRuns"], txData["totalFail"], float(txData["totalFail"]) / float(txData["totalRuns"] + txData["totalFail"]))
                     print "|     -------------------------------------------------------------------------------------------"
                     if txData["operators"] and len(txData["operators"].keys()) > 0:
@@ -77,10 +82,11 @@ class Plotter:
                 plotX.append(runData[buildId]["numUsers"])
                 totalRuns = 0.0
                 totalTime = 0.0
+                # consolidate all transactions
                 for txId, txData in runData[buildId]["txStats"].iteritems():
                     totalRuns += txData["totalRuns"]
-                    totalTime += txData["userTime"]
-                plotY.append(totalRuns * z / totalTime)
+                    totalTime = max(txData["totalTime"], totalTime)
+                plotY.append(totalRuns/ totalTime)
             plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
             plt.plot(plotX, plotY, label=buildId)
         plt.xticks(plotX)
@@ -253,7 +259,7 @@ class Plotter:
 
                 # --- Builds --- #
                 for build in os.listdir(dirRun):
-                    numUsers = int(dirRun.split("numClients_")[1])
+                    numUsers = int(dirRun.split("_")[-1])
                     self.tick()
                     dirBuild = os.path.join(dirRun, build)
                     if os.path.isdir(dirBuild):
@@ -266,8 +272,11 @@ class Plotter:
                             print "WARNING: no transaction log found in %s!" % dirBuild
                             continue
 
+                        # i = 0
                         for rawline in open(os.path.join(dirBuild, "ab.log")):
-
+                            # i = i + 1
+                            # if i>100000:
+                                # break
                             if rawline.startswith("starttime"):
                                 continue
 
@@ -277,15 +286,10 @@ class Plotter:
                             if len(linedata) < 2:
                                 continue
 
-                            txId        = int(linedata[6])
+                            txId        = linedata[6]
                             runtime     = float(linedata[4]) / 1000 # convert from usec to ms
-                            starttime   = float(linedata[1]) / 1000
+                            starttime   = int(linedata[1]) # seconds
                             txStatus    = int(linedata[7])
-
-                            if (txId == 1):
-                                txId = "NEW_ORDER"
-                            else:
-                                print "Error: unknown TX id", txId
 
                             opStats.setdefault(txId, {})
                             txStats.setdefault(txId,{
@@ -298,10 +302,16 @@ class Plotter:
                                 "rtMax":     0.0,
                                 "rtAvg":     0.0,
                                 "rtMed":     0.0,
-                                "rtStd":     0.0
+                                "rtStd":     0.0,
+                                "starttime": 0,
+                                "endtime":   0
                             })
-                            txStats[txId]["totalTime"] += runtime
-                            txStats[txId]["userTime"]  += runtime / float(numUsers)
+
+                            if starttime < txStats[txId]["starttime"] or txStats[txId]["starttime"] == 0:
+                                txStats[txId]["starttime"] = starttime
+
+                            if starttime > txStats[txId]["endtime"] or txStats[txId]["endtime"] == 0:
+                                txStats[txId]["endtime"] = starttime
 
                             if txStatus >= 200 and txStatus < 300:
                                 txStats[txId]["totalRuns"] += 1
@@ -311,6 +321,8 @@ class Plotter:
 
                         for txId, txData in txStats.iteritems():
                             allRuntimes = [a[1] for a in txData["rtTuples"]]
+                            if len(allRuntimes) == 0:
+                                allRuntimes = [0]
                             txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
                             txStats[txId]["rtRaw"] = allRuntimes
                             txStats[txId]["rtMin"] = amin(allRuntimes)
@@ -318,6 +330,8 @@ class Plotter:
                             txStats[txId]["rtAvg"] = average(allRuntimes)
                             txStats[txId]["rtMed"] = median(allRuntimes)
                             txStats[txId]["rtStd"] = std(allRuntimes)
+                            txStats[txId]["totalTime"] = txStats[txId]["endtime"] - txStats[txId]["starttime"]
+
                             for opId, opData in opStats[txId].iteritems():
                                 opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
                                 opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])

@@ -57,6 +57,10 @@ aparser.add_argument('--abCore', default=2,
                      help='Core to bind ab to.')
 aparser.add_argument('--tabledir', default=None, type=str, metavar="T",
                      help='Directory for TPCC tables to use.')
+aparser.add_argument('--genCount', default=None, type=str,
+                     help='Number of queries to generate')
+aparser.add_argument('--genFile', default=None, type=str, metavar="T",
+                     help='File to store generated queries')
 
 args = vars(aparser.parse_args())
 
