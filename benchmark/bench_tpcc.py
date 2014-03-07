@@ -182,9 +182,6 @@ class TPCCBenchmark(Benchmark):
     def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
         Benchmark.__init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs)
 
-        self._dirHyriseDB = os.path.join(os.getcwd(), "hyrise")
-        os.environ['HYRISE_DB_PATH'] = self._dirHyriseDB
-
         self.scalefactor     = kwargs["scalefactor"] if kwargs.has_key("scalefactor") else 1
         self.warehouses      = kwargs["warehouses"] if kwargs.has_key("warehouses") else 4
         self.driverClass     = createDriverClass("hyrise")
@@ -236,7 +233,6 @@ class TPCCBenchmark(Benchmark):
         config["querylog"] = None
         config["print_load"] = False
         config["port"] = self._port
-        config["hyrise_builddir"] = self._dirHyriseDB
         config["table_location"] = dirTables
         config["query_location"] = os.path.join("queries", "tpcc-queries")
         self.driver.loadConfig(config)        

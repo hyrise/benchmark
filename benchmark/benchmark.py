@@ -16,7 +16,7 @@ import queries
 class Benchmark:
 
     def __init__(self, benchmarkGroupId, benchmarkRunId, buildSettings, **kwargs):
-        if(kwargs.has_key("remote") and (kwargs.has_key("dirBinary") or kwargs.has_key("hyriseDBPath"))):
+        if(kwargs.has_key("remote") and kwargs["remote"]==True and (kwargs.has_key("dirBinary") or kwargs.has_key("hyriseDBPath"))):
             print "dirBinary and hyriseDBPath cannot be used with remote"
             exit()
 
@@ -67,6 +67,7 @@ class Benchmark:
         self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 0
         self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
         self._write_to_file_count = kwargs["write_to_file_count"] if kwargs.has_key("write_to_file_count") else None
+        self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else "0"
 
         if self._remote:
             self._ssh               = paramiko.SSHClient()
@@ -134,7 +135,7 @@ class Benchmark:
             print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
             print "Output File: ", self._dirResults + "/ab.log"
             print "---"
-            ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+            ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "1000000", "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
             ab.wait()
         else:
             self._createUsers()
@@ -237,6 +238,7 @@ class Benchmark:
         if not self._remote:
             sys.stdout.write("Starting server for build '%s'... " % self._buildSettings.getName())
             sys.stdout.flush()
+            
             env = {
                 "HYRISE_DB_PATH"    : self._dirHyriseDB,
                 "LD_LIBRARY_PATH"   : self._dirBinary+":/usr/local/lib64/",
@@ -256,7 +258,7 @@ class Benchmark:
             threadstring = ""
             if (self._serverThreads > 0):
                 threadstring = "--threads=%s" % self._serverThreads
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, threadstring],
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, "--checkpointInterval=%s" % self._checkpoint_interval, threadstring],
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,
