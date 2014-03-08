@@ -1,4 +1,5 @@
 {
+  "priority": 1,
   "operators": {
     "load_facility": {
        "type": "TableLoad",
@@ -38,14 +39,24 @@
       "type" : "ValidatePositions"
     },
 
-    "hash_build": {
-        "type": "HashBuild",
-    "fields": ["S_ID","SF_TYPE"],
-        "key": "join"
-    },
-    "hash_join": {
-      "type": "HashJoinProbe",
-      "fields": ["S_ID","SF_TYPE"]
+    "join": {
+       "type": "JoinScan",
+        "predicates" : [
+                { "type" : 0 },
+                {
+                "type" : 3, /* EXP_EQ */
+                "input_left" : 0,
+                "field_left" : "S_ID",
+                "input_right" : 1,
+                "field_right" : "S_ID"
+                },
+                {
+                "type" : 3, /* EXP_EQ */
+                "input_left" : 0,
+                "field_left" : "SF_TYPE",
+                "input_right" : 1,
+                "field_right" : "SF_TYPE"
+                }]
     },
     "project": {
       "type": "ProjectionScan",
@@ -55,14 +66,12 @@
   "edges": [
     ["load_facility", "select_facility"],
     ["select_facility", "validate_facility"],
-    ["validate_facility", "hash_build"],
-    ["hash_build", "hash_join"],
-
+    ["validate_facility", "join"],
 
     ["load_forwarding", "select_forwarding"],
     ["select_forwarding", "validate_forwarding"],
-    ["validate_forwarding", "hash_join"],
+    ["validate_forwarding", "join"],
 
-    ["hash_join","project"]
+    ["join","project"]
     ]
 }

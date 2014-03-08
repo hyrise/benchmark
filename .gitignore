@@ -10,3 +10,4 @@ logs/
 results/
 saved/
 pytpcc/pytpcc/tables
+*.prof

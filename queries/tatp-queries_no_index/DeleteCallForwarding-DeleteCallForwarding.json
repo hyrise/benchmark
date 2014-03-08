@@ -1,4 +1,5 @@
 {
+  "priority": 1,
   "operators": {
     "load": {
        "type": "TableLoad",
@@ -20,7 +21,10 @@
     },
     "delete": {
        "type": "Delete"
+    },
+    "noop": {
+      "type":"NoOp"
     }
   },
-  "edges": [["load", "select"], ["select", "validate"], ["validate", "delete"]]
+  "edges": [["load", "select"], ["select", "validate"], ["validate", "delete"], ["delete","noop"]]
 }

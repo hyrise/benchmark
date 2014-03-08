@@ -1,0 +1,57 @@
+{
+  "priority": 1,
+  "operators": {
+    "load1": {
+       "type": "TableLoad",
+       "table": "SUBSCRIBER"
+    },
+    "select1": {
+       "type": "SimpleTableScan",
+       "tablename": "SUBSCRIBER",
+       "predicates": [
+          {"type": "EQ_V", "in": 0, "f": "SUB_NBR", "vtype": 2 /*Str*/, "value": "%(sub_nbr)s"}
+       ]
+    },
+    "validate1" : {
+      "type" : "ValidatePositions"
+    },
+    "project1": {
+       "type": "ProjectionScan",
+       "fields": ["S_ID"]
+    },
+    "load2": {
+       "type": "TableLoad",
+       "table": "SPECIAL_FACILITY"
+    },
+    "select2": {
+       "type": "SimpleTableScan",
+       "tablename": "SPECIAL_FACILITY",
+       "predicates": [
+          {"type": "EQ_V", "in": 0, "f": "S_ID", "vtype": 0 /*Int*/, "value": %(s_id)d}
+       ]
+    },
+    "validate2" : {
+      "type" : "ValidatePositions"
+    },
+    "project2": {
+       "type": "ProjectionScan",
+       "fields": ["SF_TYPE"]
+    },
+    "load3": {
+       "type": "TableLoad",
+       "table": "CALL_FORWARDING"
+    },
+    "insert3": {
+       "type": "InsertScan",
+       "data" : [[%(s_id)d, %(sf_type)d, %(start_time)d, %(end_time)d, %(numberx)s]]
+    },
+    "NoOp": {
+      "type": "NoOp"
+    }
+  },
+
+  "edges": [["load1", "select1"], ["select1","validate1"],["validate1","project1"],["project1","NoOp"],
+            ["load2", "select2"], ["select2","validate2"],["validate2","project2"],["project2","NoOp"],
+            ["load3", "insert3"],["insert3","NoOp"]
+            ]
+}
