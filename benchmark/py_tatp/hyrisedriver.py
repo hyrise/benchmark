@@ -89,7 +89,7 @@ class HyriseDriver(object):
         x = random.randrange(100)
         params = None
         txn = None
-        """
+        #"""
         if x < 35: ## 35%
             txn, params = (constants.TransactionTypes.GET_SUBSCRIBER_DATA, self.generateGetSubscriberDataParams())
         elif x < 35 + 10: ## 10%
@@ -106,8 +106,8 @@ class HyriseDriver(object):
             assert x >= 100 - 2
             txn, params = (constants.TransactionTypes.DELETE_CALL_FORWARDING, self.generateDeleteCallForwardingParams())
         #"""
-        print self.generateGetNewDestinationParams()
-        txn, params = (constants.TransactionTypes.GET_NEW_DESTINATION, self.generateGetNewDestinationParams())
+        #print self.generateGetNewDestinationParams()
+        #txn, params = (constants.TransactionTypes.GET_NEW_DESTINATION, self.generateGetNewDestinationParams())
 
         return (txn, params)
 
@@ -205,7 +205,7 @@ class HyriseDriver(object):
         # http://tatpbenchmark.sourceforge.net/TATP_Description.pdf
         #sf_type = self.conn.fetchone_as_dict['sf_type']
         sf_type = params['sf_type']
-
+	"""
         #print "CheckPrimaryKeys"
         self.conn.query(q["CheckPrimaryKeys"],
             {'s_id':s_id,
@@ -222,7 +222,7 @@ class HyriseDriver(object):
         if self.conn.fetchone():
             self.conn.commit()
             raise TATPAcceptableError("INSERT_CALL_FORWARDING tried to insert a row that violates foreign key constraints of the SPECIAL FACILITY table.")
-
+	"""
         #print "InsertCallForwarding"
         self.conn.query(q["InsertCallForwarding"],
             {'s_id':s_id,
