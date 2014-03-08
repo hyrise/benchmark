@@ -1578,13 +1578,17 @@ static void read_connection(struct connection * c)
                   i++;
                 }
               } else {
-                printf("ERROR parsing response:\n%s\n", body_data);
-                strcpy(s->txname, "ERROR");  
+                if (verbosity >= 1) {
+                  printf("ERROR parsing response:\n%s\n", body_data);
+                  strcpy(s->txname, "ERROR");  
+                }
               }
             } else {
               // printf("Error: No 2xx and no 501 response");
-              strcpy(s->txname, "ERROR");
-              printf("ERROR: Received:\n%s\n", body_data);
+              if (verbosity >= 1) {
+                strcpy(s->txname, "ERROR");
+                printf("ERROR: Received:\n%s\n", body_data);
+              }
             }
 
             if (heartbeatres && !(done % heartbeatres)) {

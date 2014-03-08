@@ -51,8 +51,8 @@ aparser.add_argument('--json', default=False, action='store_true',
                      help='Use JSON queries instead of stored procedures.')
 aparser.add_argument('--ab', default=None,
                      help='Queryfile with prepared requests. If specified ab tool is used to fire queries.')
-aparser.add_argument('--verbose', default=0,
-                     help='Verbose output level.')
+aparser.add_argument('--verbose', default=1,
+                     help='Verbose output level. Default is 1. Set to 0 if nothing should be printed.')
 aparser.add_argument('--abCore', default=2,
                      help='Core to bind ab to.')
 aparser.add_argument('--tabledir', default=None, type=str, metavar="T",
