@@ -61,6 +61,8 @@ aparser.add_argument('--genCount', default=None, type=str,
                      help='Number of queries to generate')
 aparser.add_argument('--genFile', default=None, type=str, metavar="T",
                      help='File to store generated queries')
+aparser.add_argument('--onlyNeworders', default=False, action='store_true',
+                     help='Only do new-order transactions. Otherwise full mix of tpcc transactions is executed/generated.')
 
 args = vars(aparser.parse_args())
 
@@ -101,5 +103,6 @@ kwargs = {
     "abQueryFile"       : args["ab"],
     "abCore"            : args["abCore"],
     "verbose"           : args["verbose"],
-    "tabledir"          : args["tabledir"]
+    "tabledir"          : args["tabledir"],
+    "onlyNeworders"     : args["onlyNeworders"]
 }

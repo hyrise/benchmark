@@ -46,6 +46,7 @@ class Executor:
 
     def __init__(self, driver, scaleParameters, stop_on_error = False):
         self.driver = driver
+        self.onlyNeworders = False
         self.scaleParameters = scaleParameters
         self.stop_on_error = stop_on_error
     ## DEF
@@ -81,6 +82,9 @@ class Executor:
         r.stopBenchmark()
         return (r)
     ## DEF
+    
+    def setOnlyNeworders(self, OnlyNeworders):
+        self.onlyNeworders = OnlyNeworders
 
     def doOne(self):
         """Selects and executes a transaction at random. The number of new order transactions executed per minute is the official "tpmC" metric. See TPC-C 5.4.2 (page 71)."""
@@ -91,18 +95,21 @@ class Executor:
         x = rand.number(1, 100)
         params = None
         txn = None
-        if x <= 4: ## 4%
-            txn, params = (constants.TransactionTypes.STOCK_LEVEL, self.generateStockLevelParams())
-        elif x <= 4 + 4: ## 4%
-            txn, params = (constants.TransactionTypes.DELIVERY, self.generateDeliveryParams())
-        elif x <= 4 + 4 + 4: ## 4%
-            txn, params = (constants.TransactionTypes.ORDER_STATUS, self.generateOrderStatusParams())
-        elif x <= 43 + 4 + 4 + 4: ## 43%
-            txn, params = (constants.TransactionTypes.PAYMENT, self.generatePaymentParams())
-        else: ## 45%
-            assert x > 100 - 45
-            txn, params = (constants.TransactionTypes.NEW_ORDER, self.generateNewOrderParams())
 
+        if (self.onlyNeworders == True):
+            txn, params = (constants.TransactionTypes.NEW_ORDER, self.generateNewOrderParams())
+        else:
+            if x <= 4: ## 4%
+                txn, params = (constants.TransactionTypes.STOCK_LEVEL, self.generateStockLevelParams())
+            elif x <= 4 + 4: ## 4%
+                txn, params = (constants.TransactionTypes.DELIVERY, self.generateDeliveryParams())
+            elif x <= 4 + 4 + 4: ## 4%
+                txn, params = (constants.TransactionTypes.ORDER_STATUS, self.generateOrderStatusParams())
+            elif x <= 43 + 4 + 4 + 4: ## 43%
+                txn, params = (constants.TransactionTypes.PAYMENT, self.generatePaymentParams())
+            else: ## 45%
+                assert x > 100 - 45
+                txn, params = (constants.TransactionTypes.NEW_ORDER, self.generateNewOrderParams())
         return (txn, params)
     ## DEF
 
