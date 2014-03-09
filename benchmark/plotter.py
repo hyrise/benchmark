@@ -5,6 +5,20 @@ mpl.use('Agg')
 from pylab import *
 from scipy.stats import gaussian_kde
 from matplotlib.ticker import FixedFormatter
+
+import matplotlib.pyplot as plt
+
+#Direct input 
+plt.rcParams['text.latex.preamble']=[r"\usepackage{lmodern}"]
+#Options
+params = {'text.usetex' : True,
+          'font.size' : 11,
+          'font.family' : 'lmodern',
+          'text.latex.unicode': True,
+          }
+plt.rcParams.update(params)
+
+
 import numpy as np
 
 # const factor to convert result times from logs
@@ -14,11 +28,12 @@ z = 1000
 
 class Plotter:
 
-    def __init__(self, benchmarkGroupId, use_ab = False):
+    def __init__(self, benchmarkGroupId, use_ab = False, preview = None):
         self._groupId = benchmarkGroupId
         self._dirOutput = os.path.join(os.getcwd(), "plots", str(self._groupId))
         self._varyingParameter = None
         self._use_ab = use_ab
+        self._preview = preview
 
         if use_ab:
             self._runs = self._collect_ab()
@@ -33,6 +48,42 @@ class Plotter:
     def tick(self):
         sys.stdout.write('.')
         sys.stdout.flush()
+
+    def setAxLinesBW(self,ax):
+        """
+        Take each Line2D in the axes, ax, and convert the line style to be 
+        suitable for black and white viewing.
+        """
+        MARKERSIZE = 3
+
+        COLORMAP = {
+            'b': {'marker': None, 'dash': (None,None)},
+            'g': {'marker': None, 'dash': [5,5]},
+            'r': {'marker': None, 'dash': [5,3,1,3]},
+            'c': {'marker': None, 'dash': [1,3]},
+            'm': {'marker': None, 'dash': [5,2,5,2,5,10]},
+            'y': {'marker': None, 'dash': [5,3,1,2,1,10]},
+            'k': {'marker': 'o', 'dash': (None,None)} #[1,2,1,10]}
+            }
+
+        lines = ax.get_lines()
+        if ax.get_legend() != None:
+         lines = lines + ax.get_legend().get_lines()
+
+        for line in lines:
+            origColor = line.get_color()
+            line.set_color('black')
+            line.set_dashes(COLORMAP[origColor]['dash'])
+            line.set_marker(COLORMAP[origColor]['marker'])
+            line.set_markersize(MARKERSIZE)
+
+    def setFigLinesBW(self, fig):
+        """
+        Take each axes in the figure, and for each line in the axes, make the
+        line viewable in black and white.
+        """
+        for ax in fig.get_axes():
+            self.setAxLinesBW(ax)
 
     def printStatistics(self):
         for runId, runData in self._runs.iteritems():
@@ -69,11 +120,21 @@ class Plotter:
                 print "|     total:            %1.2f tps\n" % (totalRuns / totalTime)
                 print "totalRuns: %1.2f, totalTime: %1.2f" % (totalRuns, totalTime)
 
-    def plotTotalThroughput(self):
+    def plotTotalThroughput(self, xtitle=None, xtitle_converter=None):
         sys.stdout.write('plotTotalThroughput: ')
+
+        fig = plt.figure()
+        # fig.set_size_inches(3.54,3.54) 
+        fig.set_size_inches(5.31,3.54) 
+
         plt.title("Total Transaction Throughput")
-        plt.ylabel("Transactions per Second")
-        plt.xlabel("Number of Parallel Users")
+        plt.ylabel("Transactions per Minute")
+
+        if xtitle == None:
+            plt.xlabel("Number of Parallel Users")
+        else:
+            plt.xlabel(xtitle)
+
         for buildId in self._buildIds:
             plotX = []
             plotY = []
@@ -86,13 +147,26 @@ class Plotter:
                 for txId, txData in runData[buildId]["txStats"].iteritems():
                     totalRuns += txData["totalRuns"]
                     totalTime = max(txData["totalTime"], totalTime)
-                plotY.append(totalRuns/ totalTime)
+                plotY.append(60 * totalRuns / totalTime)
             plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
+
+            if xtitle_converter != None:
+                plotX = [xtitle_converter(x) for x in plotX]
+
+            if buildId == "Logger_50ms":
+                buildId = "$Logger_{50ms}$"
+
             plt.plot(plotX, plotY, label=buildId)
         plt.xticks(plotX)
         plt.legend(loc='upper left', prop={'size':10})
         fname = os.path.join(self._dirOutput, "total_throughput.pdf")
-        plt.savefig(fname)
+        self.setFigLinesBW(fig)
+        plt.savefig(
+            fname,
+             #This is simple recomendation for publication plots
+            dpi=1000, 
+            # Plot will be occupy a maximum of available space
+            bbox_inches='tight')
         plt.close()
         sys.stdout.write('\n')
 
@@ -259,6 +333,7 @@ class Plotter:
 
                 # --- Builds --- #
                 for build in os.listdir(dirRun):
+
                     numUsers = int(dirRun.split("_")[-1])
                     self.tick()
                     dirBuild = os.path.join(dirRun, build)
@@ -272,11 +347,13 @@ class Plotter:
                             print "WARNING: no transaction log found in %s!" % dirBuild
                             continue
 
-                        # i = 0
+                        i = 0
                         for rawline in open(os.path.join(dirBuild, "ab.log")):
-                            # i = i + 1
-                            # if i>100000:
-                                # break
+                            i = i + 1
+                            # preview mode?
+                            if self._preview != None and i>self._preview:
+                                break
+
                             if rawline.startswith("starttime"):
                                 continue
 

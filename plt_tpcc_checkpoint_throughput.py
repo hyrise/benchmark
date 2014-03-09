@@ -12,5 +12,7 @@ if __name__ == "__main__":
   plotter = benchmark.Plotter(groupId, use_ab = True)
 
   # plotter.plotResponseTimesVaryingUsers()
-  plotter.printStatistics()
-  plotter.plotTotalThroughput()
+  # plotter.printStatistics()
+
+
+  plotter.plotTotalThroughput(xtitle="Checkpointing Frequency [s]", xtitle_converter = lambda x: x/1000)
