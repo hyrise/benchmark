@@ -24,7 +24,7 @@ for checkpoint_interval in xrange(1, 60002, 6000):
         shutil.rmtree(kwargs["hyriseDBPath"])
 
     # run no persistency
-    # b1.run()
+    b1.run()
 
     # clear persistency directory
     if os.path.exists(kwargs["hyriseDBPath"]) and not args["manual"]:
@@ -33,7 +33,3 @@ for checkpoint_interval in xrange(1, 60002, 6000):
 
     # run buffered logger 50ms
     b4.run()
-    
-#plotter = benchmark.Plotter(groupId)
-#plotter.printStatistics()
-
