@@ -112,9 +112,11 @@ class TPCCUser(User):
 
         query_result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure)
         if query_result != None:
-            result = query_result.json()
-            self.addPerfData(result.get("performanceData", None))
-            return result
+            if query_result.status_code < 200 and query_result.status_code >= 300:
+                print "ERROR:", query_result
+                # result = query_result.json()
+                # self.addPerfData(result.get("performanceData", None))
+            return None
         else:
             return None
 
