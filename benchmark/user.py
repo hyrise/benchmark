@@ -33,7 +33,7 @@ class User(multiprocessing.Process):
         self._totalQueryTime    = 0
         self._queryfile         = None
         self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
-        self._write_to_file_count    = int(kwargs["write_to_file_count"]) if kwargs.has_key("write_to_file_count") else None
+        self._write_to_file_count    = int(kwargs["write_to_file_count"]) if kwargs.has_key("write_to_file_count") and kwargs["write_to_file_count"]!=None else None
         self._written_to_file_count = 0
 
     def prepareUser(self):

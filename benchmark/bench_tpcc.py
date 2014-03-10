@@ -34,6 +34,7 @@ class TPCCUser(User):
         self.config["execute"] = True
         self.perf = {}
         self.numErrors = 0
+        self.onlyNeworders   = kwargs["onlyNeworders"] if kwargs.has_key("onlyNeworders") else False
 
     def prepareUser(self):
         """ executed once when user starts """
@@ -44,6 +45,7 @@ class TPCCUser(User):
         self.lastResult = None
         self.lastHeader = None
         self.e = executor.Executor(self.driver, self.scaleParameters)
+        self.e.setOnlyNeworders(self.onlyNeworders)
         self.userStartTime = time.time()
 
     def runUser(self):
@@ -110,9 +112,11 @@ class TPCCUser(User):
 
         query_result = self.fireQuery(querystr, paramlist, sessionContext=self.context, autocommit=commit, stored_procedure=stored_procedure)
         if query_result != None:
-            result = query_result.json()
-            self.addPerfData(result.get("performanceData", None))
-            return result
+            if query_result.status_code < 200 and query_result.status_code >= 300:
+                print "ERROR:", query_result
+                # result = query_result.json()
+                # self.addPerfData(result.get("performanceData", None))
+            return None
         else:
             return None
 
@@ -189,8 +193,8 @@ class TPCCBenchmark(Benchmark):
         self.scaleParameters = scaleparameters.makeWithScaleFactor(self.warehouses, self.scalefactor)
         self.regenerate      = False
         self.noLoad          = kwargs["noLoad"] if kwargs.has_key("noLoad") else False
-        self.table_dir       = os.path.join(kwargs["tabledir"],"bin") if kwargs.has_key("tabledir") else None
-
+        self.table_dir       = kwargs["tabledir"] if kwargs.has_key("tabledir") else None
+        self.onlyNeworders   = kwargs["onlyNeworders"] if kwargs.has_key("onlyNeworders") else False
         self.setUserClass(TPCCUser)
 
     def generateTables(self, path):
@@ -239,7 +243,8 @@ class TPCCBenchmark(Benchmark):
 
         self.setUserArgs({
             "scaleParameters": self.scaleParameters,
-            "config": config
+            "config": config,
+            "onlyNeworders": self.onlyNeworders
         })
 
     def loadTables(self):
@@ -248,5 +253,5 @@ class TPCCBenchmark(Benchmark):
         else:
             sys.stdout.write("Importing tables into HYRISE... ")
             sys.stdout.flush()
-            self.driver.executeStart(self.table_dir)
+            self.driver.executeStart(self.table_dir, use_csv = self._csv)
             print "done"

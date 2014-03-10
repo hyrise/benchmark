@@ -4,36 +4,16 @@ import shutil
 
 groupId = "tpcc_checkpoint_throughput_tmp"
 
-for checkpoint_interval in xrange(1, 60002, 6000):
-
-    runId = "checkpoint_throughput_%s" % checkpoint_interval
+for checkpoint_interval in xrange(1, 240002, 6000):
+    parameters = {"checkpoint_interval":checkpoint_interval}
     kwargs["numUsers"] = args["clients"]
     kwargs["hyriseDBPath"] = "/mnt/fusion/david/hyrise_persistency/"
-
-    # no persistency
-    kwargs["checkpointInterval"] = 0
-    b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
-
-    # buffered logger 50ms group commit
-    kwargs["checkpointInterval"] = checkpoint_interval
-    b4 = benchmark.TPCCBenchmark(groupId, runId, s4, **kwargs)
-
-    # clear persistency directory
-    if os.path.exists(kwargs["hyriseDBPath"]) and not args["manual"]:
-        print "Deleting directory:", kwargs["hyriseDBPath"]
-        shutil.rmtree(kwargs["hyriseDBPath"])
-
-    # run no persistency
-    # b1.run()
-
-    # clear persistency directory
-    if os.path.exists(kwargs["hyriseDBPath"]) and not args["manual"]:
-        print "Deleting directory:", kwargs["hyriseDBPath"]
-        shutil.rmtree(kwargs["hyriseDBPath"])
-
-    # run buffered logger 50ms
-    b4.run()
     
-#plotter = benchmark.Plotter(groupId)
-#plotter.printStatistics()
-
+    kwargs["checkpointInterval"] = 0
+    create_benchmark_none("None", groupId, parameters, kwargs).run()
+    
+    kwargs["checkpointInterval"] = checkpoint_interval
+    create_benchmark_logger("Logger", groupId, parameters, kwargs, windowsize_ms=50000).run()
+    
+    kwargs["checkpointInterval"] = 0
+    create_benchmark_nvram("NVRAM", groupId, parameters, kwargs).run()

@@ -58,16 +58,17 @@ class Benchmark:
         self._build             = None
         self._serverProc        = None
         self._users             = []
-        self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "CoreBoundQueuesScheduler"
+        self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "WSCoreBoundQueuesScheduler"
         self._serverIP          = kwargs["serverIP"] if kwargs.has_key("serverIP") else "127.0.0.1"
         self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
         self._remotePath        = kwargs["remotePath"] if kwargs.has_key("remotePath") else "/home/" + kwargs["remoteUser"] + "/benchmark"
         self._abQueryFile       = kwargs["abQueryFile"] if kwargs.has_key("abQueryFile") else None
         self._abCore            = kwargs["abCore"] if kwargs.has_key("abCore") else 2
-        self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 0
+        self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 1
         self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
         self._write_to_file_count = kwargs["write_to_file_count"] if kwargs.has_key("write_to_file_count") else None
         self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else "0"
+        self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
 
         if self._remote:
             self._ssh               = paramiko.SSHClient()
@@ -119,6 +120,8 @@ class Benchmark:
         if not self._manual:
             # no support for building on remote machine yet
             self._buildServer()
+            if self._abQueryFile != None:
+                self._buildAb()
             self._startServer()
             print "---\nHYRISE server running on port %s\n---" % self._port
         else:
@@ -220,6 +223,18 @@ class Benchmark:
     #     for queryId, filename in queries.QUERY_FILES.iteritems():
     #         queryDict[queryId] = open(os.path.join(cwd, filename)).read()
     #     return queryDict
+
+    def _buildAb(self):
+        sys.stdout.write("Building ab tool... ")
+        sys.stdout.flush()
+        process = subprocess.Popen("make ab", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, cwd="./ab")
+        (stdout, stderr) = process.communicate()
+        returncode = process.returncode
+        if returncode != 0:
+            print stderr
+            raise Exception("ERROR: building ab tool failed with return code %s:\n===\n%s" % (self._settings.getName(), returncode, stderr))
+        else:
+            print "done"
 
     def _buildServer(self):
         sys.stdout.write("%suilding server for build '%s'... " % ("B" if not self._rebuild else "Reb", self._buildSettings.getName()))
