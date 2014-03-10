@@ -193,7 +193,7 @@ class TPCCBenchmark(Benchmark):
         self.scaleParameters = scaleparameters.makeWithScaleFactor(self.warehouses, self.scalefactor)
         self.regenerate      = False
         self.noLoad          = kwargs["noLoad"] if kwargs.has_key("noLoad") else False
-        self.table_dir       = os.path.join(kwargs["tabledir"],"bin") if kwargs.has_key("tabledir") else None
+        self.table_dir       = kwargs["tabledir"] if kwargs.has_key("tabledir") else None
         self.onlyNeworders   = kwargs["onlyNeworders"] if kwargs.has_key("onlyNeworders") else False
         self.setUserClass(TPCCUser)
 
