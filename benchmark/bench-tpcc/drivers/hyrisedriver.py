@@ -200,9 +200,13 @@ class HyriseDriver(AbstractDriver):
         sys.stdout.write('.')
         sys.stdout.flush()
 
-    def executeStart(self, tabledir):
-        loadjson = self.generateTableloadBinaryJson(tabledir)
-        self.conn.query(loadjson)
+    def executeStart(self, tabledir, use_csv = False):
+        if not use_csv:
+            loadjson = self.generateTableloadBinaryJson(tabledir)
+            self.conn.query(loadjson)
+        else:
+            loadcsvjson = self.generateTableloadCSVJson(tabledir)
+            self.conn.query(loadcsvjson)
 
     def executeLoadCSVExportBinary(self, import_path, export_path):
         loadcsvjson = self.generateTableloadCSVJson(import_path)

@@ -253,5 +253,5 @@ class TPCCBenchmark(Benchmark):
         else:
             sys.stdout.write("Importing tables into HYRISE... ")
             sys.stdout.flush()
-            self.driver.executeStart(self.table_dir)
+            self.driver.executeStart(self.table_dir, use_csv = self._csv)
             print "done"
