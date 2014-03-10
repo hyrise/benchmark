@@ -5,6 +5,8 @@ mpl.use('Agg')
 from pylab import *
 from scipy.stats import gaussian_kde
 from matplotlib.ticker import FixedFormatter
+import multiprocessing as mp
+from matplotlib.font_manager import FontProperties
 
 import matplotlib.pyplot as plt
 
@@ -25,6 +27,99 @@ import numpy as np
 # if papi is deactivated, logs contain time in secons
 # we want ms, so factor ist 1000
 z = 1000
+
+def process_ab_logfile(plotter, dirResults, run, build, preview_count):
+    txStats = {}
+    opStats = {}
+
+
+    dirRun = os.path.join(dirResults, run)
+
+    run_parameters = eval(run.replace("@", ","))
+    dirBuild = os.path.join(dirRun, build)
+    hasOpData = False
+
+    if not os.path.isdir(dirBuild):
+        print "WARNING: result dir not found: %s!" % dirBuild
+        return
+
+    if not os.path.isfile(os.path.join(dirBuild, "ab.log")):
+        print "WARNING: no transaction log found in %s!" % dirBuild
+        return
+
+    i = 0
+    for rawline in open(os.path.join(dirBuild, "ab.log")):
+        i = i + 1
+        # preview mode?
+        if preview_count != None and preview_count>0 and i>preview_count:
+            break
+
+        if rawline.startswith("starttime"):
+            continue
+
+        rawline = rawline.strip('\n')
+        linedata = rawline.split("\t")
+
+        if len(linedata) < 2:
+            continue
+
+        txId        = linedata[6]
+        runtime     = float(linedata[4]) / 1000 # convert from usec to ms
+        starttime   = int(linedata[1]) # seconds
+        txStatus    = int(linedata[7])
+
+        opStats.setdefault(txId, {})
+        txStats.setdefault(txId,{
+            "totalTime": 0.0,
+            "userTime":  0.0,
+            "totalRuns": 0,
+            "totalFail": 0,
+            "rtTuples":  [],
+            "rtMin":     0.0,
+            "rtMax":     0.0,
+            "rtAvg":     0.0,
+            "rtMed":     0.0,
+            "rtStd":     0.0,
+            "starttime": 0,
+            "endtime":   0
+        })
+
+        if starttime < txStats[txId]["starttime"] or txStats[txId]["starttime"] == 0:
+            txStats[txId]["starttime"] = starttime
+
+        if starttime > txStats[txId]["endtime"] or txStats[txId]["endtime"] == 0:
+            txStats[txId]["endtime"] = starttime
+
+        if txStatus >= 200 and txStatus < 300:
+            txStats[txId]["totalRuns"] += 1
+            txStats[txId]["rtTuples"].append((starttime, runtime))
+        else:
+            txStats[txId]["totalFail"] += 1
+
+    for txId, txData in txStats.iteritems():
+        allRuntimes = [a[1] for a in txData["rtTuples"]]
+        if len(allRuntimes) == 0:
+            allRuntimes = [0]
+        txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
+        txStats[txId]["rtRaw"] = allRuntimes
+        txStats[txId]["rtMin"] = amin(allRuntimes)
+        txStats[txId]["rtMax"] = amax(allRuntimes)
+        txStats[txId]["rtAvg"] = average(allRuntimes)
+        txStats[txId]["rtMed"] = median(allRuntimes)
+        txStats[txId]["rtStd"] = std(allRuntimes)
+        txStats[txId]["totalTime"] = txStats[txId]["endtime"] - txStats[txId]["starttime"]
+
+        for opId, opData in opStats[txId].iteritems():
+            opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
+            opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])
+            opStats[txId][opId]["rtMax"] = amax([a[1] for a in opData["rtTuples"]])
+            opStats[txId][opId]["rtAvg"] = average([a[1] for a in opData["rtTuples"]])
+            opStats[txId][opId]["rtMed"] = median([a[1] for a in opData["rtTuples"]])
+            opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
+        txStats[txId]["operators"] = opStats[txId]
+    
+    plotter.tick()
+    return {"run": run, "build": build, "txStats": txStats, "parameters": run_parameters}
 
 class Plotter:
 
@@ -120,7 +215,7 @@ class Plotter:
                 print "|     total:            %1.2f tps\n" % (totalRuns / totalTime)
                 print "totalRuns: %1.2f, totalTime: %1.2f" % (totalRuns, totalTime)
 
-    def plotTotalThroughput(self, xtitle=None, xtitle_converter=None):
+    def plotTotalThroughput(self, xtitle, x_parameter, xtitle_converter=None):
         sys.stdout.write('plotTotalThroughput: ')
 
         fig = plt.figure()
@@ -129,20 +224,17 @@ class Plotter:
 
         plt.title("Total Transaction Throughput")
         plt.ylabel("Transactions per Minute")
-
-        if xtitle == None:
-            plt.xlabel("Number of Parallel Users")
-        else:
-            plt.xlabel(xtitle)
+        plt.xlabel(xtitle)
 
         for buildId in self._buildIds:
             plotX = []
             plotY = []
             for runId, runData in self._runs.iteritems():
                 self.tick()
-                plotX.append(runData[buildId]["numUsers"])
                 totalRuns = 0.0
                 totalTime = 0.0
+                x_value = runData[buildId]["parameters"][x_parameter] 
+                plotX.append(x_value)
                 # consolidate all transactions
                 for txId, txData in runData[buildId]["txStats"].iteritems():
                     totalRuns += txData["totalRuns"]
@@ -153,12 +245,17 @@ class Plotter:
             if xtitle_converter != None:
                 plotX = [xtitle_converter(x) for x in plotX]
 
-            if buildId == "Logger_50ms":
-                buildId = "$Logger_{50ms}$"
+            plt.plot(plotX, plotY, label=buildId.replace("_", "-"))
+        # plt.xticks(plotX)
 
-            plt.plot(plotX, plotY, label=buildId)
-        plt.xticks(plotX)
-        plt.legend(loc='upper left', prop={'size':10})
+        # customize legend
+        fontP = FontProperties()
+        fontP.set_size('small')
+
+        plt.legend(loc='lower right', prop={'size':8})
+
+        # plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True, prop = fontP)
+
         fname = os.path.join(self._dirOutput, "total_throughput.pdf")
         self.setFigLinesBW(fig)
         plt.savefig(
@@ -189,7 +286,7 @@ class Plotter:
                 plotY.append(totalFails * z / totalTime)
             plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
             plt.plot(plotX, plotY, label=buildId)
-        plt.xticks(plotX)
+        # plt.xticks(plotX)
         plt.legend(loc='upper left', prop={'size':10})
         fname = os.path.join(self._dirOutput, "total_fails.pdf")
         plt.savefig(fname)
@@ -319,107 +416,45 @@ class Plotter:
         sys.stdout.write('\n')
 
     def _collect_ab(self):
+        pool = mp.Pool()
+        results = []
+        
         runs = {}
         dirResults = os.path.join(os.getcwd(), "results", self._groupId)
         if not os.path.isdir(dirResults):
             raise Exception("Group result directory '%s' not found!" % dirResults)
 
         sys.stdout.write('_collect from ab: ')
+        sys.stdout.flush()
+
         # --- Runs --- #
         for run in os.listdir(dirResults):
+            runs[run] = {}
+
+
             dirRun = os.path.join(dirResults, run)
-            if os.path.isdir(dirRun):
-                runs[run] = {}
+            if not os.path.isdir(dirRun):
+                continue
 
-                # --- Builds --- #
-                for build in os.listdir(dirRun):
+            # --- Builds --- #
+            for build in os.listdir(dirRun):
+                result = pool.apply_async(process_ab_logfile, [self, dirResults, run, build, self._preview])
+                results.append(result)
 
-                    numUsers = int(dirRun.split("_")[-1])
-                    self.tick()
-                    dirBuild = os.path.join(dirRun, build)
-                    if os.path.isdir(dirBuild):
-                        #runs[run][build] = []
-                        txStats = {}
-                        opStats = {}
-                        hasOpData = False
+        pool.close()
+        pool.join()
 
-                        if not os.path.isfile(os.path.join(dirBuild, "ab.log")):
-                            print "WARNING: no transaction log found in %s!" % dirBuild
-                            continue
-
-                        i = 0
-                        for rawline in open(os.path.join(dirBuild, "ab.log")):
-                            i = i + 1
-                            # preview mode?
-                            if self._preview != None and i>self._preview:
-                                break
-
-                            if rawline.startswith("starttime"):
-                                continue
-
-                            rawline = rawline.strip('\n')
-                            linedata = rawline.split("\t")
-
-                            if len(linedata) < 2:
-                                continue
-
-                            txId        = linedata[6]
-                            runtime     = float(linedata[4]) / 1000 # convert from usec to ms
-                            starttime   = int(linedata[1]) # seconds
-                            txStatus    = int(linedata[7])
-
-                            opStats.setdefault(txId, {})
-                            txStats.setdefault(txId,{
-                                "totalTime": 0.0,
-                                "userTime":  0.0,
-                                "totalRuns": 0,
-                                "totalFail": 0,
-                                "rtTuples":  [],
-                                "rtMin":     0.0,
-                                "rtMax":     0.0,
-                                "rtAvg":     0.0,
-                                "rtMed":     0.0,
-                                "rtStd":     0.0,
-                                "starttime": 0,
-                                "endtime":   0
-                            })
-
-                            if starttime < txStats[txId]["starttime"] or txStats[txId]["starttime"] == 0:
-                                txStats[txId]["starttime"] = starttime
-
-                            if starttime > txStats[txId]["endtime"] or txStats[txId]["endtime"] == 0:
-                                txStats[txId]["endtime"] = starttime
-
-                            if txStatus >= 200 and txStatus < 300:
-                                txStats[txId]["totalRuns"] += 1
-                                txStats[txId]["rtTuples"].append((starttime, runtime))
-                            else:
-                                txStats[txId]["totalFail"] += 1
-
-                        for txId, txData in txStats.iteritems():
-                            allRuntimes = [a[1] for a in txData["rtTuples"]]
-                            if len(allRuntimes) == 0:
-                                allRuntimes = [0]
-                            txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
-                            txStats[txId]["rtRaw"] = allRuntimes
-                            txStats[txId]["rtMin"] = amin(allRuntimes)
-                            txStats[txId]["rtMax"] = amax(allRuntimes)
-                            txStats[txId]["rtAvg"] = average(allRuntimes)
-                            txStats[txId]["rtMed"] = median(allRuntimes)
-                            txStats[txId]["rtStd"] = std(allRuntimes)
-                            txStats[txId]["totalTime"] = txStats[txId]["endtime"] - txStats[txId]["starttime"]
-
-                            for opId, opData in opStats[txId].iteritems():
-                                opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
-                                opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])
-                                opStats[txId][opId]["rtMax"] = amax([a[1] for a in opData["rtTuples"]])
-                                opStats[txId][opId]["rtAvg"] = average([a[1] for a in opData["rtTuples"]])
-                                opStats[txId][opId]["rtMed"] = median([a[1] for a in opData["rtTuples"]])
-                                opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
-                            txStats[txId]["operators"] = opStats[txId]
-
-                        if txStats != {}:
-                            runs[run][build] = {"txStats": txStats, "numUsers": numUsers}
+        for result_obj in results:
+            result = result_obj.get()
+            if result == None:
+                continue
+            run = result["run"]
+            build = result["build"]
+            txStats = result["txStats"]
+            parameters = result["parameters"]
+            if txStats != None:
+                runs[run][build] = {"txStats": txStats, "parameters": parameters}
+                    
         sys.stdout.write('\n')
         return runs
 

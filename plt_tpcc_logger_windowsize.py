@@ -3,7 +3,7 @@ import benchmark
 
 if __name__ == "__main__":
 
-  groupId = "tpcc_checkpoint_throughput_tmp"
+  groupId = "tpcc_logger_windowsize"
 
   aparser = argparse.ArgumentParser(description='Plotter for HYRISE TPC-C Benchmark results')
 
@@ -11,5 +11,7 @@ if __name__ == "__main__":
 
   plotter = benchmark.Plotter(groupId, use_ab = True)
 
-  plotter.plotTotalThroughput(xtitle="Checkpointing Frequency [s]", x_parameter="checkpoint_interval", xtitle_converter = lambda x: x/1000)
-  
+  # plotter.plotResponseTimesVaryingUsers()
+  # plotter.printStatistics()
+
+  plotter.plotTotalThroughput(xtitle="Logger Windowsize [ms]", x_parameter="windowsize_ms")

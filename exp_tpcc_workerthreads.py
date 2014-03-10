@@ -13,13 +13,6 @@ for threads in xrange(1, 19):
 
     print "benchmarking threads: ", threads
     kwargs["serverThreads"] = threads
-
-    runId = "numClients_%s" % num_clients
     kwargs["numUsers"] = num_clients
-
-    b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
-    
-    b1.run()
-    
-    if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
-        os.remove("/mnt/pmfs/hyrise_tpcc")
+    parameters = {"numClients":num_clients}    
+    create_benchmark_none("None", groupId, parameters, kwargs).run()

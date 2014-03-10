@@ -2,8 +2,24 @@ import argparse
 import benchmark
 import os
 import getpass
+import shutil
 
+def clear_dir(path):
+    print "Clearing directory:", path
+    if not os.path.exists(path):
+        return
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            os.unlink(os.path.join(root, f))
+        for d in dirs:
+            shutil.rmtree(os.path.join(root, d))
 
+def reset():
+    if not args["manual"]:
+        clear_dir(kwargs["hyriseDBPath"])
+        pmfs_data = "/mnt/pmfs/hyrisedata/"
+        clear_dir(pmfs_data)
+        
 aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')
 aparser.add_argument('--scalefactor', default=1, type=float, metavar='SF',
                      help='Benchmark scale factor')
@@ -75,12 +91,23 @@ else:
     args["tabledir"] = os.path.abspath(args["tabledir"])
     print "Using table directory:", args["tabledir"]
 
-s1 = benchmark.Settings("None", PERSISTENCY="NONE")
-s2 = benchmark.Settings("Logger_1ms", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW=1000)
-s3 = benchmark.Settings("Logger_10ms", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW=10000)
-s4 = benchmark.Settings("Logger_50ms", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW=50000)
-s5 = benchmark.Settings("Logger_unlimited", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1, GROUP_COMMIT_WINDOW="unlimited")
-s6 = benchmark.Settings("NVRAM", PERSISTENCY="NVRAM", NVRAM_FILENAME="hyrise_tpcc")
+def create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs):
+    reset()
+    runId = str(parameters).replace(",", "@")
+    s = benchmark.Settings(name, **settings_kwargs)
+    return benchmark.TPCCBenchmark(groupId, runId, s, **benchmark_kwargs) 
+
+def create_benchmark_none(name, groupId, parameters, benchmark_kwargs):
+    settings_kwargs = {"PERSISTENCY":"NONE"}
+    return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
+
+def create_benchmark_logger(name, groupId, parameters, benchmark_kwargs, windowsize_ms):
+    settings_kwargs = {"PERSISTENCY":"BUFFEREDLOGGER", "WITH_GROUP_COMMIT":1, "GROUP_COMMIT_WINDOW":windowsize_ms*1000}
+    return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
+
+def create_benchmark_nvram(name, groupId, parameters, benchmark_kwargs):
+    settings_kwargs = {"PERSISTENCY":"NVRAM", "NVRAM_FILENAME":"hyrise_tpcc"}
+    return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
 kwargs = {
     "remoteUser"        : args["remoteUser"],
