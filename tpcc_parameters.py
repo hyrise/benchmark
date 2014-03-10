@@ -16,7 +16,8 @@ def clear_dir(path):
 
 def reset():
     if not args["manual"]:
-        clear_dir(kwargs["hyriseDBPath"])
+        if "hyriseDBPath" in kwargs:
+            clear_dir(kwargs["hyriseDBPath"])
         pmfs_data = "/mnt/pmfs/hyrisedata/"
         clear_dir(pmfs_data)
         
