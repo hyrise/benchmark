@@ -63,6 +63,8 @@ aparser.add_argument('--genFile', default=None, type=str, metavar="T",
                      help='File to store generated queries')
 aparser.add_argument('--onlyNeworders', default=False, action='store_true',
                      help='Only do new-order transactions. Otherwise full mix of tpcc transactions is executed/generated.')
+aparser.add_argument('--csv', default=False, action='store_true',
+                     help='Load data from csv files and do not user binary import.')
 
 args = vars(aparser.parse_args())
 
@@ -104,5 +106,6 @@ kwargs = {
     "abCore"            : args["abCore"],
     "verbose"           : args["verbose"],
     "tabledir"          : args["tabledir"],
-    "onlyNeworders"     : args["onlyNeworders"]
+    "onlyNeworders"     : args["onlyNeworders"],
+    "csv"               : args["csv"]
 }

@@ -68,6 +68,7 @@ class Benchmark:
         self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
         self._write_to_file_count = kwargs["write_to_file_count"] if kwargs.has_key("write_to_file_count") else None
         self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else "0"
+        self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
 
         if self._remote:
             self._ssh               = paramiko.SSHClient()
