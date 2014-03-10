@@ -20,5 +20,6 @@ runId = "numClients_%s" % num_clients
 kwargs["numUsers"] = num_clients
 kwargs["write_to_file"] = args["genFile"]
 kwargs["write_to_file_count"] = args["genCount"]
-b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
+parameters = {"none":None}    
+b1 = create_benchmark_none("None", groupId, parameters, kwargs)
 b1.run()
