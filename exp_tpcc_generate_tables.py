@@ -3,7 +3,9 @@ import shutil
 
 groupId = "tmp_tpcc_generate"
 runId = "gen"
-b1 = benchmark.TPCCBenchmark(groupId, runId, s1, **kwargs)
+parameters = {"none":None}    
+b1 = create_benchmark_none("None", groupId, parameters, kwargs)
+
 
 b1.benchPrepare()
 csv_dir = os.path.join(kwargs["tabledir"], "csv")
