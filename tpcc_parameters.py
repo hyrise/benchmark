@@ -3,6 +3,7 @@ import benchmark
 import os
 import getpass
 import shutil
+import commands
 
 def clear_dir(path):
     print "Clearing directory:", path
@@ -103,6 +104,8 @@ def create_benchmark_none(name, groupId, parameters, benchmark_kwargs):
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
 def create_benchmark_logger(name, groupId, parameters, benchmark_kwargs, windowsize_ms):
+    commands.getoutput("touch hyrise/src/lib/io/GroupCommitter.h")
+    commands.getoutput("touch hyrise/src/lib/helper/Settings.cpp")  
     settings_kwargs = {"PERSISTENCY":"BUFFEREDLOGGER", "WITH_GROUP_COMMIT":1, "GROUP_COMMIT_WINDOW":windowsize_ms*1000}
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
