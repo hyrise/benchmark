@@ -15,10 +15,13 @@ def clear_dir(path):
         for d in dirs:
             shutil.rmtree(os.path.join(root, d))
 
-def reset():
+def reset_persistency_directory():
     if not args["manual"]:
         if "hyriseDBPath" in kwargs:
-            clear_dir(kwargs["hyriseDBPath"])
+            clear_dir(os.path.join(kwargs["hyriseDBPath"], "persistency"))
+
+def reset_nvram_directory():
+    if not args["manual"]:
         pmfs_data = "/mnt/pmfs/hyrisedata/"
         clear_dir(pmfs_data)
         
@@ -94,7 +97,6 @@ else:
     print "Using table directory:", args["tabledir"]
 
 def create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs):
-    reset()
     runId = str(parameters).replace(",", "@")
     s = benchmark.Settings(name, **settings_kwargs)
     return benchmark.TPCCBenchmark(groupId, runId, s, **benchmark_kwargs) 
@@ -104,12 +106,14 @@ def create_benchmark_none(name, groupId, parameters, benchmark_kwargs):
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
 def create_benchmark_logger(name, groupId, parameters, benchmark_kwargs, windowsize_ms):
+    reset_persistency_directory()
     commands.getoutput("touch hyrise/src/lib/io/GroupCommitter.h")
     commands.getoutput("touch hyrise/src/lib/helper/Settings.cpp")  
     settings_kwargs = {"PERSISTENCY":"BUFFEREDLOGGER", "WITH_GROUP_COMMIT":1, "GROUP_COMMIT_WINDOW":windowsize_ms*1000}
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
 def create_benchmark_nvram(name, groupId, parameters, benchmark_kwargs):
+    reset_nvram_directory()
     settings_kwargs = {"PERSISTENCY":"NVRAM", "NVRAM_FILENAME":"hyrise_tpcc"}
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
