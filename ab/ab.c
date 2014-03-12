@@ -692,6 +692,27 @@ static void ssl_proceed_handshake(struct connection *c)
 
 static void write_request(struct connection * c)
 {
+    if (prepared_posting == 1) {
+
+      if (postdata_cursor >= postdata_buffer + postdata_buffer_size) {
+        printf("ERROR: Not enough prepared reqeusts. Stopping!\n\n");
+        close_connection(c);
+      }
+
+      // prepare each request individually
+      reqlen = atoi(postdata_cursor);
+      postdata_cursor += 5;
+      postlen = atoi(postdata_cursor);
+      postdata_cursor += 5;
+
+      size_t msg_size = reqlen + postlen;
+      // char *mybuff = malloc(msg_size);
+      // memcpy(mybuff, postdata_cursor, msg_size);
+      
+      request = postdata_cursor;
+      postdata_cursor += msg_size;
+    }
+
     do {
         apr_time_t tnow;
         apr_size_t l = c->rwrite;
@@ -1564,7 +1585,7 @@ static void read_connection(struct connection * c)
             s->waittime  = ap_max(0, c->beginread - c->endwrite);
             strcpy(s->respcode, respcode);
 
-            if (respcode[0] == '2' || (respcode[0] == '5' && respcode[1] == '0' && respcode[2] == '1')) {
+            if (respcode[0] == '2') {
               // find and cpy tx name from buffer
               char * return_part = strstr(body_data, "{");
               if (return_part != NULL) {
@@ -1580,7 +1601,7 @@ static void read_connection(struct connection * c)
               } else {
                 if (verbosity >= 1) {
                   printf("ERROR parsing response:\n%s\n", body_data);
-                  strcpy(s->txname, "ERROR");  
+                  strcpy(s->txname, "ERROR");
                 }
               }
             } else {
@@ -1763,27 +1784,6 @@ static void test(void)
     }
 
     do {
-        if (prepared_posting == 1) {
-
-          if (postdata_cursor >= postdata_buffer + postdata_buffer_size) {
-            printf("ERROR: Not enough prepared reqeusts. Stopping.\n\n");
-            break;
-          }
-
-          // prepare each request individually
-          reqlen = atoi(postdata_cursor);
-          postdata_cursor += 5;
-          postlen = atoi(postdata_cursor);
-          postdata_cursor += 5;
-
-          size_t msg_size = reqlen + postlen;
-          // char *mybuff = malloc(msg_size);
-          // memcpy(mybuff, postdata_cursor, msg_size);
-          
-          request = postdata_cursor;
-          postdata_cursor += msg_size;
-        }
-
         apr_int32_t n;
         const apr_pollfd_t *pollresults;
 
