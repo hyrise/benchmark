@@ -150,6 +150,7 @@
 #include <apr_poll.h>
 #include "ap_release.h"
 #include <sched.h>
+#include <errno.h>
 
 #define APR_WANT_STRFUNC
 #include <apr_want.h>
@@ -306,7 +307,7 @@ char postfile[1024];    /* name of file containing post data */
 char *postdata;         /* *buffer containing data from postfile */
 char *postdata_buffer;  /* *buffer containing array of generated postdata */
 char *postdata_cursor;
-int postdata_buffer_size;
+long postdata_buffer_size;
 apr_size_t postlen = 0; /* length of data to be POSTed */
 char content_type[1024];/* content type to put in POST header */
 char *cookie,           /* optional cookie line */
@@ -706,8 +707,6 @@ static void write_request(struct connection * c)
       postdata_cursor += 5;
 
       size_t msg_size = reqlen + postlen;
-      // char *mybuff = malloc(msg_size);
-      // memcpy(mybuff, postdata_cursor, msg_size);
       
       request = postdata_cursor;
       postdata_cursor += msg_size;
@@ -2096,6 +2095,7 @@ static int open_prepared_postfile(const char *pfile)
 
     if (!postdata_buffer) {
         fprintf(stderr, "ab: Could not allocate prepared POST data buffer\n");
+        fprintf(stderr, "ab: Tried to allocate %d bytes: %s\n", postdata_buffer_size, strerror(errno));
         return APR_ENOMEM;
     }
     rv = apr_file_read_full(postfd, postdata_buffer, postdata_buffer_size, NULL);
