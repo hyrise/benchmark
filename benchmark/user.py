@@ -78,7 +78,8 @@ class User(multiprocessing.Process):
         tStart = time.time()
         if stored_procedure:
             if self._write_to_file:
-                self.write_request_to_file(query, stored_procedure, self._write_to_file)
+                w_id = queryArgs["w_id"]
+                self.write_request_to_file(query, stored_procedure, self._write_to_file, w_id)
                 return
             else:
                 result = self._session.post("http://%s:%s/%s/" % (self._host, self._port, stored_procedure), data=data, timeout=100000)
@@ -93,12 +94,12 @@ class User(multiprocessing.Process):
         else:
             raise RuntimeError("Request failed --> %s" % result.text)
 
-    def write_request_to_file(self, query, stored_procedure, filename):
+    def write_request_to_file(self, query, stored_procedure, filename, w_id):
         if self._queryfile == None:
             self._queryfile = open(filename, 'w+')
         postdata = "procedure=" + stored_procedure + "&query="+query
         postlen = len(postdata) + 4
-        request = "POST /procedure/ HTTP/1.0\r\nConnection: Keep-Alive\r\nContent-length: %s\r\nContent-type: application/x-www-form-urlencoded\r\nHost: 127.0.0.1:5000\r\nUser-Agent: ApacheBench/2.3\r\nAccept: */*\r\n\r\n" % postlen
+        request = "POST /procedure/%s/ HTTP/1.0\r\nConnection: Keep-Alive\r\nContent-length: %s\r\nContent-type: application/x-www-form-urlencoded\r\nHost: 127.0.0.1:5000\r\nUser-Agent: ApacheBench/2.3\r\nAccept: */*\r\n\r\n" % (w_id, postlen)
         requestlen = len(request)
         self._queryfile.write('{:04d}'.format(requestlen)+'\0')
         self._queryfile.write('{:04d}'.format(postlen)+'\0')
@@ -112,7 +113,7 @@ class User(multiprocessing.Process):
             print "Terminating user. Generated " + str(self._written_to_file_count) + " of " + str(self._write_to_file_count) + " queries."
             exit(0)
 
-    def startLogging(self):
+    def startLogging(self): 
         self._logevent.set()
 
     def stopLogging(self):
