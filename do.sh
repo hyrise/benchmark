@@ -12,6 +12,8 @@ DURATION="60"
 VERBOSE="0"
 PARAMETER="--ab=$QUERYFILE --clients=$CLIENTS --threads=20 --abCore=22 --port=$PORT --tabledir=$TABLEDIR --duration=$DURATION --verbose=$VERBOSE --stdout --stderr"
 
+ulimit -n 4096
+
 select opt in "${options[@]}"
 do
     case $opt in
