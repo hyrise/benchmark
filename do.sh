@@ -4,7 +4,7 @@ source do_parameters.sh
 
 
 PS3='Choose benchmark: '
-options=("Logger-Window" "Clients" "Quit")
+options=("Logger-Window" "Clients" "CheckpointInterval" "Quit")
 CMD=""
 
 ulimit -n 4096
@@ -18,6 +18,10 @@ do
             ;;
         "Clients")
             CMD="python exp_tpcc_clients.py"
+            break
+            ;;
+        "CheckpointInterval")
+            CMD="python exp_tpcc_checkpoint_throughput.py"
             break
             ;;
         "Quit")
