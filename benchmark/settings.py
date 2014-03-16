@@ -74,6 +74,7 @@ class Settings:
         for k, v in self._dict.iteritems():
             if v != None:
                 s += "\n%s := %s" % (k, str(v))
+        s += "\nLIBS += jemalloc"
         return s
 
     def writeToFile(self, filename):
