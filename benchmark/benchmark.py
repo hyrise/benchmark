@@ -67,7 +67,8 @@ class Benchmark:
         self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 1
         self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
         self._write_to_file_count = kwargs["write_to_file_count"] if kwargs.has_key("write_to_file_count") else None
-        self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else "0"
+        self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else None
+        self._commit_window     = str(kwargs["commitWindow"]) if kwargs.has_key("commitWindow") else None
         self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
 
         if self._remote:
@@ -273,7 +274,16 @@ class Benchmark:
             threadstring = ""
             if (self._serverThreads > 0):
                 threadstring = "--threads=%s" % self._serverThreads
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, "--checkpointInterval=%s" % self._checkpoint_interval, threadstring],
+
+            checkpoint_str = ""
+            if (self._checkpoint_interval != None):
+                checkpoint_str = "--checkpointInterval=%s" % self._checkpoint_interval
+
+            commit_window_str = ""
+            if (self._commit_window != None):
+                commit_window_str = "--commitWindow=%s" % self._commit_window
+
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, checkpoint_str, threadstring, commit_window_str],
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,
