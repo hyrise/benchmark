@@ -22,7 +22,7 @@ def reset_persistency_directory():
 
 def reset_nvram_directory():
     if not args["manual"]:
-        pmfs_data = "/mnt/pmfs/hyrisedata/"
+        pmfs_data = os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/")
         clear_dir(pmfs_data)
         
 aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')

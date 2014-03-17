@@ -14,7 +14,7 @@ import helper.benchmark.benchmark_main as b
 from helper.Build import *
 
 DEVNULL = open(os.devnull, 'wb')
-PMFS_FILE = "/mnt/pmfs/hyrise_david"
+PMFS_FILE = os.path.expandvars("/mnt/pmfs/$USER")
 
 def id_generator(size=10, chars=string.ascii_uppercase + string.digits):
 	return ''.join(random.choice(chars) for x in range(size))
