@@ -1460,7 +1460,7 @@ static void read_connection(struct connection * c)
         c->cbx += tocopy;
         space -= tocopy;
         c->cbuff[c->cbx] = 0;   /* terminate for benefit of strstr */
-        if (verbosity >= 2) {
+        if (verbosity >= 3) {
             printf("LOG: header received:\n%s\n", c->cbuff);
         }
         s = strstr(c->cbuff, "\r\n\r\n");
@@ -1562,6 +1562,10 @@ static void read_connection(struct connection * c)
     }
     char * body_data = s+1;
 
+    // skip empty lines at beginning of body
+    while (*body_data == '\n' || *body_data == '\r')
+      ++body_data;
+
     if (c->keepalive && (c->bread >= c->length)) {
         /* finished a keep-alive connection */
         good++;
@@ -1603,12 +1607,16 @@ static void read_connection(struct connection * c)
                   strcpy(s->txname, "ERROR");
                 }
               }
-            } else {
-              // printf("Error: No 2xx and no 501 response");
-              if (verbosity >= 1) {
+            } else if (respcode[0] == '3') {
+              if (verbosity >= 2) {
+                // Error: 3xx response
                 strcpy(s->txname, "ERROR");
-                printf("ERROR: Received:\n%s\n", body_data);
+                printf("ERROR Status %s: %s\n", respcode, body_data);
               }
+            } else if (verbosity >= 1) {
+              // Error: No 2xx and no 3xx response
+              strcpy(s->txname, "ERROR");
+              printf("ERROR Status %s: %s\n", respcode, body_data);
             }
 
             if (heartbeatres && !(done % heartbeatres)) {
