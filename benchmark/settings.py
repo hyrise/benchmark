@@ -38,6 +38,7 @@ class Settings:
                 "NVRAM_MOUNTPOINT"     : None,
                 "NVRAM_FILENAME"       : None,
                 "NVRAM_FILESIZE"       : None,
+                "NVRAM_FOLDER"         : None,
                 "NVSIMULATOR_FLUSH_NS" : None,
                 "NVSIMULATOR_READ_NS"  : None,
                 "NVSIMULATOR_WRITE_NS" : None,
