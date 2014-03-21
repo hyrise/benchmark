@@ -1,14 +1,27 @@
 #!/bin/bash
 
+source do_parameters.sh
+
 
 PS3='Choose benchmark: '
-options=("Logger-Window" "Quit")
+options=("Logger-Window" "Clients" "CheckpointInterval" "Quit")
+CMD=""
+
+ulimit -n 4096
 
 select opt in "${options[@]}"
 do
     case $opt in
         "Logger-Window")
-            python exp_tpcc_logger_windowsize.py --ab=/mnt/amida_02/tpcc/queries_gen/20W_neworder_5M.txt --clients=1000 --threads=20 --abCore=22 --stdout --stderr --port=5300 --tabledir=/mnt/amida_02/tpcc/20W-tables --duration=60 --verbose=0
+            CMD="python exp_tpcc_logger_windowsize.py"
+            break
+            ;;
+        "Clients")
+            CMD="python exp_tpcc_clients.py"
+            break
+            ;;
+        "CheckpointInterval")
+            CMD="python exp_tpcc_checkpoint_throughput.py"
             break
             ;;
         "Quit")
@@ -17,3 +30,9 @@ do
         *) echo invalid option;;
     esac
 done
+
+echo "---------------------------"
+echo "executing: " $CMD $PARAMETER
+echo "---------------------------"
+
+$CMD $PARAMETER

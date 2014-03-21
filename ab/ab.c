@@ -150,6 +150,7 @@
 #include <apr_poll.h>
 #include "ap_release.h"
 #include <sched.h>
+#include <errno.h>
 
 #define APR_WANT_STRFUNC
 #include <apr_want.h>
@@ -306,7 +307,7 @@ char postfile[1024];    /* name of file containing post data */
 char *postdata;         /* *buffer containing data from postfile */
 char *postdata_buffer;  /* *buffer containing array of generated postdata */
 char *postdata_cursor;
-int postdata_buffer_size;
+long postdata_buffer_size;
 apr_size_t postlen = 0; /* length of data to be POSTed */
 char content_type[1024];/* content type to put in POST header */
 char *cookie,           /* optional cookie line */
@@ -706,8 +707,6 @@ static void write_request(struct connection * c)
       postdata_cursor += 5;
 
       size_t msg_size = reqlen + postlen;
-      // char *mybuff = malloc(msg_size);
-      // memcpy(mybuff, postdata_cursor, msg_size);
       
       request = postdata_cursor;
       postdata_cursor += msg_size;
@@ -1461,7 +1460,7 @@ static void read_connection(struct connection * c)
         c->cbx += tocopy;
         space -= tocopy;
         c->cbuff[c->cbx] = 0;   /* terminate for benefit of strstr */
-        if (verbosity >= 2) {
+        if (verbosity >= 3) {
             printf("LOG: header received:\n%s\n", c->cbuff);
         }
         s = strstr(c->cbuff, "\r\n\r\n");
@@ -1563,6 +1562,10 @@ static void read_connection(struct connection * c)
     }
     char * body_data = s+1;
 
+    // skip empty lines at beginning of body
+    while (*body_data == '\n' || *body_data == '\r')
+      ++body_data;
+
     if (c->keepalive && (c->bread >= c->length)) {
         /* finished a keep-alive connection */
         good++;
@@ -1604,12 +1607,16 @@ static void read_connection(struct connection * c)
                   strcpy(s->txname, "ERROR");
                 }
               }
-            } else {
-              // printf("Error: No 2xx and no 501 response");
-              if (verbosity >= 1) {
+            } else if (respcode[0] == '3') {
+              if (verbosity >= 2) {
+                // Error: 3xx response
                 strcpy(s->txname, "ERROR");
-                printf("ERROR: Received:\n%s\n", body_data);
+                printf("ERROR Status %s: %s\n", respcode, body_data);
               }
+            } else if (verbosity >= 1) {
+              // Error: No 2xx and no 3xx response
+              strcpy(s->txname, "ERROR");
+              printf("ERROR Status %s: %s\n", respcode, body_data);
             }
 
             if (heartbeatres && !(done % heartbeatres)) {
@@ -2096,6 +2103,7 @@ static int open_prepared_postfile(const char *pfile)
 
     if (!postdata_buffer) {
         fprintf(stderr, "ab: Could not allocate prepared POST data buffer\n");
+        fprintf(stderr, "ab: Tried to allocate %d bytes: %s\n", postdata_buffer_size, strerror(errno));
         return APR_ENOMEM;
     }
     rv = apr_file_read_full(postfd, postdata_buffer, postdata_buffer_size, NULL);

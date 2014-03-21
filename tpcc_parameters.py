@@ -4,6 +4,7 @@ import os
 import getpass
 import shutil
 import commands
+import copy
 
 def clear_dir(path):
     print "Clearing directory:", path
@@ -22,8 +23,14 @@ def reset_persistency_directory():
 
 def reset_nvram_directory():
     if not args["manual"]:
-        pmfs_data = "/mnt/pmfs/hyrisedata/"
+        pmfs_data = os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/")
         clear_dir(pmfs_data)
+        hyrise_tpcc = os.path.expandvars("/mnt/pmfs/$USER/hyrise_tpcc")
+        txmgr = os.path.expandvars("/mnt/pmfs/$USER/txmgr.bin")
+        if os.path.isfile(hyrise_tpcc):
+            os.remove(hyrise_tpcc)
+        if os.path.isfile(txmgr):
+            os.remove(txmgr)
         
 aparser = argparse.ArgumentParser(description='Python implementation of the TPC-C Benchmark for HYRISE')
 aparser.add_argument('--scalefactor', default=1, type=float, metavar='SF',
@@ -86,6 +93,8 @@ aparser.add_argument('--onlyNeworders', default=False, action='store_true',
                      help='Only do new-order transactions. Otherwise full mix of tpcc transactions is executed/generated.')
 aparser.add_argument('--csv', default=False, action='store_true',
                      help='Load data from csv files and do not user binary import.')
+aparser.add_argument('--vtune', default=None, type=str,
+                     help='Automatically resume running vTune session once load is complete and stop when benchmark is done (implies --manual) - give vTune project folder (e.g. ~/intel/amplxe/projects/hyrise/) - assumes vTune environment is set (i.e., amplxe-cl exists)')
 
 args = vars(aparser.parse_args())
 
@@ -105,11 +114,12 @@ def create_benchmark_none(name, groupId, parameters, benchmark_kwargs):
     settings_kwargs = {"PERSISTENCY":"NONE"}
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
-def create_benchmark_logger(name, groupId, parameters, benchmark_kwargs, windowsize_ms):
+def create_benchmark_logger(name, groupId, parameters, benchmark_kwargs, windowsize_ms, checkpoint_interval_ms):
     reset_persistency_directory()
-    commands.getoutput("touch hyrise/src/lib/io/GroupCommitter.h")
-    commands.getoutput("touch hyrise/src/lib/helper/Settings.cpp")  
-    settings_kwargs = {"PERSISTENCY":"BUFFEREDLOGGER", "WITH_GROUP_COMMIT":1, "GROUP_COMMIT_WINDOW":windowsize_ms*1000}
+    settings_kwargs = {"PERSISTENCY":"BUFFEREDLOGGER"}
+    benchmark_kwargs = copy.copy(benchmark_kwargs)
+    benchmark_kwargs["commitWindow"] = windowsize_ms
+    benchmark_kwargs["checkpointInterval"] = checkpoint_interval_ms
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
 def create_benchmark_nvram(name, groupId, parameters, benchmark_kwargs):
@@ -142,5 +152,6 @@ kwargs = {
     "verbose"           : args["verbose"],
     "tabledir"          : args["tabledir"],
     "onlyNeworders"     : args["onlyNeworders"],
-    "csv"               : args["csv"]
+    "csv"               : args["csv"],
+    "vtune"             : args["vtune"],
 }

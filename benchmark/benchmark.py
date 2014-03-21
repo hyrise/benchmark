@@ -67,8 +67,13 @@ class Benchmark:
         self._verbose           = kwargs["verbose"] if kwargs.has_key("verbose") else 1
         self._write_to_file     = kwargs["write_to_file"] if kwargs.has_key("write_to_file") else None
         self._write_to_file_count = kwargs["write_to_file_count"] if kwargs.has_key("write_to_file_count") else None
-        self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else "0"
+        self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else None
+        self._commit_window     = str(kwargs["commitWindow"]) if kwargs.has_key("commitWindow") else None
         self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
+        self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
+
+        if self._vtune is not None:
+            self._manual = True
 
         if self._remote:
             self._ssh               = paramiko.SSHClient()
@@ -150,6 +155,10 @@ class Benchmark:
         self.loadTables()
         self.benchAfterLoad()
 
+        print self._vtune
+        if self._vtune is not None:
+            subprocess.check_output("amplxe-cl -command resume", cwd=self._vtune, shell=True)
+
         if self._runtime > 0:
             if self._abQueryFile != None:
                 print "---"
@@ -202,9 +211,9 @@ class Benchmark:
                     sys.stdout.flush()
                     self._users[i].join()
                 print "Stopping %s user(s)... done     " % self._numUsers
-
+        if self._vtune is not None:
+            subprocess.check_output("amplxe-cl -command stop", cwd=self._vtune, shell=True)
         self.benchBeforeStop()
-
         self._stopServer()
         print "all set"
 
@@ -295,7 +304,16 @@ class Benchmark:
             threadstring = ""
             if (self._serverThreads > 0):
                 threadstring = "--threads=%s" % self._serverThreads
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, "--checkpointInterval=%s" % self._checkpoint_interval, threadstring, paramString],
+
+            checkpoint_str = ""
+            if (self._checkpoint_interval != None):
+                checkpoint_str = "--checkpointInterval=%s" % self._checkpoint_interval
+
+            commit_window_str = ""
+            if (self._commit_window != None):
+                commit_window_str = "--commitWindow=%s" % self._commit_window
+
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, checkpoint_str, threadstring, commit_window_str],
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,

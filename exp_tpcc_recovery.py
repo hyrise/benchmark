@@ -63,6 +63,7 @@ for runtime in [0, 10, 30, 60, 120]:
     kwArgs = kwargs.copy()
     kwArgs["runtime"] = runtime
     kwArgs["numUsers"] = 16
+    kwArgs["warmuptime"] = 0
 
     bLogger   = RecoveryBenchmark(groupId, runId, sLogger, **kwArgs)
     bLoggerCP = RecoveryBenchmark(groupId, runId, sLoggerCP, createCheckpoint=True, **kwArgs)

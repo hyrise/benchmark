@@ -299,8 +299,8 @@ if __name__ == "__main__":
         b2.run()
         # b3.run()
 
-        if os.path.exists("/mnt/pmfs/hyrise_tpcc"):
-            os.remove("/mnt/pmfs/hyrise_tpcc")
+        if os.path.exists(os.path.expandvars("/mnt/pmfs/$USER/hyrise_tpcc")):
+            os.remove(os.path.expandvars("/mnt/pmfs/$USER/hyrise_tpcc"))
 
     #plotter = benchmark.Plotter(groupId)
     #plotter.printStatistics()
