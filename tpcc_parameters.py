@@ -25,8 +25,8 @@ def reset_nvram_directory():
     if not args["manual"]:
         pmfs_data = os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/")
         clear_dir(pmfs_data)
-        hyrise_tpcc = "/mnt/pmfs/hyrise_tpcc"
-        txmgr = "/mnt/pmfs/txmgr.bin"
+        hyrise_tpcc = os.path.expandvars("/mnt/pmfs/$USER/hyrise_tpcc")
+        txmgr = os.path.expandvars("/mnt/pmfs/$USER/txmgr.bin")
         if os.path.isfile(hyrise_tpcc):
             os.remove(hyrise_tpcc)
         if os.path.isfile(txmgr):
