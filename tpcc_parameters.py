@@ -93,6 +93,8 @@ aparser.add_argument('--onlyNeworders', default=False, action='store_true',
                      help='Only do new-order transactions. Otherwise full mix of tpcc transactions is executed/generated.')
 aparser.add_argument('--csv', default=False, action='store_true',
                      help='Load data from csv files and do not user binary import.')
+aparser.add_argument('--vtune', default=None, type=str,
+                     help='Automatically resume running vTune session once load is complete and stop when benchmark is done (implies --manual) - give vTune project folder (e.g. ~/intel/amplxe/projects/hyrise/) - assumes vTune environment is set (i.e., amplxe-cl exists)')
 
 args = vars(aparser.parse_args())
 
@@ -150,5 +152,6 @@ kwargs = {
     "verbose"           : args["verbose"],
     "tabledir"          : args["tabledir"],
     "onlyNeworders"     : args["onlyNeworders"],
-    "csv"               : args["csv"]
+    "csv"               : args["csv"],
+    "vtune"             : args["vtune"],
 }

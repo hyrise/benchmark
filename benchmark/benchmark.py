@@ -70,6 +70,10 @@ class Benchmark:
         self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else None
         self._commit_window     = str(kwargs["commitWindow"]) if kwargs.has_key("commitWindow") else None
         self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
+        self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
+
+        if self._vtune is not None:
+            self._manual = True
 
         if self._remote:
             self._ssh               = paramiko.SSHClient()
@@ -134,6 +138,10 @@ class Benchmark:
         self.benchPrepare()
         self.loadTables()
 
+        print self._vtune
+        if self._vtune is not None:
+            subprocess.check_output("amplxe-cl -command resume", cwd=self._vtune, shell=True)
+
         if self._abQueryFile != None:
             print "---"
             print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
@@ -184,6 +192,9 @@ class Benchmark:
                 sys.stdout.write("Stopping %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
                 sys.stdout.flush()
                 self._users[i].join()
+
+        if self._vtune is not None:
+            subprocess.check_output("amplxe-cl -command stop", cwd=self._vtune, shell=True)
         
         print "Stopping %s user(s)... done     " % self._numUsers
         self._stopServer()
