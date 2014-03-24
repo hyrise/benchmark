@@ -9,6 +9,8 @@ import multiprocessing as mp
 from matplotlib.font_manager import FontProperties
 
 import matplotlib.pyplot as plt
+import copy 
+import re
 
 #Direct input 
 plt.rcParams['text.latex.preamble']=[r"\usepackage{lmodern}"]
@@ -29,97 +31,148 @@ import numpy as np
 z = 1000
 
 def process_ab_logfile(plotter, dirResults, run, build, preview_count):
-    txStats = {}
-    opStats = {}
 
+    try:
+        txStats = {}
+        opStats = {}
 
-    dirRun = os.path.join(dirResults, run)
+        dirRun = os.path.join(dirResults, run)
+        run_parameters = eval(run.replace("@", ","))
+        dirBuild = os.path.join(dirRun, build)
+        hasOpData = False
 
-    run_parameters = eval(run.replace("@", ","))
-    dirBuild = os.path.join(dirRun, build)
-    hasOpData = False
+        if not os.path.isdir(dirBuild):
+            print "WARNING: result dir not found: %s!" % dirBuild
+            return
 
-    if not os.path.isdir(dirBuild):
-        print "WARNING: result dir not found: %s!" % dirBuild
-        return
+        if not os.path.isfile(os.path.join(dirBuild, "ab.log")):
+            print "WARNING: no transaction log found in %s!" % dirBuild
+            return
 
-    if not os.path.isfile(os.path.join(dirBuild, "ab.log")):
-        print "WARNING: no transaction log found in %s!" % dirBuild
-        return
+        i = 0
+        for rawline in open(os.path.join(dirBuild, "ab.log")):
+            i = i + 1
+            # preview mode?
+            if preview_count != None and preview_count>0 and i>preview_count:
+                break
 
-    i = 0
-    for rawline in open(os.path.join(dirBuild, "ab.log")):
-        i = i + 1
-        # preview mode?
-        if preview_count != None and preview_count>0 and i>preview_count:
-            break
+            if rawline.startswith("starttime"):
+                continue
 
-        if rawline.startswith("starttime"):
-            continue
+            rawline = rawline.strip('\n')
+            linedata = rawline.split("\t")
 
-        rawline = rawline.strip('\n')
-        linedata = rawline.split("\t")
+            if len(linedata) < 2:
+                continue
 
-        if len(linedata) < 2:
-            continue
+            txId        = linedata[6]
+            runtime     = float(linedata[4]) / 1000 # convert from usec to ms
+            starttime   = int(linedata[1]) # seconds
+            txStatus    = int(linedata[7])
 
-        txId        = linedata[6]
-        runtime     = float(linedata[4]) / 1000 # convert from usec to ms
-        starttime   = int(linedata[1]) # seconds
-        txStatus    = int(linedata[7])
+            opStats.setdefault(txId, {})
+            txStats.setdefault(txId,{
+                "totalTime": 0.0,
+                "userTime":  0.0,
+                "totalRuns": 0,
+                "totalFail": 0,
+                "rtTuples":  [],
+                "rtMin":     0.0,
+                "rtMax":     0.0,
+                "rtAvg":     0.0,
+                "rtMed":     0.0,
+                "rtStd":     0.0,
+                "starttime": 0,
+                "endtime":   0
+            })
 
-        opStats.setdefault(txId, {})
-        txStats.setdefault(txId,{
-            "totalTime": 0.0,
-            "userTime":  0.0,
-            "totalRuns": 0,
-            "totalFail": 0,
-            "rtTuples":  [],
-            "rtMin":     0.0,
-            "rtMax":     0.0,
-            "rtAvg":     0.0,
-            "rtMed":     0.0,
-            "rtStd":     0.0,
-            "starttime": 0,
-            "endtime":   0
-        })
+            if starttime < txStats[txId]["starttime"] or txStats[txId]["starttime"] == 0:
+                txStats[txId]["starttime"] = starttime
 
-        if starttime < txStats[txId]["starttime"] or txStats[txId]["starttime"] == 0:
-            txStats[txId]["starttime"] = starttime
+            if starttime > txStats[txId]["endtime"] or txStats[txId]["endtime"] == 0:
+                txStats[txId]["endtime"] = starttime
 
-        if starttime > txStats[txId]["endtime"] or txStats[txId]["endtime"] == 0:
-            txStats[txId]["endtime"] = starttime
+            if txStatus >= 200 and txStatus < 300:
+                txStats[txId]["totalRuns"] += 1
+                txStats[txId]["rtTuples"].append((starttime, runtime))
+            else:
+                txStats[txId]["totalFail"] += 1
 
-        if txStatus >= 200 and txStatus < 300:
-            txStats[txId]["totalRuns"] += 1
-            txStats[txId]["rtTuples"].append((starttime, runtime))
-        else:
-            txStats[txId]["totalFail"] += 1
+        for txId, txData in txStats.iteritems():
+            allRuntimes = [a[1] for a in txData["rtTuples"]]
+            if len(allRuntimes) == 0:
+                allRuntimes = [0]
 
-    for txId, txData in txStats.iteritems():
-        allRuntimes = [a[1] for a in txData["rtTuples"]]
-        if len(allRuntimes) == 0:
-            allRuntimes = [0]
-        txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
-        txStats[txId]["rtRaw"] = allRuntimes
-        txStats[txId]["rtMin"] = amin(allRuntimes)
-        txStats[txId]["rtMax"] = amax(allRuntimes)
-        txStats[txId]["rtAvg"] = average(allRuntimes)
-        txStats[txId]["rtMed"] = median(allRuntimes)
-        txStats[txId]["rtStd"] = std(allRuntimes)
-        txStats[txId]["totalTime"] = txStats[txId]["endtime"] - txStats[txId]["starttime"]
+            txStats[txId]["rtTuples"].sort(key=lambda a: a[0])
+            txStats[txId]["rtRaw"] = allRuntimes
+            txStats[txId]["rtMin"] = amin(allRuntimes)
+            txStats[txId]["rtMax"] = amax(allRuntimes)
+            txStats[txId]["rtAvg"] = average(allRuntimes)
+            txStats[txId]["rtMed"] = median(allRuntimes)
+            txStats[txId]["rtStd"] = std(allRuntimes)
+            txStats[txId]["totalTime"] = txStats[txId]["endtime"] - txStats[txId]["starttime"]
 
-        for opId, opData in opStats[txId].iteritems():
-            opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
-            opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])
-            opStats[txId][opId]["rtMax"] = amax([a[1] for a in opData["rtTuples"]])
-            opStats[txId][opId]["rtAvg"] = average([a[1] for a in opData["rtTuples"]])
-            opStats[txId][opId]["rtMed"] = median([a[1] for a in opData["rtTuples"]])
-            opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
-        txStats[txId]["operators"] = opStats[txId]
-    
-    plotter.tick()
-    return {"run": run, "build": build, "txStats": txStats, "parameters": run_parameters}
+            for opId, opData in opStats[txId].iteritems():
+                opStats[txId][opId]["avgRuns"] = average([a[0] for a in opData["rtTuples"]])
+                opStats[txId][opId]["rtMin"] = amin([a[1] for a in opData["rtTuples"]])
+                opStats[txId][opId]["rtMax"] = amax([a[1] for a in opData["rtTuples"]])
+                opStats[txId][opId]["rtAvg"] = average([a[1] for a in opData["rtTuples"]])
+                opStats[txId][opId]["rtMed"] = median([a[1] for a in opData["rtTuples"]])
+                opStats[txId][opId]["rtStd"] = std([a[1] for a in opData["rtTuples"]])
+            txStats[txId]["operators"] = opStats[txId]
+        
+        plotter.tick()
+        return {"run": run, "build": build, "txStats": txStats, "parameters": run_parameters}
+
+    except Exception as e:
+        print "Unexpected error in process_ab_logfile:", e
+        raise
+
+def process_over_time_plot(buildId, runId, runData, dirOutput):
+
+    try:
+        number_of_bins = 50
+        build_run_identifier_name = "(build '%s', run '%s')" % (buildId, runId.translate(None, '{}_'))
+        fig = plt.figure(1, figsize=(10, 10))
+
+        ax_latencies = fig.add_subplot(2, 1, 1)
+        ax_latencies.set_xlabel("Runtime in Seconds")
+        ax_latencies.set_ylabel("Latency in ms")
+
+        ax_throughput = fig.add_subplot(2, 1, 2)
+        ax_throughput.set_xlabel("Runtime in Seconds")
+        ax_throughput.set_ylabel("Throughput per Second")
+
+        for txId, txData in runData[buildId]["txStats"].iteritems():
+            if txId != "TPCC-NewOrder":
+                continue
+             # sort runtimes by starttime and create bins
+            tx_start = txData["starttime"]
+            latency_dict = {}
+            if len(txData["rtTuples"]) == 0:
+                continue
+            
+            bin_factor = (txData["endtime"] - txData["starttime"]) / number_of_bins
+            for starttime, runtime in txData["rtTuples"]:
+                binned_time = (starttime-tx_start)/bin_factor
+                if not binned_time in latency_dict:
+                    latency_dict[binned_time] = []
+                latency_dict[binned_time].append(runtime)
+            sorted_keys = [x*bin_factor for x in sorted(latency_dict.iterkeys())]
+
+            ax_latencies.plot(sorted_keys, [np.median(latency_dict[x]) for x in sorted_keys], label=txId)
+            ax_throughput.plot(sorted_keys, [len(latency_dict[x])/bin_factor for x in sorted_keys], label=txId)
+            sys.stdout.write(".")
+            sys.stdout.flush()
+
+        fname = os.path.join(dirOutput, "over_time_%s_%s.pdf" % (buildId, runId))
+        plt.savefig(fname)
+        plt.close() 
+
+    except Exception as e:
+        print "Unexpected error in process_over_time_plot:", e
+        raise
+
 
 class Plotter:
 
@@ -135,7 +188,18 @@ class Plotter:
         else:
             self._runs = self._collect()
 
-        self._buildIds = self._runs[self._runs.keys()[0]].keys()
+        # get build ids from all runs
+        self._buildIds = list(set([build_id for x in self._runs.keys() for build_id in self._runs[x].keys()]))
+
+
+        #inlfate default values
+        if "{'default': 'yes'}" in self._runs:
+            default_values = self._runs["{'default': 'yes'}"]
+            del self._runs["{'default': 'yes'}"]
+            for build_id in default_values:
+                for key in self._runs:
+                    self._runs[key][build_id] = copy.copy(default_values[build_id])
+                    self._runs[key][build_id]["parameters"] = eval(key)
 
         if not os.path.isdir(self._dirOutput):
             os.makedirs(self._dirOutput)
@@ -219,7 +283,6 @@ class Plotter:
         sys.stdout.write('plotTotalThroughput: ')
 
         fig = plt.figure()
-        # fig.set_size_inches(3.54,3.54) 
         fig.set_size_inches(5.31,3.54) 
 
         plt.title("Total Transaction Throughput")
@@ -246,15 +309,11 @@ class Plotter:
                 plotX = [xtitle_converter(x) for x in plotX]
 
             plt.plot(plotX, plotY, label=buildId.replace("_", "-"))
-        # plt.xticks(plotX)
 
         # customize legend
         fontP = FontProperties()
         fontP.set_size('small')
-
-        plt.legend(loc='lower right', prop={'size':8})
-
-        # plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True, prop = fontP)
+        plt.legend(loc='lower right', prop={'size':8}, handlelength=3)
 
         fname = os.path.join(self._dirOutput, "total_throughput.pdf")
         self.setFigLinesBW(fig)
@@ -267,29 +326,66 @@ class Plotter:
         plt.close()
         sys.stdout.write('\n')
 
-    def plotTotalFails(self):
-        sys.stdout.write('plotTotalFails: ')
+    def plotOverTime(self):
+
+        sys.stdout.write('plotResponseTimesOverTime: ')
+        pool = mp.Pool(mp.cpu_count())
+
+        for buildId in self._buildIds:
+            overall_x_min = 0
+            overall_x_max = 0
+            overall_y_max = 0
+            overall_y_min = 0
+
+            for runId, runData in self._runs.iteritems():
+                pool.apply_async(process_over_time_plot, [buildId, runId, runData, self._dirOutput])
+
+        pool.close()
+        pool.join()
+        sys.stdout.write('\n')
+
+    def plotTotalFails(self, xtitle, x_parameter, xtitle_converter=None):
+        fig = plt.figure()
+        fig.set_size_inches(5.31,3.54) 
+
         plt.title("Total Failed Transactions")
-        plt.ylabel("Failed Transactions per Second")
-        plt.xlabel("Number of Parallel Users")
+        plt.ylabel("Failed Transactions per Minute")
+        plt.xlabel(xtitle)
+
         for buildId in self._buildIds:
             plotX = []
             plotY = []
             for runId, runData in self._runs.iteritems():
                 self.tick()
-                plotX.append(runData[buildId]["numUsers"])
                 totalFails = 0.0
                 totalTime = 0.0
+                x_value = runData[buildId]["parameters"][x_parameter] 
+                plotX.append(x_value)
+                # consolidate all transactions
                 for txId, txData in runData[buildId]["txStats"].iteritems():
                     totalFails += txData["totalFail"]
-                    totalTime += txData["userTime"]
-                plotY.append(totalFails * z / totalTime)
+                    totalTime = max(txData["totalTime"], totalTime)
+                plotY.append(60 * totalFails / totalTime)
             plotX, plotY = (list(t) for t in zip(*sorted(zip(plotX, plotY))))
-            plt.plot(plotX, plotY, label=buildId)
-        # plt.xticks(plotX)
-        plt.legend(loc='upper left', prop={'size':10})
+
+            if xtitle_converter != None:
+                plotX = [xtitle_converter(x) for x in plotX]
+
+            plt.plot(plotX, plotY, label=buildId.replace("_", "-"))
+
+        # customize legend
+        fontP = FontProperties()
+        fontP.set_size('small')
+        plt.legend(loc='lower right', prop={'size':8}, handlelength=3)
+
         fname = os.path.join(self._dirOutput, "total_fails.pdf")
-        plt.savefig(fname)
+        self.setFigLinesBW(fig)
+        plt.savefig(
+            fname,
+             #This is simple recomendation for publication plots
+            dpi=1000, 
+            # Plot will be occupy a maximum of available space
+            bbox_inches='tight')
         plt.close()
         sys.stdout.write('\n')
 
@@ -371,8 +467,8 @@ class Plotter:
             for runId, runData in self._runs.iteritems():
                 maxPlt = len(runData[buildId]["txStats"].keys())
                 curPlt = 0
-                fig = plt.figure(1, figsize=(10, 4))
-                fig.subplots_adjust(bottom=0.2)
+                fig = plt.figure(1, figsize=(10, 10))
+                fig.subplots_adjust(bottom=0.2, hspace=0.6)
                 for txId, txData in runData[buildId]["txStats"].iteritems():
                     self.tick()
                     curPlt += 1
@@ -416,7 +512,7 @@ class Plotter:
         sys.stdout.write('\n')
 
     def _collect_ab(self):
-        pool = mp.Pool()
+        pool = mp.Pool(mp.cpu_count())
         results = []
         
         runs = {}
