@@ -6,6 +6,7 @@ source do_parameters.sh
 PS3='Choose benchmark: '
 options=("Logger-Window" "Clients" "CheckpointInterval" "Quit")
 CMD=""
+PLT=""
 
 ulimit -n 4096
 
@@ -14,14 +15,17 @@ do
     case $opt in
         "Logger-Window")
             CMD="python exp_tpcc_logger_windowsize.py"
+            PLT="python plt_tpcc_logger_windowsize.py"
             break
             ;;
         "Clients")
             CMD="python exp_tpcc_clients.py"
+            PLT="python plt_tpcc.py"
             break
             ;;
         "CheckpointInterval")
             CMD="python exp_tpcc_checkpoint_throughput.py"
+            PLT="python plt_tpcc_checkpoint_throughput.py"
             break
             ;;
         "Quit")
@@ -31,8 +35,18 @@ do
     esac
 done
 
+read -p "Wiht plotting? [y/n]" answer
+
 echo "---------------------------"
-echo "executing: " $CMD $PARAMETER
+echo "executing experiment: " $CMD $PARAMETER
 echo "---------------------------"
 
-$CMD $PARAMETER
+# $CMD $PARAMETER
+
+if [[ $answer = y ]] ; then
+    echo "---------------------------"
+    echo "executing plot: " $PLT
+    echo "---------------------------"
+    $PLT
+fi
+
