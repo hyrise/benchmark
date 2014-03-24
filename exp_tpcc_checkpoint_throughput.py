@@ -9,7 +9,8 @@ kwargs["numUsers"] = args["clients"]
 kwargs["hyriseDBPath"] = "/mnt/fusion/david/hyrise_persistency/"
 
 parameters = {"default":"yes"}
-# create_benchmark_none("None", groupId, parameters, kwargs).run()
+
+create_benchmark_none("None", groupId, parameters, kwargs).run()
 create_benchmark_nvram("NVRAM", groupId, parameters, kwargs).run()
 
 for checkpoint_interval_ms in xrange(1, 600002, 30000):

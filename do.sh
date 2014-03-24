@@ -41,7 +41,7 @@ echo "---------------------------"
 echo "executing experiment: " $CMD $PARAMETER
 echo "---------------------------"
 
-# $CMD $PARAMETER
+$CMD $PARAMETER
 
 if [[ $answer = y ]] ; then
     echo "---------------------------"
