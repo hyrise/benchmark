@@ -70,17 +70,16 @@ class Benchmark:
         self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else None
         self._commit_window     = str(kwargs["commitWindow"]) if kwargs.has_key("commitWindow") else None
         self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
+        self._coreoffset        = kwargs["coreoffset"] if kwargs.has_key("coreoffset") else None
         self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
 
         if self._vtune is not None:
-            self._manual = True
-
+            self._manual = True        
         if self._remote:
             self._ssh               = paramiko.SSHClient()
         else:
             self._ssh           = None
         self._exiting           = False
-
 
         self._session.headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         if not os.path.isdir(self._dirResults):
@@ -165,7 +164,7 @@ class Benchmark:
                 print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
                 print "Output File: ", self._dirResults + "/ab.log"
                 print "---"
-                ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "1000000", "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+                ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "99999999", "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
                 ab.wait()
             else:
                 self._createUsers()
@@ -313,7 +312,11 @@ class Benchmark:
             if (self._commit_window != None):
                 commit_window_str = "--commitWindow=%s" % self._commit_window
 
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, checkpoint_str, threadstring, commit_window_str],
+            coreoffset_str = ""
+            if (self._coreoffset != None):
+                coreoffset_str = "--coreOffset=%s" % self._coreoffset
+            
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, coreoffset_str, checkpoint_str, threadstring, commit_window_str],
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,
