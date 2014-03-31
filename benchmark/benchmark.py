@@ -58,7 +58,7 @@ class Benchmark:
         self._build             = None
         self._serverProc        = None
         self._users             = []
-        self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "WSCoreBoundQueuesScheduler"
+        self._scheduler         = kwargs["scheduler"] if kwargs.has_key("scheduler") else "PartitionedQueuesScheduler"
         self._serverIP          = kwargs["serverIP"] if kwargs.has_key("serverIP") else "127.0.0.1"
         self._remoteUser        = kwargs["remoteUser"] if kwargs.has_key("remoteUser") else "hyrise"
         self._remotePath        = kwargs["remotePath"] if kwargs.has_key("remotePath") else "/home/" + kwargs["remoteUser"] + "/benchmark"
@@ -395,7 +395,7 @@ class Benchmark:
                     self._serverProc.kill()
                 time.sleep(0.5)
                 if self._serverProc.poll() is None:
-                    subprocess.call("killall hyrise-server_release")
+                    subprocess.call(["killall", "hyrise-server_release"])
                 time.sleep(0.5)
         else:
             print "kill server, close connection"

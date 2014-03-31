@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
   args = vars(aparser.parse_args())
 
-  plotter = benchmark.Plotter(groupId, use_ab = True, preview=10000)
+  plotter = benchmark.Plotter(groupId, use_ab = True)
 
   xtitle = "Checkpointing Frequency [s]"
   xtitle_converter = lambda x: x/1000

@@ -31,7 +31,6 @@ import numpy as np
 z = 1000
 
 def process_ab_logfile(plotter, dirResults, run, build, preview_count):
-
     try:
         txStats = {}
         opStats = {}
@@ -158,10 +157,10 @@ def process_over_time_plot(buildId, runId, runData, dirOutput):
                 if not binned_time in latency_dict:
                     latency_dict[binned_time] = []
                 latency_dict[binned_time].append(runtime)
-            sorted_keys = [x*bin_factor for x in sorted(latency_dict.iterkeys())]
+            sorted_keys = [x for x in sorted(latency_dict.iterkeys())]
 
-            ax_latencies.plot(sorted_keys, [np.median(latency_dict[x]) for x in sorted_keys], label=txId)
-            ax_throughput.plot(sorted_keys, [len(latency_dict[x])/bin_factor for x in sorted_keys], label=txId)
+            ax_latencies.plot([x*bin_factor for x in sorted_keys], [np.median(latency_dict[x]) for x in sorted_keys], label=txId)
+            ax_throughput.plot([x*bin_factor for x in sorted_keys], [len(latency_dict[x])/bin_factor for x in sorted_keys], label=txId)
             sys.stdout.write(".")
             sys.stdout.flush()
 
@@ -338,7 +337,8 @@ class Plotter:
             overall_y_min = 0
 
             for runId, runData in self._runs.iteritems():
-                pool.apply_async(process_over_time_plot, [buildId, runId, runData, self._dirOutput])
+                # pool.apply_async(process_over_time_plot, [buildId, runId, runData, self._dirOutput])
+                process_over_time_plot(buildId, runId, runData, self._dirOutput)
 
         pool.close()
         pool.join()
@@ -525,15 +525,18 @@ class Plotter:
 
         # --- Runs --- #
         for run in os.listdir(dirResults):
-            runs[run] = {}
-
-
+            
             dirRun = os.path.join(dirResults, run)
             if not os.path.isdir(dirRun):
                 continue
+            runs[run] = {}
 
             # --- Builds --- #
             for build in os.listdir(dirRun):
+
+                dirBuild = os.path.join(dirRun, build)
+                if not os.path.isdir(dirBuild):
+                    continue
                 result = pool.apply_async(process_ab_logfile, [self, dirResults, run, build, self._preview])
                 results.append(result)
 
