@@ -100,8 +100,8 @@ aparser.add_argument('--csv', default=False, action='store_true',
                      help='Load data from csv files and do not user binary import.')
 aparser.add_argument('--vtune', default=None, type=str,
                      help='Automatically resume running vTune session once load is complete and stop when benchmark is done (implies --manual) - give vTune project folder (e.g. ~/intel/amplxe/projects/hyrise/) - assumes vTune environment is set (i.e., amplxe-cl exists)')
-aparser.add_argument('--coreoffset', default=None, type=str,
-                     help='Core Offset for Hyrise Worker threads.')
+aparser.add_argument('--nodes', default=None, type=str,
+                     help='NUMA nodes for Hyrise Worker threads.')
 
 args = vars(aparser.parse_args())
 
@@ -161,5 +161,5 @@ kwargs = {
     "onlyNeworders"     : args["onlyNeworders"],
     "csv"               : args["csv"],
     "vtune"             : args["vtune"],
-    "coreoffset"        : args["coreoffset"]
+    "nodes"             : args["nodes"]
 }
