@@ -70,7 +70,7 @@ class Benchmark:
         self._checkpoint_interval = str(kwargs["checkpointInterval"]) if kwargs.has_key("checkpointInterval") else None
         self._commit_window     = str(kwargs["commitWindow"]) if kwargs.has_key("commitWindow") else None
         self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
-        self._coreoffset        = kwargs["coreoffset"] if kwargs.has_key("coreoffset") else None
+        self._nodes             = kwargs["nodes"] if kwargs.has_key("nodes") else None
         self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
 
         if self._vtune is not None:
@@ -312,11 +312,11 @@ class Benchmark:
             if (self._commit_window != None):
                 commit_window_str = "--commitWindow=%s" % self._commit_window
 
-            coreoffset_str = ""
-            if (self._coreoffset != None):
-                coreoffset_str = "--coreOffset=%s" % self._coreoffset
+            nodes_str = ""
+            if (self._nodes != None):
+                nodes_str = "--nodes=%s" % self._nodes
             
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, coreoffset_str, checkpoint_str, threadstring, commit_window_str],
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str],
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,
