@@ -4,7 +4,7 @@ source do_parameters.sh
 
 
 PS3='Choose benchmark: '
-options=("Logger-Window" "Clients" "CheckpointInterval" "Quit")
+options=("Logger-Window" "Clients" "CheckpointInterval" "Recovery" "Quit")
 CMD=""
 PLT=""
 
@@ -28,6 +28,11 @@ do
             PLT="python plt_tpcc_checkpoint_throughput.py"
             break
             ;;
+        "Recovery")
+            CMD="python exp_tpcc_recovery.py"
+            PLT="python plt_tpcc_recovery.py"
+            break
+            ;;
         "Quit")
             exit 0
             ;;
@@ -35,7 +40,7 @@ do
     esac
 done
 
-read -p "Wiht plotting? [y/n]" answer
+read -p "With plotting? [y/n] " answer
 
 echo "---------------------------"
 echo "executing experiment: " $CMD $PARAMETER

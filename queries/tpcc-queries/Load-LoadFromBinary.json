@@ -4,49 +4,58 @@
         "0l": {
             "type": "RecoverTable",
             "tablename": "CUSTOMER",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
         "1l": {
             "type": "RecoverTable",
             "tablename": "DISTRICT",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
         "2l": {
             "type": "RecoverTable",
             "tablename": "HISTORY",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
         "3l": {
             "type": "RecoverTable",
             "tablename": "STOCK",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
         "4l": {
             "type": "RecoverTable",
             "tablename": "ITEM",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
         "5l": {
             "type": "RecoverTable",
             "tablename": "NEW_ORDER",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
         "6l": {
             "type": "RecoverTable",
             "tablename": "ORDER_LINE",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
 
         "7l": {
             "type": "RecoverTable",
             "tablename": "ORDERS",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
 
         "8l": {
             "type": "RecoverTable",
             "tablename": "WAREHOUSE",
-            "path" : "$PATH$"
+            "path" : "$PATH$",
+            "threads": 20
             },
 
         "noop": {"type" : "NoOp"}
