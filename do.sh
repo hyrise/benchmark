@@ -35,7 +35,7 @@ do
     esac
 done
 
-read -p "Wiht plotting? [y/n]" answer
+read -p "With plotting? [y/n]" answer
 
 echo "---------------------------"
 echo "executing experiment: " $CMD $PARAMETER

@@ -154,7 +154,6 @@ class Benchmark:
         self.loadTables()
         self.benchAfterLoad()
 
-        print self._vtune
         if self._vtune is not None:
             subprocess.check_output("amplxe-cl -command resume", cwd=self._vtune, shell=True)
 
@@ -395,8 +394,8 @@ class Benchmark:
                     self._serverProc.kill()
                 time.sleep(0.5)
                 if self._serverProc.poll() is None:
-                    subprocess.call(["killall", "hyrise-server_release"])
-                time.sleep(0.5)
+                    subprocess.call(["killall", "-u", os.getlogin(), "hyrise-server_release"])
+                time.sleep(5)
         else:
             print "kill server, close connection"
             self._ssh.exec_command("killall hyrise-server_release");
