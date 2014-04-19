@@ -87,6 +87,8 @@ for runtime in [0, 20, 40]:
     clear_dir(os.path.join(os.getcwd(), "builds", "Logger", "persistency"))
     bLoggerCP.run()
     clear_dir(os.path.join(os.getcwd(), "builds", "LoggerWithCheckpoint", "persistency"))
+    reset_nvram_directory()
     bNVRAM.run()
+    reset_nvram_directory()
     clear_dir(os.path.join("/mnt/pmfs", os.environ["USER"], "hyrisedata"))
 
