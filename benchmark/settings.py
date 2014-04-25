@@ -32,6 +32,7 @@ class Settings:
                 "WITH_PAPI"            : 0,
                 "WITH_MYSQL"           : 0,
                 "VERBOSE_BUILD"        : None,
+                "WITH_DICTIONARY_REUSE": 0,
                 "PERSISTENCY"          : "NONE",
                 "WITH_GROUP_COMMIT"    : 0,
                 "GROUP_COMMIT_WINDOW"  : 10,
