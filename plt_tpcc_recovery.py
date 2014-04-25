@@ -13,7 +13,7 @@ def collectRecoveryTimes(groupId):
     for run in runs:
         for build in builds:
             resultFile = os.path.join(resultDir, run, build, "recoverytime.txt")
-            recoveryTime = int(open(resultFile).read())
+            recoveryTime = int(float(open(resultFile).read()))
             results[build]["recoveryTimes"].append(recoveryTime / 1000.0)
             results[build]["runTimes"].append(int(run.replace("deltaFilltime","")))
     return results
@@ -31,6 +31,6 @@ if __name__ == "__main__":
         plotY = []
         plotX, plotY = (list(t) for t in zip(*sorted(zip(results[build]["runTimes"], results[build]["recoveryTimes"]))))
         plt.plot(plotX, plotY, label=build)
-    plt.legend(loc='upper left', prop={'size':10})
+    plt.legend(loc='lower right', prop={'size':10})
     plt.savefig("recovery.pdf")
     plt.close()

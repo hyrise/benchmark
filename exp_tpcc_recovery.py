@@ -49,26 +49,33 @@ class RecoveryBenchmark(benchmark.TPCCBenchmark):
         threadstring = ""
         if (self._serverThreads > 0):
             threadstring = "--threads=%s" % self._serverThreads
-        clearFileSystemCache()
-        proc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, threadstring, "--recoverAndExit"],
-                                            cwd=self._dirBinary,
-                                            env=env,
-                                            stdout=open("/dev/null") if not self._stdout else None,
-                                            stderr=open("/dev/null") if not self._stderr else None)
-        proc.wait() # wait for server to terminate
-        recoveryTime = int(open(os.path.join(self._dirBinary, "recoverytime.txt")).read())
-        print "Recovery time was %1.5fs" % (recoveryTime / 1000.0 / 1000.0)
-        open(self.outputFile, "w").write(str(recoveryTime))
+
+        # run recovery `n` times and take the average
+        n = 5
+        avgRecoveryTime = 0.0
+        for i in range(n):
+            clearFileSystemCache()
+            proc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, threadstring, "--recoverAndExit"],
+                                                cwd=self._dirBinary,
+                                                env=env,
+                                                stdout=open("/dev/null") if not self._stdout else None,
+                                                stderr=open("/dev/null") if not self._stderr else None)
+            proc.wait() # wait for server to terminate
+            recoveryTime = int(open(os.path.join(self._dirBinary, "recoverytime.txt")).read())
+            print "Run #%i: Recovery time was %1.5fs" % (i, recoveryTime / 1000.0 / 1000.0)
+            avgRecoveryTime += recoveryTime / n
+        print "Average Recovery time was %1.5fs" % (avgRecoveryTime / 1000.0 / 1000.0)
+        open(self.outputFile, "w").write(str(avgRecoveryTime))
 
 groupId = "tpcc_recovery"
 
-sLogger   = benchmark.Settings("Logger", BLD="release", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=0)
-sLoggerCP = benchmark.Settings("LoggerWithCheckpoint", BLD="release", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=0)
-sNVRAM    = benchmark.Settings("NVRAM", BLD="release", PERSISTENCY="NVRAM", NVRAM_FOLDER="/mnt/pmfs/Tim.Berning", WITH_GROUP_COMMIT=0)
+sLogger       = benchmark.Settings("Logger", BLD="release", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1)
+sLoggerCP     = benchmark.Settings("LoggerWithCheckpoint", BLD="release", PERSISTENCY="BUFFEREDLOGGER", WITH_GROUP_COMMIT=1)
+sNVRAM        = benchmark.Settings("NVRAM", BLD="release", PERSISTENCY="NVRAM", NVRAM_FOLDER=os.path.join("/mnt/pmfs", os.environ["USER"]), WITH_GROUP_COMMIT=1)
 
 clear_dir(os.path.join(os.getcwd(), "builds", "Logger", "persistency"))
 clear_dir(os.path.join(os.getcwd(), "builds", "LoggerWithCheckpoint", "persistency"))
-clear_dir(os.path.join("/mnt/pmfs", os.environ["USER"], "hyrisedata"))
+reset_nvram_directory()
 clearFileSystemCache()
 
 for runtime in [0, 20, 40]:
@@ -87,8 +94,5 @@ for runtime in [0, 20, 40]:
     clear_dir(os.path.join(os.getcwd(), "builds", "Logger", "persistency"))
     bLoggerCP.run()
     clear_dir(os.path.join(os.getcwd(), "builds", "LoggerWithCheckpoint", "persistency"))
-    reset_nvram_directory()
     bNVRAM.run()
     reset_nvram_directory()
-    clear_dir(os.path.join("/mnt/pmfs", os.environ["USER"], "hyrisedata"))
-
