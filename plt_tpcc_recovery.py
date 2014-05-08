@@ -13,7 +13,9 @@ def collectRecoveryTimes(groupId):
     for run in runs:
         for build in builds:
             resultFile = os.path.join(resultDir, run, build, "recoverytime.txt")
-            recoveryTime = int(float(open(resultFile).read()))
+            result = open(resultFile).readline().split(";")
+            recoveryTime = int(float(result[0]))
+            stockSize = int(result[1])
             results[build]["recoveryTimes"].append(recoveryTime / 1000.0)
             results[build]["runTimes"].append(int(run.replace("deltaFilltime","")))
     return results
