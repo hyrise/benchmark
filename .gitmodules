@@ -1,3 +1,4 @@
 [submodule "hyrise"]
 	path = hyrise
-	url = git@github.com:hyrise/hyrise_nvm.git
+    url = git@github.com:hyrise/hyrise_nvm.git
+    branch = new_nvm_master
