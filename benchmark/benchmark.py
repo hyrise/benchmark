@@ -214,6 +214,8 @@ class Benchmark:
         if self._vtune is not None:
             subprocess.check_output("amplxe-cl -command stop", cwd=self._vtune, shell=True)
         self.benchBeforeStop()
+        if self.failed:
+            return not self.failed
         self._stopServer()
         print "all set"
 
@@ -221,6 +223,7 @@ class Benchmark:
             os.chdir(self._olddir)
 
         self.benchAfter()
+        return not self.failed
 
 
     def addQuery(self, queryId, queryStr):
@@ -394,18 +397,22 @@ class Benchmark:
     def _stopServer(self):
         if not self._remote:
             if not self._manual and self._serverProc:
-                sys.stdout.write("Stopping server... ")
-                sys.stdout.flush()
-                self._serverProc.terminate()
-                time.sleep(0.5)
-                if self._serverProc.poll() is None:
-                    #print "Server still running. Waiting 2 sec and forcing shutdown..."
-                    time.sleep(2)
-                    self._serverProc.kill()
-                time.sleep(0.5)
-                if self._serverProc.poll() is None:
-                    subprocess.call(["killall", "-u", os.getlogin(), "hyrise-server_release"])
-                time.sleep(5)
+                try:
+                    sys.stdout.write("Stopping server... ")
+                    sys.stdout.flush()
+                    self._serverProc.terminate()
+                    time.sleep(0.5)
+                    if self._serverProc.poll() is None:
+                        #print "Server still running. Waiting 2 sec and forcing shutdown..."
+                        time.sleep(2)
+                        self._serverProc.kill()
+                    time.sleep(0.5)
+                    if self._serverProc.poll() is None:
+                        subprocess.call(["killall", "-u", os.getlogin(), "hyrise-server_release"])
+                    time.sleep(5)
+                except:
+                    self.failed = True
+                    return
         else:
             print "kill server, close connection"
             self._ssh.exec_command("killall hyrise-server_release");
