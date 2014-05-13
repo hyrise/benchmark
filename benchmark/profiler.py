@@ -65,7 +65,7 @@ class Profiler():
         if chosen == "Perf Mem":
             foldername=str(int(time.time()))
             os.makedirs("./profiler_results/" + foldername)
-            self.command="./profiler_addr/addr -p $PROCESS_ID -o ./profiler_results/" + foldername + "/perf.data"
+            self.command="./profiler_addr/bin/latency_profiler -p $PROCESS_ID -o ./profiler_results/" + foldername + "/perf.data"
             # self.command="echo 'test'"
             # self.postprocess_command = "./profiler/perf_postprocess.sh " + foldername
             # print "Perf needs sudo..."
@@ -93,7 +93,7 @@ class Profiler():
     def end(self):
         if self.profile_process is not None:
             print "Profiler terminating..."
-            os.killpg(self.profile_process.pid, signal.SIGTERM)
+            # os.killpg(self.profile_process.pid, signal.SIGTERM)
             print self.profile_process.communicate()
             print "Profiler terminated"
         if self.postprocess_command is not None:

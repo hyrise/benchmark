@@ -7,7 +7,8 @@
 struct perf_fd;
 
 pid_t execute(char **argv, int argc);
-void wait_for_process(pid_t  pid);
+void wait_for_child_process(pid_t  pid);
+void wait_for_other_process(pid_t  pid);
 void write_result_samples(char* filename, struct perf_fd *pfd);
 void write_result_nosamples(char* filename, long long cycles, long long cycles_ref, long long inst_retired, long long llc_ref, long long llc_miss);
 

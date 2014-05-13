@@ -63,7 +63,9 @@ int execute_program(int argc, char **argv, pid_t pid, int seconds, char* output_
     exit(1);
   }
 
+  bool child = false;
   if (pid == 0) {
+    child = true;
     pid = execute(argv, argc);
   }
 
@@ -75,9 +77,38 @@ int execute_program(int argc, char **argv, pid_t pid, int seconds, char* output_
   if (perf_enable(&loads) < 0)
     err("PERF_EVENT_IOC_ENABLE");
   
+  struct perf_fd fd_cycles;
+  struct perf_fd fd_cycles_ref;
+  struct perf_fd fd_inst_retired;
+  struct perf_fd fd_llc_ref;
+  struct perf_fd fd_llc_miss;
+ 
+  long long cycles = 0;
+  long long cycles_ref = 0;
+  long long inst_retired = 0;
+  long long llc_ref = 0;
+  long long llc_miss = 0;
+
+  open_perf_counter(&fd_cycles, 0, ARCH_CYCLE);
+  open_perf_counter(&fd_cycles_ref, 0, ARCH_CYCLE_REF);
+  open_perf_counter(&fd_inst_retired, 0, ARCH_INST_RETIRED);
+  open_perf_counter(&fd_llc_ref, 0, ARCH_LLC_REF);
+  open_perf_counter(&fd_llc_miss, 0, ARCH_LLC_MISS);
+
+  start_perf_counter(&fd_cycles);
+  start_perf_counter(&fd_cycles_ref);
+  start_perf_counter(&fd_inst_retired);
+  start_perf_counter(&fd_llc_ref);
+  start_perf_counter(&fd_llc_miss);
+
   if (seconds == 0) {
     printf("waiting for process %d\n", pid);
-    wait_for_process(pid);
+    if (child == true) {
+      wait_for_child_process(pid);
+    } else {
+      wait_for_other_process(pid);
+    }
+
   } else {
     printf("collecting for %d seconds...\n", seconds);
     sleep(seconds);
@@ -89,6 +120,34 @@ int execute_program(int argc, char **argv, pid_t pid, int seconds, char* output_
   write_result_samples(output_file, &loads);
   perf_fd_close(&loads);
 
+  stop_perf_counter(&fd_cycles);
+  stop_perf_counter(&fd_cycles_ref);
+  stop_perf_counter(&fd_inst_retired);
+  stop_perf_counter(&fd_llc_ref);
+  stop_perf_counter(&fd_llc_miss);
+  
+  cycles = perf_read_value(&fd_cycles);
+  cycles_ref = perf_read_value(&fd_cycles_ref);
+  inst_retired = perf_read_value(&fd_inst_retired);
+  llc_ref = perf_read_value(&fd_llc_ref);
+  llc_miss = perf_read_value(&fd_llc_miss);
+
+  printf("Cycles: %lld\n", cycles);
+  printf("Cycles (ref): %lld\n", cycles_ref);
+  printf("Instructions Retired: %lld\n", inst_retired);
+  printf("LLC References: %lld\n", llc_ref);
+  printf("LLC Misses: %lld\n", llc_miss);
+
+  char out[128];
+  snprintf(out, 128,"%s.stats.csv",output_file);
+  write_result_nosamples(out, cycles, cycles_ref, inst_retired, llc_ref, llc_miss);
+  
+  close_perf_counter(&fd_cycles);
+  close_perf_counter(&fd_cycles_ref);
+  close_perf_counter(&fd_inst_retired);
+  close_perf_counter(&fd_llc_ref);
+  close_perf_counter(&fd_llc_miss);
+
   return 0;
 }
 
@@ -96,7 +155,7 @@ int main(int argc, char **argv)
 {
   pid_t pid = 0;
   int seconds = 0;
-  char* output_file = "";
+  char* output_file = NULL;
 
   // skip program name
   argv++;

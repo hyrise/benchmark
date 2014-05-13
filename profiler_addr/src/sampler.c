@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "perf.h"
 #include "util.h"
@@ -53,29 +54,42 @@ pid_t execute(char **argv, int argc)
     }
     printf("\n");
 
-     if ((pid = fork()) < 0) {     /* fork a child process           */
-          printf("*** ERROR: forking child process failed\n");
-          exit(1);
-     }
-     else if (pid == 0) {          /* for the child process:         */
-          if (execvp(*argv, argv) < 0) {     /* execute the command  */
-               printf("*** ERROR: exec failed\n");
-               exit(1);
-          }
-     }
+    if ((pid = fork()) < 0) {     /* fork a child process           */
+        printf("*** ERROR: forking child process failed\n");
+        exit(1);
+    }
+    else if (pid == 0) {          /* for the child process:         */
+      printf("child executing\n");
+        if (execvp(*argv, argv) < 0) {     /* execute the command  */
+             printf("*** ERROR: exec failed\n");
+             exit(1);
+        }
+        printf("child finished\n");
+    }
 
-     return pid; 
+    return pid; 
+    }
+
+void wait_for_child_process(pid_t  pid) {
+  int status;
+  pid_t w;
+
+  do {
+    w = waitpid(pid, &status, WUNTRACED | WCONTINUED);
+    if (w == -1) {
+      perror("waitpid");
+      exit(1);
+    }
+  } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 }
 
-void wait_for_process(pid_t  pid) {
-  struct timespec requested, remaining;
-  requested.tv_sec = 0;
-  requested.tv_nsec = 100000000L;
+void wait_for_other_process(pid_t  pid) {
+  unsigned int microseconds = 500;
 
   /* wait for completion  */
-  while (kill(pid, 0) != -1 && errno != ESRCH)      
+  while (kill(pid, 0) != -1)      
   {
-    nanosleep(&requested , &remaining);
+    usleep(microseconds);
   }
 }
 
