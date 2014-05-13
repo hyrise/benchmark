@@ -2,6 +2,7 @@ from tpcc_parameters import *
 import time
 import subprocess
 import os
+import requests
 import sys
 
 CHECKPOINT_WITH_MAIN_JSON = """
@@ -25,22 +26,32 @@ class RecoveryBenchmark(benchmark.TPCCBenchmark):
         self.outputFile = os.path.join(self._dirResults, "recoverytime.txt")
         self.skipRecovery = kwargs["skipRecovery"] if kwargs.has_key("skipRecovery") else False
         self.persistOnLoad = kwargs["persistOnLoad"] if kwargs.has_key("persistOnLoad") else False
+        self.failed = False
 
     def benchAfterLoad(self):
         # persist the main after load
         if not self.noLoad and self.persistOnLoad:
             self.fireQuery(CHECKPOINT_WITH_MAIN_JSON)
 
+
     def benchBeforeStop(self):
         if self.createCheckpoint:
             print "Creating Checkpoint"
-            self.fireQuery(CHECKPOINT_JSON)
+            try:
+                self.fireQuery(CHECKPOINT_JSON)
+            except requests.ConnectionError:
+                # probably means Hyrise died in the meantime
+                self.failed = True
             print "Done"
+        else:
+            if self._serverProc.poll() != None:
+                # server has stopped and that should not be the case just yet...
+                self.failed = True
 
     def benchAfter(self):
         """ benchmark run is finished, hyrise server stopped, tables persisted
             restart with --recoverAndExit flag and take the time """
-        if self.skipRecovery:
+        if self.skipRecovery or self.failed:
             return
         if self._remote or self._manual:
             print "cannot benchmark recovery on manual or remote build!"
@@ -135,38 +146,41 @@ tmpRunId = "recovery_prepare"
 kwargs["scheduler"] = "WSCoreBoundQueuesScheduler"
 kwargs["warmuptime"] = 0
 kwargs["runtime"] = 0
-kwargs["numUsers"] = 1000
-#bTmpLogger   = RecoveryBenchmark(tmpGroupId, tmpRunId, sLogger, persistencyDir=persistencyDirLogger, persistOnLoad=True, skipRecovery=True, **kwargs)
-#bTmpLogger.run()
-#time.sleep(1)
-#clear_dir(os.path.join(persistencyDirLogger, "logs"))
-#clear_dir(os.path.join(persistencyDirLogger, "checkpoints"))
+kwargs["numUsers"] = 20
+bTmpLogger = RecoveryBenchmark(tmpGroupId, tmpRunId, sLogger, persistencyDir=persistencyDirLogger, persistOnLoad=True, skipRecovery=True, **kwargs)
+bTmpLogger.run()
+time.sleep(1)
+clear_dir(os.path.join(persistencyDirLogger, "logs"))
+clear_dir(os.path.join(persistencyDirLogger, "checkpoints"))
 bTmpLoggerCP = RecoveryBenchmark(tmpGroupId, tmpRunId, sLoggerCP, persistencyDir=persistencyDirLoggerCP, persistOnLoad=True, skipRecovery=True, **kwargs)
 bTmpLoggerCP.run()
 time.sleep(1)
 clear_dir(os.path.join(persistencyDirLoggerCP, "logs"))
 clear_dir(os.path.join(persistencyDirLoggerCP, "checkpoints"))
-#bTmpNVRAM = RecoveryBenchmark(tmpGroupId, tmpRunId, sNVRAM, persistOnLoad=True, skipRecovery=True, **kwargs)
-#bTmpNVRAM.run()
-#time.sleep(1)
 clearFileSystemCache()
 print "\n===== Finished Preparation =====\n"
 
-for runtime in [0, 20, 40]:
+for runtime in [0, 20, 40, 60, 80, 100]:
     runId = "deltaFilltime%s" % runtime
     kwArgs = kwargs.copy()
     kwArgs["runtime"] = runtime
 
-    #bLogger = RecoveryBenchmark(groupId, runId, sLogger, persistencyDir=persistencyDirLogger, **kwArgs)
-    #bLogger.run()
-    #clear_dir(os.path.join(persistencyDirLogger, "logs"))
-    #clear_dir(os.path.join(persistencyDirLogger, "checkpoints"))
+    success = False
+    while not success:
+        bLogger = RecoveryBenchmark(groupId, runId, sLogger, persistencyDir=persistencyDirLogger, **kwArgs)
+        success = bLogger.run()
+        clear_dir(os.path.join(persistencyDirLogger, "logs"))
+        clear_dir(os.path.join(persistencyDirLogger, "checkpoints"))
 
-    bLoggerCP = RecoveryBenchmark(groupId, runId, sLoggerCP, persistencyDir=persistencyDirLoggerCP, createCheckpoint=True, **kwArgs)
-    bLoggerCP.run()
-    clear_dir(os.path.join(persistencyDirLoggerCP, "logs"))
-    clear_dir(os.path.join(persistencyDirLoggerCP, "checkpoints"))
+    success = False
+    while not success:
+        bLoggerCP = RecoveryBenchmark(groupId, runId, sLoggerCP, persistencyDir=persistencyDirLoggerCP, createCheckpoint=True, **kwArgs)
+        success = bLoggerCP.run()
+        clear_dir(os.path.join(persistencyDirLoggerCP, "logs"))
+        clear_dir(os.path.join(persistencyDirLoggerCP, "checkpoints"))
 
-    bNVRAM = RecoveryBenchmark(groupId, runId, sNVRAM, **kwArgs)
-    bNVRAM.run()
-    reset_nvram_directory()
+    success = False
+    while not success:
+        bNVRAM = RecoveryBenchmark(groupId, runId, sNVRAM, **kwArgs)
+        success = bNVRAM.run()
+        reset_nvram_directory()
