@@ -136,16 +136,16 @@ class RecoveryBenchmark(benchmark.Benchmark):
         self._deltaPercentage = int(kwargs["deltaPercentage"])
         self._binaryLoad      = kwargs["binary"]
         self._withCheckpoint  = kwargs["withCheckpoint"] if kwargs.has_key("withCheckpoint") else False
-        self._persistencyDir  = os.path.join("/mnt", "fusion", "STOCK_recovery", "%imio" % self._tableSize, "bin", "delta%i%s" % (self._deltaPercentage, "_log" if not self._withCheckpoint else ""))
+        self._persistencyDir  = os.path.join("/mnt", "ramdisk", "STOCK_recovery", "%imio" % self._tableSize, "bin", "delta%i%s" % (self._deltaPercentage, "_log" if not self._withCheckpoint else ""))
         self._outputFile      = os.path.join(self._dirResults, "recoverytime.txt")
 
     def setTableSize(self, newSize):
         self._tableSize       = newSize
-        self._persistencyDir  = os.path.join("/mnt", "fusion", "STOCK_recovery", "%imio" % self._tableSize, "bin", "delta%i%s" % (self._deltaPercentage, "_log" if not self._withCheckpoint else ""))
+        self._persistencyDir  = os.path.join("/mnt", "ramdisk", "STOCK_recovery", "%imio" % self._tableSize, "bin", "delta%i%s" % (self._deltaPercentage, "_log" if not self._withCheckpoint else ""))
 
     def setDeltaPercentage(self, newPercentage):
         self._deltaPercentage = newPercentage
-        self._persistencyDir  = os.path.join("/mnt", "fusion", "STOCK_recovery", "%imio" % self._tableSize, "bin", "delta%i%s" % (self._deltaPercentage, "_log" if not self._withCheckpoint else ""))
+        self._persistencyDir  = os.path.join("/mnt", "ramdisk", "STOCK_recovery", "%imio" % self._tableSize, "bin", "delta%i%s" % (self._deltaPercentage, "_log" if not self._withCheckpoint else ""))
 
     def run(self):
         # first check if this one was generated already
@@ -257,6 +257,7 @@ class RecoveryBenchmark(benchmark.Benchmark):
             if name == "STOCK":
                 stockDeltaSize = int(size)
                 break
+        recoveryTimeFile.close()
         print "Average Recovery time was %1.5fs" % (avgRecoveryTime / 1000.0 / 1000.0)
         print "STOCK Table Delta size was %i" % stockDeltaSize
         open(self._outputFile, "w").write("%s;%s" % (str(avgRecoveryTime), str(stockDeltaSize)))
@@ -333,5 +334,5 @@ for tableSize in [2, 4, 6, 8, 10]:
         bNVRAM = RecoveryBenchmark(groupId, runId, sNVRAM, withCheckpoint=True, **kwArgs)
         bNVRAM.run()
         bNVRAM.runRecovery()
+        reset_nvram_directory()
         time.sleep(20)
-        reset_nvram_directory

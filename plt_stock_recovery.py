@@ -51,3 +51,55 @@ if __name__ == "__main__":
     plt.legend(loc='upper left', prop={'size':8})
     plt.savefig("recovery.pdf")
     plt.close()
+
+    fusionDir = os.path.join(os.getcwd(), "results", "STOCK_recovery_fusion")
+    if os.path.isdir(fusionDir):
+        groupId = "STOCK_recovery_fusion"
+        results = collectRecoveryTimes(groupId)
+        fig = plt.figure()
+        plt.title("TPC-C Recovery from FusionIO")
+        plt.ylabel("Recovery Time in s")
+        plt.xlabel("STOCK Table Size in m")
+        plt.ylim(-5, 160)
+
+        lineColors = ["r", "g", "b"]
+        lineStyles = ["-", "--", "-.", ":"]
+        c = 0
+        for build in results:
+            s = 0
+            for deltaPercentage in [0, 10, 20, 50]:
+                plotX = []
+                plotY = []
+                plotX, plotY = (list(t) for t in zip(*sorted(zip(results[build][deltaPercentage]["tableSizes"], results[build][deltaPercentage]["recoveryTimes"]))))
+                plt.plot(plotX, plotY, color=lineColors[c], linestyle=lineStyles[s], label="%s (%i%% in Delta)" % (build, deltaPercentage))
+                s += 1
+            c += 1
+        plt.legend(loc='upper left', prop={'size':8})
+        plt.savefig("recovery_fusion.pdf")
+        plt.close()
+
+    ramdiskDir = os.path.join(os.getcwd(), "results", "STOCK_recovery_ramdisk")
+    if os.path.isdir(ramdiskDir):
+        groupId = "STOCK_recovery_ramdisk"
+        results = collectRecoveryTimes(groupId)
+        fig = plt.figure()
+        plt.title("TPC-C Recovery from Ramdisk")
+        plt.ylabel("Recovery Time in s")
+        plt.xlabel("STOCK Table Size in m")
+        plt.ylim(-5, 160)
+
+        lineColors = ["r", "g", "b"]
+        lineStyles = ["-", "--", "-.", ":"]
+        c = 0
+        for build in results:
+            s = 0
+            for deltaPercentage in [0, 10, 20, 50]:
+                plotX = []
+                plotY = []
+                plotX, plotY = (list(t) for t in zip(*sorted(zip(results[build][deltaPercentage]["tableSizes"], results[build][deltaPercentage]["recoveryTimes"]))))
+                plt.plot(plotX, plotY, color=lineColors[c], linestyle=lineStyles[s], label="%s (%i%% in Delta)" % (build, deltaPercentage))
+                s += 1
+            c += 1
+        plt.legend(loc='upper left', prop={'size':8})
+        plt.savefig("recovery_ramdisk.pdf")
+        plt.close()
