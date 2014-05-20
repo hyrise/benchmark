@@ -49,7 +49,6 @@ Q_LOAD_STOCK = """ {
             "table": "STOCK",
             "filename": "%(filename)s",
             "path": "%(path)s"
-            }
         },
         "createMainIdx": {
              "type": "CreateGroupkeyIndex",
@@ -67,7 +66,7 @@ Q_LOAD_STOCK = """ {
     },
     "edges": [
         ["loadStock", "createMainIdx"], ["createMainIdx", "noop"],
-        ["loadStock", "createDeltaIdx"], ["createDeltaIdx", "noop]
+        ["loadStock", "createDeltaIdx"], ["createDeltaIdx", "noop"]
     ]
 } """
 
