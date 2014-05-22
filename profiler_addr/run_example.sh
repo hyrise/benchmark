@@ -11,7 +11,6 @@ OUT_DIR=$1
 make -j 2
 
 sizes=( 1 1024 4096 32768 1048576 4194304 8388608)
-sizes=( 1024 )
 
 for i in "${sizes[@]}"
 do
