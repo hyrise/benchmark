@@ -43,26 +43,35 @@ class Profiler():
             return choice(choices, title)
         return choices[chosen]
 
-    def setup(self):
-        choices = ["Vtune General-Exploration", "Vtune Advanced-Hotspots", "Vtune Locks and Waits", "Vtune Memory Access", "Vtune Read-Bandwidth", "Perf Mem", "None"]
-        chosen = self.choice(choices, "Choose profiler analysis:")
+    def setup(self, profiler_type):
 
-        if chosen == "Vtune General-Exploration":
+        choices = ["vtune_ge", "vtune_ah", "vtune_lw", "vtune_ma", "vtune_rb", "sampler", "None"]
+        if profiler_type is "interactive":
+            chosen = self.choice(choices, "Choose profiler analysis:")
+        else:
+            if profiler_type in choices:
+                chosen = profiler_type
+            else:
+                print "ERROR: unknown profiler specified (" + profiler_type + ")"
+                print "Available: ", str(choices)
+                exit(1)
+
+        if chosen == "vtune_ge":
             VTUNE_COLLECT=" -collect nehalem-general-exploration -knob enable-stack-collection=true"
             self.command="$VTUNE_COMMAND $VTUNE_COLLECT $VTUNE_PARAMETER"
-        if chosen == "Vtune Advanced-Hotspots":
+        if chosen == "vtune_ah":
             VTUNE_COLLECT="-collect advanced-hotspots -knob collection-detail=stack-and-callcount"
             self.command="$VTUNE_COMMAND $VTUNE_COLLECT $VTUNE_PARAMETER"
-        if chosen == "Vtune Locks and Waits":
+        if chosen == "vtune_lw":
             VTUNE_COLLECT="-collect locksandwaits"
             self.command="$VTUNE_COMMAND $VTUNE_COLLECT $VTUNE_PARAMETER"
-        if chosen == "Vtune Memory Access":
+        if chosen == "vtune_ma":
             VTUNE_COLLECT="-collect nehalem-memory-access -knob enable-stack-collection=true"
             self.command="$VTUNE_COMMAND $VTUNE_COLLECT $VTUNE_PARAMETER"
-        if chosen == "Vtune Read-Bandwidth":
+        if chosen == "vtune_rb":
             VTUNE_COLLECT="-collect wsmex-read-bandwidth"
             self.command="$VTUNE_COMMAND $VTUNE_COLLECT $VTUNE_PARAMETER"
-        if chosen == "Perf Mem":
+        if chosen == "sampler":
             foldername=str(int(time.time()))
             os.makedirs("./profiler_results/" + foldername)
             self.command="./profiler_addr/bin/latency_profiler -p $PROCESS_ID -o ./profiler_results/" + foldername + "/perf.data"

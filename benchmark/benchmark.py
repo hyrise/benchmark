@@ -73,7 +73,7 @@ class Benchmark:
         self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
         self._nodes             = kwargs["nodes"] if kwargs.has_key("nodes") else None
         self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
-        self._with_profiler     = kwargs["profiler"] if kwargs.has_key("profiler") else False
+        self._with_profiler     = kwargs["profiler"] if kwargs.has_key("profiler") else None
         self._profiler = None
 
         if self._vtune is not None:
@@ -125,9 +125,9 @@ class Benchmark:
         except:
             print "Could not add signal handler."
 
-        if self._with_profiler:
+        if self._with_profiler is not None:        
             self._profiler = Profiler(self._dirBinary)
-            self._profiler.setup()
+            self._profiler.setup(self._with_profiler)
 
         print "+------------------+"
         print "| HYRISE benchmark |"
@@ -164,7 +164,7 @@ class Benchmark:
         if self._vtune is not None:
             subprocess.check_output("amplxe-cl -command resume", cwd=self._vtune, shell=True)
 
-        if self._with_profiler:
+        if self._with_profiler is not None:        
             print "---\n"
             self._profiler.start(str(self._serverProc.pid))
 
@@ -225,7 +225,8 @@ class Benchmark:
         self.benchBeforeStop()
         self._stopServer()
 
-        if self._with_profiler:
+
+        if self._with_profiler is not None:
             print "---\n"
             self._profiler.end()
 
