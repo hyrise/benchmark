@@ -12,6 +12,7 @@ import paramiko
 
 from queries import *
 import queries
+from profiler import Profiler
 
 class Benchmark:
 
@@ -74,6 +75,8 @@ class Benchmark:
         self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
         self._persistencyDir    = kwargs["persistencyDir"] if kwargs.has_key("persistencyDir") else None
         self._recoverOnStart    = kwargs["recoverOnStart"] if kwargs.has_key("recoverOnStart") else False
+        self._with_profiler     = kwargs["profiler"] if kwargs.has_key("profiler") else None
+        self._profiler = None
 
         if self._vtune is not None:
             self._manual = True
@@ -124,6 +127,10 @@ class Benchmark:
         except:
             print "Could not add signal handler."
 
+        if self._with_profiler is not None:        
+            self._profiler = Profiler(self._dirBinary)
+            self._profiler.setup(self._with_profiler)
+
         print "+------------------+"
         print "| HYRISE benchmark |"
         print "+------------------+\n"
@@ -158,6 +165,10 @@ class Benchmark:
 
         if self._vtune is not None:
             subprocess.check_output("amplxe-cl -command resume", cwd=self._vtune, shell=True)
+
+        if self._with_profiler is not None:        
+            print "---\n"
+            self._profiler.start(str(self._serverProc.pid))
 
         if self._runtime > 0:
             if self._abQueryFile != None:
@@ -217,6 +228,12 @@ class Benchmark:
         if self.failed:
             return not self.failed
         self._stopServer()
+
+
+        if self._with_profiler is not None:
+            print "---\n"
+            self._profiler.end()
+
         print "all set"
 
         if self._remote:
@@ -320,6 +337,7 @@ class Benchmark:
             if (self._nodes != None):
                 nodes_str = "--nodes=%s" % self._nodes
 
+<<<<<<< HEAD
             persistency_str = ""
             if (self._persistencyDir != None):
                 persistency_str = "--persistencyDir=%s" % self._persistencyDir
@@ -329,6 +347,9 @@ class Benchmark:
                 recovery_str = "--recover"
 
             self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str, persistency_str, recovery_str],
+=======
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str],
+>>>>>>> 01a35bc7cbbad7f3ba1c2515f20093bff81be63c
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,

@@ -15,3 +15,8 @@ pytpcc/pytpcc/tables
 ab/ab
 ab_queries/
 tables/
+
+
+profiler_addr/bin/example
+profiler_addr/bin/latency_profiler
+profiler_results/*
