@@ -121,126 +121,133 @@ class Benchmark:
         return True
 
     def run(self):
+        while(True):
+            self.failed = False
 
-        try:
-            signal.signal(signal.SIGINT, self._signalHandler)
-        except:
-            print "Could not add signal handler."
+            try:
+                signal.signal(signal.SIGINT, self._signalHandler)
+            except:
+                print "Could not add signal handler."
 
-        if self._with_profiler is not None:        
-            self._profiler = Profiler(self._dirBinary)
-            self._profiler.setup(self._with_profiler)
+            if self._with_profiler is not None:        
+                self._profiler = Profiler(self._dirBinary)
+                self._profiler.setup(self._with_profiler)
 
-        print "+------------------+"
-        print "| HYRISE benchmark |"
-        print "+------------------+\n"
+            print "+------------------+"
+            print "| HYRISE benchmark |"
+            print "+------------------+\n"
 
-        if self._remote:
-            subprocess.call(["mkdir", "-p", "remotefs/" + self._host])
-            subprocess.call(["fusermount", "-u", "remotefs/127.0.0.1"])
-            subprocess.Popen(["sshfs", self._remoteUser + "@" + self._host + ":" + self._remotePath, "remotefs/" + self._host + "/"], preexec_fn = self.preexec)
-            self._olddir = os.getcwd()
-            os.chdir("remotefs/" + self._host + "/")
-            self._dirBinary         = os.path.join(os.getcwd(), "builds/%s" % self._buildSettings.getName())
-            self._dirHyriseDB       = os.path.join(os.getcwd(), "hyrise")
-            self._startSSHConnection()
+            if self._remote:
+                subprocess.call(["mkdir", "-p", "remotefs/" + self._host])
+                subprocess.call(["fusermount", "-u", "remotefs/127.0.0.1"])
+                subprocess.Popen(["sshfs", self._remoteUser + "@" + self._host + ":" + self._remotePath, "remotefs/" + self._host + "/"], preexec_fn = self.preexec)
+                self._olddir = os.getcwd()
+                os.chdir("remotefs/" + self._host + "/")
+                self._dirBinary         = os.path.join(os.getcwd(), "builds/%s" % self._buildSettings.getName())
+                self._dirHyriseDB       = os.path.join(os.getcwd(), "hyrise")
+                self._startSSHConnection()
 
 
-        if not self._manual:
-            # no support for building on remote machine yet
-            self._buildServer()
-            if self._abQueryFile != None:
-                self._buildAb()
-            self._startServer()
-            print "---\nHYRISE server running on port %s\n---" % self._port
-        else:
-            print "---\nManual mode, expecting HYRISE server running on port %s\n---" % self._port
-
-        self._runPrepareQueries()
-
-        print "Preparing benchmark..."
-        self.benchPrepare()
-        self.loadTables()
-        self.benchAfterLoad()
-
-        if self._vtune is not None:
-            subprocess.check_output("amplxe-cl -command resume", cwd=self._vtune, shell=True)
-
-        if self._with_profiler is not None:        
-            print "---\n"
-            self._profiler.start(str(self._serverProc.pid))
-
-        if self._runtime > 0:
-            if self._abQueryFile != None:
-                print "---"
-                print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
-                print "Output File: ", self._dirResults + "/ab.log"
-                print "---"
-                ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "99999999", "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
-                ab.wait()
+            if not self._manual:
+                # no support for building on remote machine yet
+                self._buildServer()
+                if self._abQueryFile != None:
+                    self._buildAb()
+                self._startServer()
+                print "---\nHYRISE server running on port %s\n---" % self._port
             else:
-                self._createUsers()
-                sys.stdout.write("Starting %s user(s)...\r" % self._numUsers)
-                sys.stdout.flush()
-                for i in range(self._numUsers):
-                    sys.stdout.write("Starting %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
+                print "---\nManual mode, expecting HYRISE server running on port %s\n---" % self._port
+
+            self._runPrepareQueries()
+
+            print "Preparing benchmark..."
+            self.benchPrepare()
+            self.loadTables()
+            self.benchAfterLoad()
+
+            if self._vtune is not None:
+                subprocess.check_output("amplxe-cl -command resume", cwd=self._vtune, shell=True)
+
+            if self._with_profiler is not None:        
+                print "---\n"
+                self._profiler.start(str(self._serverProc.pid))
+
+            if self._runtime > 0:
+                if self._abQueryFile != None:
+                    print "---"
+                    print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
+                    print "Output File: ", self._dirResults + "/ab.log"
+                    print "---"
+                    ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "99999999", "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+                    ab.wait()
+                    if ab.returncode:
+                        self.failed = True
+                else:
+                    self._createUsers()
+                    sys.stdout.write("Starting %s user(s)...\r" % self._numUsers)
                     sys.stdout.flush()
-                    self._users[i].start()
-                print "Starting %s user(s)... done     " % self._numUsers
+                    for i in range(self._numUsers):
+                        sys.stdout.write("Starting %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
+                        sys.stdout.flush()
+                        self._users[i].start()
+                    print "Starting %s user(s)... done     " % self._numUsers
 
-                for i in range(self._warmuptime):
-                    sys.stdout.write("Warming up... %i   \r" % (self._warmuptime - i))
+                    for i in range(self._warmuptime):
+                        sys.stdout.write("Warming up... %i   \r" % (self._warmuptime - i))
+                        sys.stdout.flush()
+                        if self.allUsersFinished():
+                            break
+                        time.sleep(1)
+                    print "Warming up... done     "
+
+                    sys.stdout.write("Logging results for %i seconds... \r" % self._runtime)
                     sys.stdout.flush()
-                    if self.allUsersFinished():
-                        break
-                    time.sleep(1)
-                print "Warming up... done     "
+                    for i in range(self._numUsers):
+                        self._users[i].startLogging()
+                    for i in range(self._runtime):
+                        sys.stdout.write("Logging results for %i seconds... \r" % (self._runtime - i))
+                        sys.stdout.flush()
+                        if self.allUsersFinished():
+                            break
+                        time.sleep(1)
+                    #time.sleep(self._runtime)
+                    for i in range(self._numUsers):
+                        self._users[i].stopLogging()
+                    print "Logging results for %i seconds... done" % self._runtime
 
-                sys.stdout.write("Logging results for %i seconds... \r" % self._runtime)
-                sys.stdout.flush()
-                for i in range(self._numUsers):
-                    self._users[i].startLogging()
-                for i in range(self._runtime):
-                    sys.stdout.write("Logging results for %i seconds... \r" % (self._runtime - i))
+                    sys.stdout.write("Stopping %s user(s)...\r" % self._numUsers)
                     sys.stdout.flush()
-                    if self.allUsersFinished():
-                        break
-                    time.sleep(1)
-                #time.sleep(self._runtime)
-                for i in range(self._numUsers):
-                    self._users[i].stopLogging()
-                print "Logging results for %i seconds... done" % self._runtime
+                    for i in range(self._numUsers):
+                        self._users[i].stop()
+                    print "users stopped"
+                    time.sleep(2)
+                    for i in range(self._numUsers):
+                        sys.stdout.write("Stopping %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
+                        sys.stdout.flush()
+                        self._users[i].join()
+                    print "Stopping %s user(s)... done     " % self._numUsers
+            if self._vtune is not None:
+                subprocess.check_output("amplxe-cl -command stop", cwd=self._vtune, shell=True)
+            self.benchBeforeStop()
 
-                sys.stdout.write("Stopping %s user(s)...\r" % self._numUsers)
-                sys.stdout.flush()
-                for i in range(self._numUsers):
-                    self._users[i].stop()
-                print "users stopped"
-                time.sleep(2)
-                for i in range(self._numUsers):
-                    sys.stdout.write("Stopping %s user(s)... %i%%      \r" % (self._numUsers, (i+1.0) / self._numUsers * 100))
-                    sys.stdout.flush()
-                    self._users[i].join()
-                print "Stopping %s user(s)... done     " % self._numUsers
-        if self._vtune is not None:
-            subprocess.check_output("amplxe-cl -command stop", cwd=self._vtune, shell=True)
-        self.benchBeforeStop()
-        if self.failed:
-            return not self.failed
-        self._stopServer()
+            self._stopServer()
 
 
-        if self._with_profiler is not None:
-            print "---\n"
-            self._profiler.end()
+            if self._with_profiler is not None:
+                print "---\n"
+                self._profiler.end()
 
-        print "all set"
+            print "all set"
 
-        if self._remote:
-            os.chdir(self._olddir)
+            if self._remote:
+                os.chdir(self._olddir)
 
-        self.benchAfter()
-        return not self.failed
+            self.benchAfter()
+
+            if not self.failed:
+                return True
+
+            print "Failed - trying again"
 
 
     def addQuery(self, queryId, queryStr):
@@ -337,7 +344,6 @@ class Benchmark:
             if (self._nodes != None):
                 nodes_str = "--nodes=%s" % self._nodes
 
-<<<<<<< HEAD
             persistency_str = ""
             if (self._persistencyDir != None):
                 persistency_str = "--persistencyDir=%s" % self._persistencyDir
@@ -347,9 +353,6 @@ class Benchmark:
                 recovery_str = "--recover"
 
             self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str, persistency_str, recovery_str],
-=======
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str],
->>>>>>> 01a35bc7cbbad7f3ba1c2515f20093bff81be63c
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,
