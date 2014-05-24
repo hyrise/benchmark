@@ -434,8 +434,10 @@ class Benchmark:
                     if self._serverProc.poll() is None:
                         subprocess.call(["killall", "-u", os.getlogin(), "hyrise-server_release"])
                     time.sleep(5)
+                    del self._serverProc
                 except:
                     self.failed = True
+                    del self._serverProc
                     return
         else:
             print "kill server, close connection"
