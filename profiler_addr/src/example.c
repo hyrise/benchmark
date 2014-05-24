@@ -42,7 +42,7 @@
 #include "sampler.h"
 #include "util.h"
 
-#include <papi.h>
+//#include <papi.h>
 
 
 void print_usage() {
