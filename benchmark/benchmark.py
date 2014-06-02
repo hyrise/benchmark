@@ -72,6 +72,7 @@ class Benchmark:
         self._commit_window     = str(kwargs["commitWindow"]) if kwargs.has_key("commitWindow") else None
         self._csv                = kwargs["csv"] if kwargs.has_key("csv") else False
         self._nodes             = kwargs["nodes"] if kwargs.has_key("nodes") else None
+        self._memorynodes       = kwargs["memorynodes"] if kwargs.has_key("memorynodes") else None
         self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
         self._persistencyDir    = kwargs["persistencyDir"] if kwargs.has_key("persistencyDir") else None
         self._recoverOnStart    = kwargs["recoverOnStart"] if kwargs.has_key("recoverOnStart") else False
@@ -344,6 +345,10 @@ class Benchmark:
             if (self._nodes != None):
                 nodes_str = "--nodes=%s" % self._nodes
 
+            memorynodes_str = ""
+            if (self._memorynodes != None):
+                memorynodes_str = "--memorynodes=%s" % self._memorynodes
+
             persistency_str = ""
             if (self._persistencyDir != None):
                 persistency_str = "--persistencyDir=%s" % self._persistencyDir
@@ -352,7 +357,7 @@ class Benchmark:
             if (self._recoverOnStart):
                 recovery_str = "--recover"
 
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str, persistency_str, recovery_str],
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, memorynodes_str, checkpoint_str, threadstring, commit_window_str, persistency_str, recovery_str],
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,
