@@ -48,7 +48,8 @@ Q_LOAD_STOCK = """ {
             "type": "TableLoad",
             "table": "STOCK",
             "filename": "%(filename)s",
-            "path": "%(path)s"
+            "path": "%(path)s",
+            "nonvolatile": 1
         },
         "createMainIdx": {
              "type": "CreateGroupkeyIndex",
