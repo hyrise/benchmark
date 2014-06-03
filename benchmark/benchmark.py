@@ -75,6 +75,7 @@ class Benchmark:
         self._vtune             = os.path.expanduser(kwargs["vtune"]) if kwargs.has_key("vtune") and kwargs["vtune"] is not None else None
         self._with_profiler     = kwargs["profiler"] if kwargs.has_key("profiler") else None
         self._profiler = None
+        self._memNode           = kwargs["memNode"] if kwargs.has_key("memNode") else None
 
         if self._vtune is not None:
             self._manual = True        
@@ -119,6 +120,14 @@ class Benchmark:
         return True
 
     def run(self):
+        filename = self._dirResults + "/ab.log"
+        i = 1
+        while not os.path.isfile(filename):
+            print "Starting benchmark try", i, "for file", filename
+            self.run_real()
+            i = i + 1
+
+    def run_real(self):
 
         try:
             signal.signal(signal.SIGINT, self._signalHandler)
@@ -331,8 +340,12 @@ class Benchmark:
             nodes_str = ""
             if (self._nodes != None):
                 nodes_str = "--nodes=%s" % self._nodes
+            
+            mem_node_str = ""
+            if (self._memNode != None):
+                mem_node_str = "--memorynode=%s" % self._memNode
 
-            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str],
+            self._serverProc = subprocess.Popen([server, "--port=%s" % self._port, "--logdef=%s" % logdef, "--scheduler=%s" % self._scheduler, nodes_str, checkpoint_str, threadstring, commit_window_str, mem_node_str],
                                                 cwd=self._dirBinary,
                                                 env=env,
                                                 stdout=open("/dev/null") if not self._stdout else None,

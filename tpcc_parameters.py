@@ -115,6 +115,9 @@ else:
 def create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs):
     runId = str(parameters).replace(",", "@")
     s = benchmark.Settings(name, **settings_kwargs)
+    benchmark_kwargs = copy.copy(benchmark_kwargs)    
+    benchmark_kwargs["nodes"] = 1
+    benchmark_kwargs["memNode"] = 1
     return benchmark.TPCCBenchmark(groupId, runId, s, **benchmark_kwargs) 
 
 def create_benchmark_none(name, groupId, parameters, benchmark_kwargs):
