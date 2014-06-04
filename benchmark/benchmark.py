@@ -122,6 +122,8 @@ class Benchmark:
         return True
 
     def run(self):
+        attempt = 0
+        max_attempts = 3
         while(True):
             self.failed = False
 
@@ -181,7 +183,9 @@ class Benchmark:
                     print "---"
                     ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "99999999", "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
                     ab.wait()
-                    if ab.returncode:
+                    r = ab.returncode
+                    print "ab returned " + str(r)
+                    if r:
                         self.failed = True
                 else:
                     self._createUsers()
@@ -248,7 +252,18 @@ class Benchmark:
             if not self.failed:
                 return True
 
-            print "Failed - trying again"
+            attempt += 1
+            if(attempt == max_attempts):
+                print "Failed - not trying again after " + str(max_attempts) + " attempts"
+                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/") + "* " + os.path.expandvars("/mnt/pmfs/$USER/") + "*")
+                return False
+            print "Failed - trying again (attempt " + str(attempt) + " of " + str(max_attempts) + ")"
+            try:
+                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/") + "*")
+                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/") + "*")
+            except OSError:
+                pass
+            time.sleep(10)
 
 
     def addQuery(self, queryId, queryStr):
