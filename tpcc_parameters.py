@@ -120,12 +120,14 @@ def create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwarg
     return benchmark.TPCCBenchmark(groupId, runId, s, **benchmark_kwargs) 
 
 def create_benchmark_none(name, groupId, parameters, benchmark_kwargs):
-    settings_kwargs = {"PERSISTENCY":"NONE"}
+    with_hashmaps = int("WITH_HASHMAPS" in parameters and parameters["WITH_HASHMAPS"])
+    settings_kwargs = {"PERSISTENCY":"NONE", "WITH_HASHMAPS": with_hashmaps}
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
 def create_benchmark_logger(name, groupId, parameters, benchmark_kwargs, windowsize_ms, checkpoint_interval_ms):
     reset_persistency_directory()
-    settings_kwargs = {"PERSISTENCY":"BUFFEREDLOGGER"}
+    with_hashmaps = int("WITH_HASHMAPS" in parameters and parameters["WITH_HASHMAPS"])
+    settings_kwargs = {"PERSISTENCY":"BUFFEREDLOGGER", "WITH_HASHMAPS": with_hashmaps}
     benchmark_kwargs = copy.copy(benchmark_kwargs)
     benchmark_kwargs["commitWindow"] = windowsize_ms
     benchmark_kwargs["checkpointInterval"] = checkpoint_interval_ms
@@ -133,7 +135,10 @@ def create_benchmark_logger(name, groupId, parameters, benchmark_kwargs, windows
 
 def create_benchmark_nvram(name, groupId, parameters, benchmark_kwargs):
     reset_nvram_directory()
-    settings_kwargs = {"PERSISTENCY":"NVRAM", "NVRAM_FILENAME":"hyrise_tpcc"}
+    with_hashmaps = int("WITH_HASHMAPS" in parameters and parameters["WITH_HASHMAPS"])
+    with_clflush = int(not "WITH_CLFLUSH" in parameters or parameters["WITH_CLFLUSH"])
+    with_redundant_on_nvm = int(not "WITH_REDUNDANT_ON_NVM" in parameters or parameters["WITH_REDUNDANT_ON_NVM"])
+    settings_kwargs = {"PERSISTENCY":"NVRAM", "NVRAM_FILENAME":"hyrise_tpcc", "WITH_HASHMAPS": with_hashmaps, "WITH_CLFLUSH": with_clflush, "WITH_REDUNDANT_ON_NVM": with_redundant_on_nvm}
     return create_benchmark(name, settings_kwargs, groupId, parameters, benchmark_kwargs)
 
 kwargs = {

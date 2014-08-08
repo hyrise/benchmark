@@ -46,6 +46,9 @@ class Settings:
                 "COMPILER"             : None,
                 "WITH_GROUP_COMMIT"    : None,
                 "GROUP_COMMIT_WINDOW"  : None,
+                "WITH_CLFLUSH"         : None,
+                "WITH_HASHMAPS"        : None,
+                "WITH_REDUNDANT_ON_NVM": None,
             }
         for k, v in kwargs.iteritems():
             self.__setitem__(k, v)
