@@ -255,12 +255,13 @@ class Benchmark:
             attempt += 1
             if(attempt == max_attempts):
                 print "Failed - not trying again after " + str(max_attempts) + " attempts"
-                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/") + "* " + os.path.expandvars("/mnt/pmfs/$USER/") + "*")
+                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/") + "* " + os.path.expandvars("/mnt/pmfs/$USER/") + "*", shell=True)
                 return False
             print "Failed - trying again (attempt " + str(attempt) + " of " + str(max_attempts) + ")"
             try:
-                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/") + "*")
-                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/") + "*")
+                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/hyrisedata/") + "*", shell=True)
+                subprocess.call("rm " + os.path.expandvars("/mnt/pmfs/$USER/") + "*", shell=True)
+                subprocess.call("kill -9 `pgrep hyrise`", shell=True)
             except OSError:
                 pass
             time.sleep(10)
