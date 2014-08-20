@@ -9,7 +9,7 @@ cd $SCRIPT_DIR
 
 
 BENCHMARK="unknown"
-options=("Logger-Window" "Clients" "CheckpointInterval" "Recovery" "Single-Run" "Profiler" "Quit")
+options=("Logger-Window" "Clients" "CheckpointInterval" "Recovery" "Single-Run" "Profiler" "RecoveryDemo" "Quit")
 
 if [ "$#" -eq 1 ]; then
 
@@ -58,6 +58,9 @@ case $BENCHMARK in
         ;;
     "Profiler")
         CMD="python exp_tpcc_profiler_run.py"
+        ;;
+    "RecoveryDemo")
+        CMD="python exp_tpcc_recovery_demo.py"
         ;;
     "Quit")
         exit 0
