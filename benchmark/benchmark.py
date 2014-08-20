@@ -174,14 +174,14 @@ class Benchmark:
             if self._with_profiler is not None:        
                 print "---\n"
                 self._profiler.start(str(self._serverProc.pid))
-
             if self._runtime > 0:
                 if self._abQueryFile != None:
                     print "---"
                     print "Using ab with queryfile=" + self._abQueryFile + ", concurrency=" + str(self._numUsers) + ", time=" + str(self._runtime) +"s"
                     print "Output File: ", self._dirResults + "/ab.log"
                     print "---"
-                    ab = subprocess.Popen(["./ab/ab","-g", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "99999999", "-c", str(self._numUsers), "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+                    print ' '.join(["./ab/ab","-G", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "99999999", "-c", str(self._numUsers), "-r",  "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
+                    ab = subprocess.Popen(["./ab/ab","-G", self._dirResults + "/ab.log", "-l", str(self._abCore), "-v", str(self._verbose), "-k", "-t", str(self._runtime), "-n", "99999999", "-c", str(self._numUsers), "-r", "-m", self._abQueryFile, self._host+":"+str(self._port)+"/procedure/"])
                     ab.wait()
                     r = ab.returncode
                     print "ab returned " + str(r)
