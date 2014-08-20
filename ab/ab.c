@@ -319,6 +319,7 @@ int proxyport = 0;      /* proxy port */
 char *connecthost;
 apr_port_t connectport;
 char *gnuplot;          /* GNUplot file */
+char gnuplotflush = 0;  /* flush to gnuplot while running? */
 char *csvperc;          /* CSV Percentile file */
 char url[1024];
 char * fullurl, * colonhost;
@@ -352,6 +353,8 @@ int err_conn = 0;          /* requests failed due to connection drop */
 int err_recv = 0;          /* requests failed due to broken read */
 int err_except = 0;        /* requests failed due to exception */
 int err_response = 0;      /* requests with invalid or non-200 response */
+
+size_t gnuplot_last_written = 0; /* id of request last written to gnuplot file */
 
 #ifdef USE_SSL
 int is_ssl;
@@ -1053,14 +1056,14 @@ static void output_results(int sig)
             fclose(out);
         }
         if (gnuplot) {
-            FILE *out = fopen(gnuplot, "w");
+            FILE *out = fopen(gnuplot, "a");
             char tmstring[APR_CTIME_LEN];
             if (!out) {
                 perror("Cannot open gnuplot output file");
                 exit(1);
             }
-            fprintf(out, "starttime\tseconds\tctime\tdtime\tttime\twait\ttxname\tstatus\n");
-            for (i = 0; i < done; i++) {
+            if(!gnuplotflush) fprintf(out, "starttime\tseconds\tctime\tdtime\tttime\twait\ttxname\tstatus\n");
+            for (i = gnuplot_last_written; i < done; i++) {
                 (void) apr_ctime(tmstring, stats[i].starttime);
                 stats[i].respcode[3] = '\0';
                 fprintf(out, "%s\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
@@ -1790,6 +1793,16 @@ static void test(void)
         start_connect(&con[i]);
     }
 
+    FILE *out;
+    if(gnuplotflush) {
+      out = fopen(gnuplot, "w");
+      if (!out) {
+        perror("Cannot open gnuplot output file");
+        exit(1);
+      }
+      fprintf(out, "starttime\tseconds\tctime\tdtime\tttime\twait\ttxname\tstatus\n");
+    }
+
     do {
         apr_int32_t n;
         const apr_pollfd_t *pollresults;
@@ -1883,7 +1896,26 @@ static void test(void)
                 }
             }
         }
+        if (gnuplotflush && done % 1000 == 0) {
+          char tmstring[APR_CTIME_LEN];
+          for (i = gnuplot_last_written; i < done; i++) {
+              (void) apr_ctime(tmstring, stats[i].starttime);
+              stats[i].respcode[3] = '\0';
+              fprintf(out, "%s\t%llu\t%" APR_TIME_T_FMT
+                             "\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
+                             "\t%" APR_TIME_T_FMT "\t%s\t%s\n", tmstring,
+                      stats[i].starttime,
+                      ap_round_ms(stats[i].ctime),
+                      ap_round_ms(stats[i].time - stats[i].ctime),
+                      ap_round_ms(stats[i].time),
+                      ap_round_ms(stats[i].waittime), stats[i].txname, stats[i].respcode);
+          }
+          gnuplot_last_written = done;
+          fflush(out);
+      }
     } while (lasttime < stoptime && done < requests);
+
+    if(gnuplotflush) fclose(gnuplot);
     
     if (heartbeatres)
         fprintf(stderr, "Finished %d requests\n", done);
@@ -1953,7 +1985,8 @@ static void usage(const char *progname)
     fprintf(stderr, "    -k              Use HTTP KeepAlive feature\n");
     fprintf(stderr, "    -d              Do not show percentiles served table.\n");
     fprintf(stderr, "    -S              Do not show confidence estimators and warnings.\n");
-    fprintf(stderr, "    -g filename     Output collected data to gnuplot format file.\n");
+    fprintf(stderr, "    -g filename     Output collected data to gnuplot format file at the end of the benchmark.\n");
+    fprintf(stderr, "    -G filename     Output collected data to gnuplot format file (almost) live.\n");
     fprintf(stderr, "    -e filename     Output CSV file with percentages served\n");
     fprintf(stderr, "    -r              Don't exit on socket receive errors.\n");
     fprintf(stderr, "    -h              Display usage information (this message)\n");
@@ -2169,7 +2202,7 @@ int main(int argc, const char * const argv[])
 #endif
 
     apr_getopt_init(&opt, cntxt, argc, argv);
-    while ((status = apr_getopt(opt, "n:c:t:b:T:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:X:de:Sq"
+    while ((status = apr_getopt(opt, "n:c:t:b:T:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:G:X:de:Sq"
 #ifdef USE_SSL
             "Z:f:"
 #endif
@@ -2206,6 +2239,10 @@ int main(int argc, const char * const argv[])
                 break;
             case 'g':
                 gnuplot = strdup(optarg);
+                break;
+            case 'G':
+                gnuplot = strdup(optarg);
+                gnuplotflush = 1;
                 break;
             case 'd':
                 percentile = 0;
