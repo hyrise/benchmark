@@ -5,6 +5,8 @@ import subprocess
 import os
 import time
 import sys
+import json
+import time
 
 groupId = "recovery_demo"
 num_clients = args["clients"]
@@ -48,14 +50,29 @@ Please stand by while HYRISE instances are being started and initial data is loa
 
 """
 
-# benchmarks['nvram'] = create_benchmark_nvram("NVRAM", groupId, {}, kwargs)
-benchmarks['logger'] = create_benchmark_logger("Logger", groupId, {}, kwargs, windowsize_ms=20, checkpoint_interval_ms=0)
+benchmarks['nvram'] = create_benchmark_nvram("NVRAM", groupId, {}, kwargs)
+# benchmarks['logger'] = create_benchmark_logger("Logger", groupId, {}, kwargs, windowsize_ms=20, checkpoint_interval_ms=0)
 # benchmarks['loggercp'] = create_benchmark_logger("LoggerCP", groupId, {}, kwargs, windowsize_ms=20, checkpoint_interval_ms=10000)
+
+def write_event(benchmark, event):
+	eventfile = benchmark._dirResults + "/events.json"
+	if os.path.isfile(eventfile):
+		with open(eventfile) as f:
+			data = json.load(f)
+	else:
+		data = {}
+
+	data.update({time.time(): event})
+
+	with open(eventfile, 'w') as f:
+	    json.dump(data, f)
+	    f.flush()
 
 def run_server(name, benchmark):
 	print "starting " + name + "...",
 	while True:
 		benchmark._startServer()
+		write_event(benchmark, "restart")
 		benchmark._recoverOnStart = True
 		print "done."
 		subprocess.Popen.wait(benchmark._serverProc)
@@ -117,5 +134,6 @@ Press RETURN to kill HYRISE instances
 while True:
 	raw_input()
 	os.system("kill -9 `pgrep hyrise`")
+	write_event(benchmark, "kill")
 	print "BAM!"
 	print ""
