@@ -7,14 +7,13 @@
 
 <body>
     <img src="http://hpi.de/fileadmin/templates/img/hpi_logo_srgb_wb_sl1_web80.png" style="float: left" />
-    <h1 style="margin-left: 200px; padding-top: 30px; color: rgb(89, 96, 101); font-family: Verdana, sans-serif">HYRISE Live Throughput Visualizer</h1>
+    <h1 style="margin-left: 200px; padding-top: 30px; color: rgb(89, 96, 101); font-family: Verdana, sans-serif; margin-bottom: 50px">HYRISE Live Throughput Visualizer</h1>
     <div id="graphs"></div>
 
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
 
-    <script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
-    <script type="text/javascript" src="http://code.highcharts.com/modules/exporting.js"></script>   
+    <script type="text/javascript" src="http://code.highcharts.com/stock/highstock.js"></script>
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.2.4/mootools-yui-compressed.js"></script>
 
@@ -24,8 +23,8 @@
     $(document).ready(function () {
         $.getJSON('/builds', function(data) {
             $.each(data, function(i, build) {
-                $("#graphs").append($("<h1>").text(build))
-                container = $("#graphs").append($("<div>").attr("style", "min-width: 310px; height: 400px; margin: 0 auto"))
+                container = $("<div>").attr("style", "min-width: 310px; height: 400px; margin: 0 auto")
+                $("#graphs").append(container)
 
 
                 container.highcharts({
@@ -37,25 +36,32 @@
                         events: {
                             load: function () {
                                 // set up the updating of the chart each second
-                                var series = this.series[0];
-                                var inserted = [];
+                                var series = this.series[0], events = this.series[1];
+                                var inserted_data = [], inserted_events = [];
                                 var chart = this;
                                 var last_size = 0;
                                 setInterval(function () {
                                     new Request({
                                         method:"GET",
-                                        url:"NVRAM.json",
+                                        url: build+".json",
                                         onSuccess:function(response){
                                             json = $.parseJSON(response);
                                             if(!json) return
                                             var this_size = Object.keys(json).length
                                             if(this_size < last_size) series.setData([])
                                             last_size = this_size
-                                            $.each(json, function(e, i) {
-                                                if(e == 0)
-                                                if(inserted[e]) return;
-                                                inserted[e] = true;
+                                            $.each(json.data, function(e, i) {
+                                                if(inserted_data[e]) return;
+                                                inserted_data[e] = true;
                                                 series.addPoint([e*SCALE,i-0], false, false, false);
+                                            })
+                                            $.each(json.events, function(e, i) {
+                                                if(inserted_events[e]) return;
+                                                inserted_events[e] = true;
+                                                title = i
+                                                if(title == "kill") title = "◼";
+                                                if(title == "restart") title = "▶";
+                                                events.addPoint({x: e*SCALE, title: title}, false, false, false);
                                             })
                                             chart.redraw()
                                         }
@@ -94,9 +100,16 @@
                         enabled: false
                     },
                     series: [{
+                        id: 'data',
                         name: build,
                         data: [],
                         allowPointSelect: false,
+                    }, {
+                        type : 'flags',
+                        data : [],
+                        onSeries : 'data',  // Id of which series it should be placed on. If not defined 
+                                        // the flag series will be put on the X axis
+                        shape : 'flag'  // Defines the shape of the flags.
                     }],
                     plotOptions: {
                         spline: {
