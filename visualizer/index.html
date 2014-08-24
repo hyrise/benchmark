@@ -81,7 +81,7 @@
 
         yAxis: [{
             min: 0,
-            max: 1200,
+            max: 500,
             minorTickPosition: 'outside',
             tickPosition: 'outside',
             labels: {
@@ -89,20 +89,20 @@
                 distance: 20
             },
             plotBands: [{
-                from: 1000,
-                to: 1200,
+                from: 400,
+                to: 500,
                 color: '#C02316',
                 innerRadius: '100%',
                 outerRadius: '105%'
             }],
             pane: 0,
             title: {
-                text: 'Replica A<br/><span style="font-size:8px">Milliseconds</span>',
+                text: 'Replica A<br/><span style="font-size:8px">#TX Behind</span>',
                 y: -40
             }
         }, {
             min: 0,
-            max: 1200,
+            max: 500,
             minorTickPosition: 'outside',
             tickPosition: 'outside',
             labels: {
@@ -110,20 +110,20 @@
                 distance: 20
             },
             plotBands: [{
-                from: 1000,
-                to: 1200,
+                from: 400,
+                to: 500,
                 color: '#C02316',
                 innerRadius: '100%',
                 outerRadius: '105%'
             }],
             pane: 1,
             title: {
-                text: 'Replica B<br/><span style="font-size:8px">Milliseconds</span>',
+                text: 'Replica B<br/><span style="font-size:8px">#TX Behind</span>',
                 y: -40
             }
         }, {
             min: 0,
-            max: 1200,
+            max: 500,
             minorTickPosition: 'outside',
             tickPosition: 'outside',
             labels: {
@@ -131,15 +131,15 @@
                 distance: 20
             },
             plotBands: [{
-                from: 1000,
-                to: 1200,
+                from: 400,
+                to: 500,
                 color: '#C02316',
                 innerRadius: '100%',
                 outerRadius: '105%'
             }],
             pane: 2,
             title: {
-                text: 'Replica C<br/><span style="font-size:8px">Milliseconds</span>',
+                text: 'Replica C<br/><span style="font-size:8px">#TX Behind</span>',
                 y: -40
             }
         }],
@@ -181,11 +181,28 @@
                     url:"delay",
                     onSuccess:function(response){
                         json = $.parseJSON(response);
+                        rows = json.rows
                         if(!json) return
-                        $.each(json, function(e, i) {
-                            r = chart.series[e].points[0];
-                            r.update(i, false);
-                        })
+
+                        lcid_replica = rows[0][2];
+                        lcid_master = rows[1][2];
+
+                        r = chart.series[0].points[0];
+                        r.update(lcid_master-lcid_replica, false);
+
+                        r = chart.series[1].points[0];
+                        r.update(lcid_master-lcid_replica, false);
+
+                        r = chart.series[2].points[0];
+                        r.update(lcid_master-lcid_replica, false);
+
+                        // $.each(rows, function(node, heartbeat, lcid) {
+                        //     // r = chart.series[e].points[0];
+                        //     // r.update(i, false);
+                        //     console.log(node)
+                        //     console.log(heartbeat)
+                        //     console.log(lcid)
+                        // })
                         chart.redraw()
                     }
                 }).send(); //Don't forget to send our request! 
@@ -257,7 +274,7 @@
                     },
                     yAxis: {
                         title: {
-                            text: '#NewOrder transactions in ' + (1/SCALE) + ' seconds'
+                            text: '#Queries per Second'
                         },
                         plotLines: [{
                             value: 0,
@@ -265,7 +282,7 @@
                             color: '#808080'
                         }],
                         min: 0,
-                        max: 1250
+                        max: 4000
                     },
                     legend: {
                         enabled: false

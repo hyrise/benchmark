@@ -6,7 +6,7 @@ import string
 def write_request_to_file(_queryfile, query):
 	postdata = "query="+query
 	postlen = len(postdata) + 4
-	request = "POST /query HTTP/1.0\r\nConnection: Keep-Alive\r\nContent-length: %s\r\nContent-type: application/x-www-form-urlencoded\r\nHost: 127.0.0.1:5000\r\nUser-Agent: ApacheBench/2.3\r\nAccept: */*\r\n\r\n" % (postlen)
+	request = "POST /jsonWrite HTTP/1.0\r\nConnection: Keep-Alive\r\nContent-Length: %s\r\nContent-Type: application/x-www-form-urlencoded\r\nHost: 127.0.0.1:5000\r\nUser-Agent: ApacheBench/2.3\r\nAccept: */*\r\n\r\n" % (postlen)
 	requestlen = len(request)
 	_queryfile.write('{:04d}'.format(requestlen)+'\0')
 	_queryfile.write('{:04d}'.format(postlen)+'\0')
