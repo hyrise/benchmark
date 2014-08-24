@@ -1,0 +1,23 @@
+{
+    "operators": {
+        "retrieve_revenue": {
+            "type" : "GetTable",
+            "name" : "revenue"
+        },
+	"1": {
+            "type": "HashBuild",
+            "fields": ["year"],
+	     "key": "groupby"
+        },
+        "2": {
+            "type": "GroupByScan",
+            "fields": ["year"],
+            "functions": [
+		{"type": "COUNT", "field": "year", "distinct": false, "as": "count"}
+             ]
+        }
+     },
+    "edges" : [
+        ["retrieve_revenue", "1"], ["retrieve_revenue", "2"], ["1", "2"]
+    ]
+}
