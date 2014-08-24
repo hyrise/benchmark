@@ -1,0 +1,76 @@
+{
+    "operators" : {
+
+        "0l": {
+            "type": "RecoverTable",
+            "tablename": "CUSTOMER",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+        "1l": {
+            "type": "RecoverTable",
+            "tablename": "DISTRICT",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+        "2l": {
+            "type": "RecoverTable",
+            "tablename": "HISTORY",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+        "3l": {
+            "type": "RecoverTable",
+            "tablename": "STOCK",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+        "4l": {
+            "type": "RecoverTable",
+            "tablename": "ITEM",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+        "5l": {
+            "type": "RecoverTable",
+            "tablename": "NEW_ORDER",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+        "6l": {
+            "type": "RecoverTable",
+            "tablename": "ORDER_LINE",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+
+        "7l": {
+            "type": "RecoverTable",
+            "tablename": "ORDERS",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+
+        "8l": {
+            "type": "RecoverTable",
+            "tablename": "WAREHOUSE",
+            "path" : "/home/David.Schwalb/tpcc/1W-tables/bin/",
+            "threads": 20
+            },
+
+        "noop": {"type" : "NoOp"}
+    },
+
+    "edges": [
+        ["0l","noop"],
+        ["1l","noop"],
+        ["2l","noop"],
+        ["3l","noop"],
+        ["4l","noop"],
+        ["5l","noop"],
+        ["6l","noop"],
+        ["7l","noop"],
+        ["8l","noop"]
+    ]
+}
+

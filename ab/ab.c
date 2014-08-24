@@ -320,6 +320,8 @@ char *connecthost;
 apr_port_t connectport;
 char *gnuplot;          /* GNUplot file */
 char gnuplotflush = 0;  /* flush to gnuplot while running? */
+int gnuplotflush_threshold = 1000;  /* result flush threshold */
+int last_gnuplotflush = 0; /* timestamp of last flush */
 char *csvperc;          /* CSV Percentile file */
 char url[1024];
 char * fullurl, * colonhost;
@@ -1896,7 +1898,8 @@ static void test(void)
                 }
             }
         }
-        if (gnuplotflush && done % 1000 == 0) {
+
+        if (gnuplotflush && done % gnuplotflush_threshold == 0) {
           char tmstring[APR_CTIME_LEN];
           for (i = gnuplot_last_written; i < done; i++) {
               (void) apr_ctime(tmstring, stats[i].starttime);
@@ -1959,42 +1962,43 @@ static void usage(const char *progname)
 /* 80 column ruler:  ********************************************************************************
  */
     fprintf(stderr, "Options are:\n");
-    fprintf(stderr, "    -n requests     Number of requests to perform\n");
-    fprintf(stderr, "    -c concurrency  Number of multiple requests to make\n");
-    fprintf(stderr, "    -t timelimit    Seconds to max. wait for responses\n");
-    fprintf(stderr, "    -b windowsize   Size of TCP send/receive buffer, in bytes\n");
-    fprintf(stderr, "    -p postfile     File containing data to POST. Remember also to set -T\n");
-    fprintf(stderr, "    -T content-type Content-type header for POSTing, eg.\n");
-    fprintf(stderr, "                    'application/x-www-form-urlencoded'\n");
-    fprintf(stderr, "                    Default is 'text/plain'\n");
-    fprintf(stderr, "    -v verbosity    How much troubleshooting info to print\n");
-    fprintf(stderr, "    -w              Print out results in HTML tables\n");
-    fprintf(stderr, "    -i              Use HEAD instead of GET\n");
-    fprintf(stderr, "    -x attributes   String to insert as table attributes\n");
-    fprintf(stderr, "    -y attributes   String to insert as tr attributes\n");
-    fprintf(stderr, "    -z attributes   String to insert as td or th attributes\n");
-    fprintf(stderr, "    -C attribute    Add cookie, eg. 'Apache=1234. (repeatable)\n");
-    fprintf(stderr, "    -H attribute    Add Arbitrary header line, eg. 'Accept-Encoding: gzip'\n");
-    fprintf(stderr, "                    Inserted after all normal header lines. (repeatable)\n");
-    fprintf(stderr, "    -A attribute    Add Basic WWW Authentication, the attributes\n");
-    fprintf(stderr, "                    are a colon separated username and password.\n");
-    fprintf(stderr, "    -P attribute    Add Basic Proxy Authentication, the attributes\n");
-    fprintf(stderr, "                    are a colon separated username and password.\n");
-    fprintf(stderr, "    -X proxy:port   Proxyserver and port number to use\n");
-    fprintf(stderr, "    -V              Print version number and exit\n");
-    fprintf(stderr, "    -k              Use HTTP KeepAlive feature\n");
-    fprintf(stderr, "    -d              Do not show percentiles served table.\n");
-    fprintf(stderr, "    -S              Do not show confidence estimators and warnings.\n");
-    fprintf(stderr, "    -g filename     Output collected data to gnuplot format file at the end of the benchmark.\n");
-    fprintf(stderr, "    -G filename     Output collected data to gnuplot format file (almost) live.\n");
-    fprintf(stderr, "    -e filename     Output CSV file with percentages served\n");
-    fprintf(stderr, "    -r              Don't exit on socket receive errors.\n");
-    fprintf(stderr, "    -h              Display usage information (this message)\n");
-    fprintf(stderr, "    -m datafile     File containing data for prepared requests\n");
-    fprintf(stderr, "    -l processor    Processor to bind the thread\n");
-#ifdef USE_SSL
-    fprintf(stderr, "    -Z ciphersuite  Specify SSL/TLS cipher suite (See openssl ciphers)\n");
-    fprintf(stderr, "    -f protocol     Specify SSL/TLS protocol (SSL2, SSL3, TLS1, or ALL)\n");
+    fprintf(stderr, "    -n requests            Number of requests to perform\n");
+    fprintf(stderr, "    -c concurrency         Number of multiple requests to make\n");
+    fprintf(stderr, "    -t timelimit           Seconds to max. wait for responses\n");
+    fprintf(stderr, "    -b windowsize          Size of TCP send/receive buffer, in bytes\n");
+    fprintf(stderr, "    -p postfile            File containing data to POST. Remember also to set -T\n");
+    fprintf(stderr, "    -T content-type        Content-type header for POSTing, eg.\n");
+    fprintf(stderr, "                           'application/x-www-form-urlencoded'\n");
+    fprintf(stderr, "                           Default is 'text/plain'\n");
+    fprintf(stderr, "    -v verbosity           How much troubleshooting info to print\n");
+    fprintf(stderr, "    -w                     Print out results in HTML tables\n");
+    fprintf(stderr, "    -i                     Use HEAD instead of GET\n");
+    fprintf(stderr, "    -x attributes          String to insert as table attributes\n");
+    fprintf(stderr, "    -y attributes          String to insert as tr attributes\n");
+    fprintf(stderr, "    -z attributes          String to insert as td or th attributes\n");
+    fprintf(stderr, "    -C attribute           Add cookie, eg. 'Apache=1234. (repeatable)\n");
+    fprintf(stderr, "    -H attribute           Add Arbitrary header line, eg. 'Accept-Encoding: gzip'\n");
+    fprintf(stderr, "                           Inserted after all normal header lines. (repeatable)\n");
+    fprintf(stderr, "    -A attribute           Add Basic WWW Authentication, the attributes\n");
+    fprintf(stderr, "                           are a colon separated username and password.\n");
+    fprintf(stderr, "    -P attribute           Add Basic Proxy Authentication, the attributes\n");
+    fprintf(stderr, "                           are a colon separated username and password.\n");
+    fprintf(stderr, "    -X proxy:port          Proxyserver and port number to use\n");
+    fprintf(stderr, "    -V                     Print version number and exit\n");
+    fprintf(stderr, "    -k                     Use HTTP KeepAlive feature\n");
+    fprintf(stderr, "    -d                     Do not show percentiles served table.\n");
+    fprintf(stderr, "    -S                     Do not show confidence estimators and warnings.\n");
+    fprintf(stderr, "    -g filename            Output collected data to gnuplot format file at the end of the benchmark.\n");
+    fprintf(stderr, "    -G filename            Output collected data to gnuplot format file (almost) live.\n");
+    fprintf(stderr, "    -Q flush-threshold     Threshold for flushing output file (almost) live (needs -G).\n");
+    fprintf(stderr, "    -e filename            Output CSV file with percentages served\n");
+    fprintf(stderr, "    -r                     Don't exit on socket receive errors.\n");
+    fprintf(stderr, "    -h                     Display usage information (this message)\n");
+    fprintf(stderr, "    -m datafile            File containing data for prepared requests\n");
+    fprintf(stderr, "    -l processor           Processor to bind the thread\n");
+#ifdef USE_SSL        
+    fprintf(stderr, "    -Z ciphersuite         Specify SSL/TLS cipher suite (See openssl ciphers)\n");
+    fprintf(stderr, "    -f protocol            Specify SSL/TLS protocol (SSL2, SSL3, TLS1, or ALL)\n");
 #endif
     exit(EINVAL);
 }
@@ -2202,7 +2206,7 @@ int main(int argc, const char * const argv[])
 #endif
 
     apr_getopt_init(&opt, cntxt, argc, argv);
-    while ((status = apr_getopt(opt, "n:c:t:b:T:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:G:X:de:Sq"
+    while ((status = apr_getopt(opt, "n:c:t:b:T:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:G:Q:X:de:Sq"
 #ifdef USE_SSL
             "Z:f:"
 #endif
@@ -2231,6 +2235,9 @@ int main(int argc, const char * const argv[])
                 break;
             case 'b':
                 windowsize = atoi(optarg);
+                break;
+            case 'Q':
+                gnuplotflush_threshold = atoi(optarg);
                 break;
             case 'i':
                 if (posting == 1)

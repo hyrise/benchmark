@@ -10,17 +10,190 @@
     <h1 style="margin-left: 200px; padding-top: 30px; color: rgb(89, 96, 101); font-family: Verdana, sans-serif; margin-bottom: 50px">HYRISE Live Throughput Visualizer</h1>
     <div id="graphs"></div>
 
+    <div id="delayContainer" style="width: 900px; height: 300px; margin: 0 auto"></div>
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
 
+
     <script type="text/javascript" src="http://code.highcharts.com/stock/highstock.js"></script>
 
+    <script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/highcharts-more.js"></script>
+    <script type="text/javascript" src="http://code.highcharts.com/modules/exporting.js"></script>   
+
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.2.4/mootools-yui-compressed.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 
     <script type="text/javascript">
     var SCALE = 10; // 10 points per second - needs to correlate with ab
 
     $(document).ready(function () {
+
+
+        $('#delayContainer').highcharts({
+
+        chart: {
+            type: 'gauge',
+            plotBorderWidth: 0,
+            plotBackgroundColor: {
+                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                stops: [
+                    [0, '#FFFFFF'],
+                    [0.3, '#FFFFFF'],
+                    [1, '#FFFFFF']
+                ]
+            },
+            plotBackgroundImage: null,
+            height: 200
+        },
+
+        title: {
+            text: 'Replication Delay'
+        },
+
+        pane: [{
+            startAngle: -45,
+            endAngle: 45,
+            background: null,
+            center: ['15%', '145%'],
+            size: 300
+        }, {
+            startAngle: -45,
+            endAngle: 45,
+            background: null,
+            center: ['50%', '145%'],
+            size: 300
+        }, {
+            startAngle: -45,
+            endAngle: 45,
+            background: null,
+            center: ['85%', '145%'],
+            size: 300
+        }],
+
+        yAxis: [{
+            min: 0,
+            max: 1200,
+            minorTickPosition: 'outside',
+            tickPosition: 'outside',
+            labels: {
+                rotation: 'auto',
+                distance: 20
+            },
+            plotBands: [{
+                from: 1000,
+                to: 1200,
+                color: '#C02316',
+                innerRadius: '100%',
+                outerRadius: '105%'
+            }],
+            pane: 0,
+            title: {
+                text: 'Replica A<br/><span style="font-size:8px">Milliseconds</span>',
+                y: -40
+            }
+        }, {
+            min: 0,
+            max: 1200,
+            minorTickPosition: 'outside',
+            tickPosition: 'outside',
+            labels: {
+                rotation: 'auto',
+                distance: 20
+            },
+            plotBands: [{
+                from: 1000,
+                to: 1200,
+                color: '#C02316',
+                innerRadius: '100%',
+                outerRadius: '105%'
+            }],
+            pane: 1,
+            title: {
+                text: 'Replica B<br/><span style="font-size:8px">Milliseconds</span>',
+                y: -40
+            }
+        }, {
+            min: 0,
+            max: 1200,
+            minorTickPosition: 'outside',
+            tickPosition: 'outside',
+            labels: {
+                rotation: 'auto',
+                distance: 20
+            },
+            plotBands: [{
+                from: 1000,
+                to: 1200,
+                color: '#C02316',
+                innerRadius: '100%',
+                outerRadius: '105%'
+            }],
+            pane: 2,
+            title: {
+                text: 'Replica C<br/><span style="font-size:8px">Milliseconds</span>',
+                y: -40
+            }
+        }],
+
+        plotOptions: {
+            gauge: {
+                dataLabels: {
+                    enabled: false
+                },
+                dial: {
+                    radius: '100%'
+                }
+            }
+        },
+
+
+        series: [{
+            data: [0],
+            yAxis: 0
+        }, {
+            data: [0],
+            yAxis: 1
+        }, {
+            data: [0],
+            yAxis: 2
+        }]
+
+    },
+
+        // Let the music play
+        function (chart) {
+            setInterval(function () {
+                var r1 = chart.series[0].points[0],
+                    r2 = chart.series[1].points[0],
+                    r3 = chart.series[2].points[0];
+                
+                new Request({
+                    method:"GET",
+                    url:"delay",
+                    onSuccess:function(response){
+                        json = $.parseJSON(response);
+                        if(!json) return
+                        $.each(json, function(e, i) {
+                            r = chart.series[e].points[0];
+                            r.update(i, false);
+                        })
+                        chart.redraw()
+                    }
+                }).send(); //Don't forget to send our request! 
+            }, 1000);
+        });
+
+
+
         $.getJSON('/builds', function(data) {
             $.each(data, function(i, build) {
                 container = $("<div>").attr("style", "min-width: 310px; height: 400px; margin: 0 auto")
@@ -43,7 +216,8 @@
                                 setInterval(function () {
                                     new Request({
                                         method:"GET",
-                                        url: build+".json",
+                                        url: build,
+                                        // url:"nvm",
                                         onSuccess:function(response){
                                             json = $.parseJSON(response);
                                             if(!json) return
@@ -125,8 +299,92 @@
 
             })
         });
+
+
     });
     </script>
+
+
+<button type="button" id="loading-example-btn" data-starting-text="Starting Server..." data-started-text="Server Running" data-stopping-text="Stopping Server..." class="btn btn-primary">
+  Start Server
+</button>
+<script>
+  $('#loading-example-btn').click(function () {
+    var btn = $(this)
+
+    btn.button('starting')
+    new Request({
+        method:"GET",
+        url:"startserver",
+        onSuccess:function(response){
+            btn.button('reset');
+            btn.button('Stop')
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+
+<div width="800px" height="300px">
+    <b>Logfile Master:</b>
+    <div id="log1"></div>
+</div>
+<div width="800px" height="300px">
+    <b>Logfile Replica1:</b>
+    <div id="log2"></div>
+</div>
+<div width="800px" height="300px">
+    <b>Logfile Replica2:</b>
+    <div id="log3"></div>
+</div>
+<div width="800px" height="300px">
+    <b>Logfile Replica3:</b>
+    <div id="log4"></div>
+</div>
+
+<button type="button" id="log-refresh-btn" data-loading-text="loading log..." class="btn btn-primary">Refresh Log</button>
+
+<script>
+  $('#log-refresh-btn').click(function () {
+    var btn = $(this)
+    
+    btn.button('loading')
+    
+    new Request({
+        method:"GET",
+        url:"log1",
+        onSuccess:function(response){
+            // btn.button('reset');
+            $('#log1').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+    new Request({
+        method:"GET",
+        url:"log2",
+        onSuccess:function(response){
+            // btn.button('reset');
+            $('#log2').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+    new Request({
+        method:"GET",
+        url:"log3",
+        onSuccess:function(response){
+            // btn.button('reset');
+            $('#log3').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+    new Request({
+        method:"GET",
+        url:"log4",
+        onSuccess:function(response){
+            btn.button('reset');
+            $('#log4').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+
+
 
 </body></html>
 

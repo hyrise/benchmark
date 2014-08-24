@@ -9,84 +9,129 @@ import math
 import numpy as np
 from functools import partial
 import os.path, time
+import cherrypy
+import random
+from subprocess import call
 
-
+#dict of tuples of result file and event file.
+#event file is None if no events should be displayed
 AB_LOGS = {
-    'NVRAM': '../results/recovery_demo/{}/NVRAM/',
-    # 'Logger': '../results/recovery_demo/{}/Logger/',
+    # 'NVRAM': ('../results/recovery_demo/{}/NVRAM/ab.log', None),
+    # 'Logger': ('../results/recovery_demo/{}/Logger/ab.log', None),
+    'master_writes': ('./ab_writes.log', "./events_master.json"),
 }
 
-class MyRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/':
-            self.path = '/index.html'
-            return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
-        if self.path == '/builds':
-            self.send_response(200)
-            self.send_header("Content-type:", "application/json")
-            self.end_headers()
-            json.dump(AB_LOGS.keys(), self.wfile)
-            return
+def readlog(logfilename):
+    try:
+        with open(logfilename) as f:
+            content = f.readlines()
+            return content
+    except:
+        return ""
 
-        if self.path.endswith('.json'):
-            start_time = time.time()
+def create_json_from_ab(logfilename):
+    start_time = time.time()
+    jsonstring = ""
+    fname = AB_LOGS[logfilename][0]
 
-            self.send_response(200)
-            self.send_header("Content-type:", "application/json")
-            self.end_headers()
+    if not os.path.isfile(fname):
+        print "ab log not found " + fname
+        return
 
-            resultdir = AB_LOGS[self.path.replace('/', '').replace('.json', '')]
-            fname = resultdir + "ab.log"
-            if not os.path.isfile(fname):
-                print "ab log not found " + fname
-                return
+    df = pd.read_csv(fname, sep="\t", engine='c', usecols=['seconds', 'txname'], dtype={
+        'seconds': np.uint64,
+        'txname': object,
+    })
 
-            df = pd.read_csv(fname, sep="\t", engine='c', usecols=['seconds', 'txname'], dtype={
-                'seconds': np.uint64,
-                'txname': object,
-            })
-            df = df[df.txname == "TPCC-NewOrder"]
+    df = df[df.txname == "TPCC-NewOrder"]
+    
+    if math.isnan(df.seconds.max()):
+        print "no valid data found " + fname
+        return
 
-            if math.isnan(df.seconds.max()):
-                print "no valid data found " + fname
-                return
+    start_timestamp = int(df.seconds.min())
+    df.seconds -= start_timestamp
+    df.seconds /= 1e6
+    df.seconds = np.round(df.seconds, 1)
+    
+    df = df.txname.groupby(df.seconds).agg('count')
+    df = df.head(len(df.index)-10)
+    df = df * 10 # normalize to seconds
 
-            start_timestamp = int(df.seconds.min())
-            df.seconds -= start_timestamp
-            df.seconds /= 1e6
-            df.seconds = np.round(df.seconds, 1)
-            df = df.txname.groupby(df.seconds).agg('count')
+    jsonstring += '{"data":'
+    jsonstring += df.to_json()
+    jsonstring += ', "events":'
 
-            df = df.head(len(df.index)-10)
+    eventfile = AB_LOGS[logfilename][1]
+    if os.path.isfile(eventfile):
+        with open(eventfile) as f:
+            events = json.load(f)
+        events_normalized = {}
+        for k, v in events.iteritems():
+            print int(k.replace('.',''))
+            print start_timestamp
+            events_normalized[(int(k.replace('.',''))-start_timestamp)/1e6] = v
+        jsonstring += json.dumps(events_normalized)
+    else:
+        jsonstring += '[]'
+    jsonstring += '}'               
 
-            self.wfile.write('{"data":')                
-            df.to_json(path_or_buf=self.wfile) # leave out last rows because they might be incomplete
+    print str(time.time() - start_time) + " elapsed"
+    return jsonstring
 
-            self.wfile.write(', "events":')                
-            eventfile = resultdir + "/events.json"
-            if os.path.isfile(eventfile):
-                with open(eventfile) as f:
-                    events = json.load(f)
-                events_normalized = {}
-                for k, v in events.iteritems():
-                    print int(k.replace('.',''))
-                    print start_timestamp
-                    events_normalized[(int(k.replace('.',''))-start_timestamp)/1e6] = v
-                self.wfile.write(json.dumps(events_normalized))
-            else:
-                self.wfile.write('[]')                
-            self.wfile.write('}')                
+class MyServerHandler(object):
+    @cherrypy.expose
+    def index(self):
+        with open("index.html") as f:
+            content = f.readlines()
+            return content
+    
+    @cherrypy.expose
+    def log1(self):
+        return readlog("log1.txt")
+        
+    @cherrypy.expose
+    def log2(self):
+        return readlog("log2.txt")
+    
+    @cherrypy.expose
+    def log3(self):
+        return readlog("log3.txt")
+    
+    @cherrypy.expose
+    def log4(self):
+        return readlog("log4.txt")
 
-            print str(time.time() - start_time) + " elapsed"
-            return
-        print "route not found " + self.path
+    @cherrypy.expose
+    def delay(self):
+        return """{"0":%d, "1":%d, "2":%d}""" % (random.random()*100, random.random()*100, random.random()*100)
 
-class ThreadingServer(SocketServer.ThreadingMixIn,
-                   BaseHTTPServer.HTTPServer):
-    pass
+    @cherrypy.expose
+    def master_writes(self):
+        return create_json_from_ab("master_writes")
 
-Handler = MyRequestHandler
-ThreadingServer.allow_reuse_address = True
-server = ThreadingServer(('0.0.0.0', 8080), Handler)
+    @cherrypy.expose
+    def NVRAM(self):
+        return create_json_from_ab("NVRAM")
 
-server.serve_forever()
+    @cherrypy.expose
+    def Logger(self):
+        return create_json_from_ab("Logger")
+
+    @cherrypy.expose
+    def builds(self):
+        return json.dumps(AB_LOGS.keys())
+
+    @cherrypy.expose
+    def startserver(self):
+        call(["bash", "start.sh"])
+        return ""
+  
+if __name__ == '__main__':
+    random.seed()
+    cherrypy.config.update({
+        'server.socket_host': '192.168.30.177',
+        'server.socket_port': 8080,
+    })
+    cherrypy.quickstart(MyServerHandler())
+
