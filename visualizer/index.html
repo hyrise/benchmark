@@ -10,16 +10,31 @@
     <h1 style="margin-left: 200px; padding-top: 30px; color: rgb(89, 96, 101); font-family: Verdana, sans-serif; margin-bottom: 50px">HYRISE Live Throughput Visualizer</h1>
     <div id="graphs"></div>
 
-    <div id="delayContainer" style="width: 900px; height: 300px; margin: 0 auto"></div>
+    <div style=" overflow: auto; width:1650px; margin: 0 auto ">
+        <div id="delayContainer" style="border:1px;width: 900px; height: 300px; float:left; margin: 50px"></div>
+        <div id="heatMapContainer" style="width: 500px; height: 250px; float:left; margin: 50px"></div>
+    </div>
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
 
+    
+    
+    <!-- // <script type="text/javascript" src="http://code.highcharts.com/stock/highstock.js"></script> -->
 
-    <script type="text/javascript" src="http://code.highcharts.com/stock/highstock.js"></script>
+    <script src="http://github.highcharts.com/highcharts.js"></script>
+    <script src="http://github.highcharts.com/highcharts-more.js"></script>
+    <script src="http://github.highcharts.com/modules/heatmap.js"></script>
+    <script src="http://github.highcharts.com/modules/exporting.js"></script>
 
-    <script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
-    <script src="http://code.highcharts.com/highcharts-more.js"></script>
-    <script type="text/javascript" src="http://code.highcharts.com/modules/exporting.js"></script>   
+    <!-- // <script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script> -->
+    <!-- // <script src="http://code.highcharts.com/highcharts-more.js"></script> -->
+    <!-- // <script src="http://code.highcharts.com/modules/heatmap.js"></script> -->
+    <!-- // <script type="text/javascript" src="http://code.highcharts.com/modules/exporting.js"></script>        -->
+
+    
+    <!-- // <script src="http://code.highcharts.com/modules/exporting.js"></script> -->
+
+    <!-- // <script type="text/javascript" src="http://github.highcharts.com/highstock.src.js"></script> -->
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.2.4/mootools-yui-compressed.js"></script>
 
@@ -36,6 +51,89 @@
     var SCALE = 10; // 10 points per second - needs to correlate with ab
 
     $(document).ready(function () {
+
+
+        $('#heatMapContainer').highcharts({
+
+            chart: {
+                type: 'heatmap',
+                marginTop: 40,
+                marginBottom: 40,
+                events: {
+                    load: function () {
+                        // set up the updating of the chart each second
+                        var series = this.series[0], events = this.series[1];
+                        var inserted_data = [], inserted_events = [];
+                        var chart = this;
+                        var last_size = 0;
+                        setInterval(function () {
+                            new Request({
+                                method:"GET",
+                                url: "load",
+                                onSuccess:function(response){
+                                    json = $.parseJSON(response);
+                                    if(!json) return
+                                    chart.series[0].setData([[0, 0, json[0][0]], [0, 1, json[0][1]], [1, 0, json[1][0]], [1, 1, json[1][1]], [2, 0, json[2][0]], [2, 1, json[2][1]], [3, 0, json[3][0]], [3, 1, json[3][1]]]);
+                                }
+                            }).send(); //Don't forget to send our request!    
+                        }, 500);
+                    }
+                }
+            },
+
+
+            title: {
+                text: 'Server Load'
+            },
+
+            xAxis: {
+                categories: ['Master', 'Replica A', 'Replica B', 'Replica C']
+            },
+
+            yAxis: {
+                categories: ['Core 1', 'Core 2'],
+                title: null
+            },
+
+            colorAxis: {
+                min: 0,
+                max: 100,
+                minColor: '#FFFFFF',
+                maxColor: '#FF0000',
+            },
+
+            legend: {
+                align: 'right',
+                layout: 'vertical',
+                margin: 0,
+                verticalAlign: 'top',
+                y: 50,
+                symbolHeight: 100
+            },
+
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.xAxis.categories[this.point.x] + '</b> sold <br><b>' +
+                        this.point.value + '</b> items on <br><b>' + this.series.yAxis.categories[this.point.y] + '</b>';
+                }
+            },
+
+            series: [{
+                name: 'Load',
+                borderColor: 'silver',
+                borderWidth: 0.4,
+                data: [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0], [3, 0, 0], [3, 1, 0]],
+                dataLabels: {
+                    enabled: true,
+                    color: 'black',
+                    style: {
+                        textShadow: 'none',
+                        HcTextStroke: null
+                    }
+                }
+            }]
+
+    });
 
 
         $('#delayContainer').highcharts({
@@ -180,12 +278,15 @@
                     method:"GET",
                     url:"delay",
                     onSuccess:function(response){
-                        json = $.parseJSON(response);
-                        rows = json.rows
-                        if(!json) return
+                        // json = $.parseJSON(response);
+                        // rows = json.rows
+                        // if(!json) return
 
-                        lcid_replica = rows[0][2];
-                        lcid_master = rows[1][2];
+                        // lcid_replica = rows[0][2];
+                        // lcid_master = rows[1][2];
+
+                        lcid_replica = 120;
+                        lcid_master = 160;
 
                         r = chart.series[0].points[0];
                         r.update(lcid_master-lcid_replica, false);
@@ -213,28 +314,27 @@
 
         $.getJSON('/builds', function(data) {
             $.each(data, function(i, build) {
-                container = $("<div>").attr("style", "min-width: 310px; height: 400px; margin: 0 auto")
+                container = $("<div>").attr("style", "min-width: 310px; height: 350px; margin: 50px")
                 $("#graphs").append(container)
 
 
                 container.highcharts({
                     chart: {
-                        type: 'spline',
+                        type: 'areaspline',
                         animation: false,
                         // animation: Highcharts.svg, // don't animate in old IE
                         marginRight: 10,
                         events: {
                             load: function () {
                                 // set up the updating of the chart each second
-                                var series = this.series[0], events = this.series[1];
-                                var inserted_data = [], inserted_events = [];
+                                var series = this.series[0];//, events = this.series[1];
+                                var inserted_data = [];//, inserted_events = [];
                                 var chart = this;
                                 var last_size = 0;
                                 setInterval(function () {
                                     new Request({
                                         method:"GET",
                                         url: build,
-                                        // url:"nvm",
                                         onSuccess:function(response){
                                             json = $.parseJSON(response);
                                             if(!json) return
@@ -246,18 +346,18 @@
                                                 inserted_data[e] = true;
                                                 series.addPoint([e*SCALE,i-0], false, false, false);
                                             })
-                                            $.each(json.events, function(e, i) {
-                                                if(inserted_events[e]) return;
-                                                inserted_events[e] = true;
-                                                title = i
-                                                if(title == "kill") title = "◼";
-                                                if(title == "restart") title = "▶";
-                                                events.addPoint({x: e*SCALE, title: title}, false, false, false);
-                                            })
+                                            // $.each(json.events, function(e, i) {
+                                            //     if(inserted_events[e]) return;
+                                            //     inserted_events[e] = true;
+                                            //     title = i
+                                            //     if(title == "kill") title = "◼";
+                                            //     if(title == "restart") title = "▶";
+                                            //     events.addPoint({x: e*SCALE, title: title}, false, false, false);
+                                            // })
                                             chart.redraw()
                                         }
                                     }).send(); //Don't forget to send our request!    
-                                }, 1000);
+                                }, 500);
                             }
                         }
                     },
@@ -267,20 +367,21 @@
                     xAxis: {
                         type: 'linear',
                         max: 600,
-                        min: 0,
-                        labels: {
-                            formatter: function() {return this.value/SCALE + "s"}
-                        }
+                        min: 0
+                        // ,
+                        // labels: {
+                            // formatter: function() {return this.value/SCALE + "s"}
+                        // }
                     },
                     yAxis: {
                         title: {
                             text: '#Queries per Second'
                         },
-                        plotLines: [{
-                            value: 0,
-                            width: 1,
-                            color: '#808080'
-                        }],
+                        // plotLines: [{
+                        //     value: 0,
+                        //     width: 1,
+                        //     color: '#808080'
+                        // }],
                         min: 0,
                         max: 4000
                     },
@@ -290,25 +391,48 @@
                     exporting: {
                         enabled: false
                     },
+                    // plotOptions: {
+                    //     area: {
+                    //         fillColor: {
+                    //             linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1},
+                    //             stops: [
+                    //                 [0, Highcharts.getOptions().colors[0]],
+                    //                 [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                    //             ]
+                    //         },
+                    //         marker: {
+                    //             radius: 2
+                    //         },
+                    //         lineWidth: 1,
+                    //         states: {
+                    //             hover: {
+                    //                 lineWidth: 1
+                    //             }
+                    //         },
+                    //         threshold: null
+                    //     }
+                    // },
                     series: [{
                         id: 'data',
                         name: build,
                         data: [],
                         allowPointSelect: false,
-                    }, {
-                        type : 'flags',
-                        data : [],
-                        onSeries : 'data',  // Id of which series it should be placed on. If not defined 
-                                        // the flag series will be put on the X axis
-                        shape : 'flag'  // Defines the shape of the flags.
-                    }],
-                    plotOptions: {
-                        spline: {
-                            marker: {
-                                enabled: false
-                            },
                         }
-                    }
+                        // , {
+                        //     type : 'flags',
+                        //     data : [],
+                        //     onSeries : 'data',  // Id of which series it should be placed on. If not defined 
+                        //                     // the flag series will be put on the X axis
+                        //     shape : 'flag'  // Defines the shape of the flags.
+                        // }
+                        ],
+                    // plotOptions: {
+                    //     spline: {
+                    //         marker: {
+                    //             enabled: false
+                    //         },
+                    //     }
+                    // }
 
                 });
 
@@ -321,7 +445,7 @@
     });
     </script>
 
-
+<!-- 
 <button type="button" id="loading-example-btn" data-starting-text="Starting Server..." data-started-text="Server Running" data-stopping-text="Stopping Server..." class="btn btn-primary">
   Start Server
 </button>
@@ -400,7 +524,7 @@
     }).send(); //Don't forget to send our request!
   });
 </script>
-
+ -->
 
 
 </body></html>

@@ -13,14 +13,15 @@ import cherrypy
 import random
 from subprocess import call
 import requests
+import psutil
 
 #dict of tuples of result file and event file.
 #event file is None if no events should be displayed
 AB_LOGS = {
     # 'NVRAM': ('../results/recovery_demo/{}/NVRAM/ab.log', None),
     # 'Logger': ('../results/recovery_demo/{}/Logger/ab.log', None),
-    'master_writes': ('./ab_writes.log', "./events_master.json"),
-    'reads': ('./ab_reads.log', "./events_reads.json")
+    'MasterWrites': ('./ab_writes.log', "./events_master.json"),
+    'Reads': ('./ab_reads.log', "./events_reads.json")
 }
 
 def readlog(logfilename):
@@ -109,17 +110,26 @@ class MyServerHandler(object):
 
     @cherrypy.expose
     def delay(self):
-        payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
-        r = requests.post("http://localhost:5000/query/", data=payload)
-        return r.text
+        # payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
+        # r = requests.post("http://localhost:5000/query/", data=payload)
+        # return r.text
+        return ""
 
     @cherrypy.expose
-    def master_writes(self):
-        return create_json_from_ab("master_writes")
+    def load(self):
+        # payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
+        # r = requests.post("http://localhost:5000/query/", data=payload)
+        # return r.text
+        l = psutil.cpu_percent(interval=0, percpu=True)
+        return """{"0": [%d, %d], "1": [%d, %d], "2": [%d, %d], "3": [%d, %d] }""" % (l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], )
 
     @cherrypy.expose
-    def reads(self):
-        return create_json_from_ab("reads")
+    def MasterWrites(self):
+        return create_json_from_ab("MasterWrites")
+
+    @cherrypy.expose
+    def Reads(self):
+        return create_json_from_ab("Reads")
 
     @cherrypy.expose
     def NVRAM(self):

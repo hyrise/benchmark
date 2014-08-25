@@ -14,8 +14,9 @@ rm ab_reads.log
 rm ab_writes.log
 
 cwd=$(pwd)
-cd ~/hyrise/
-BINARY=./build/hyrise-server_debug
+cd ~/hyrise
+
+BINARY=./build/hyrise-server_release
 DISPATCHER=~/dispatcher/dispatcher
 DISPATCHPORT=6667
 SETUPQUERY=$cwd/insert_test.json
@@ -26,11 +27,11 @@ echo "Binary file is $BINARY"
 pwd
 
 # start master
-echo "Starting master..."
-($BINARY --persistencyDirectory ~ --threads 1 > ~/benchmark/visualizer/log1.txt)&
-master_pid=$!
-sleep 1
-checkprocess $master_pid
+#echo "Starting master..."
+#($BINARY --persistencyDirectory ~ --threads 1 --corecount 1 > ~/benchmark/visualizer/log1.txt)&
+#master_pid=$!
+#sleep 1
+#checkprocess $master_pid
 
 # create table on master
 echo "Executing $SETUPQUERY @ Master..."
@@ -38,15 +39,15 @@ curl -X POST --data-urlencode "query@$SETUPQUERY" http://localhost:5000/jsonQuer
 
 # start replica 1-3
 echo "Starting replica 1..."
-($BINARY --port 5001 --persistencyDirectory ~ -n 1 --threads 1 > ~/benchmark/visualizer/log2.txt)&
-r1_pid=$!
+#($BINARY --port 5001 --persistencyDirectory ~ -n 1 --threads 1 --corecount 1 > ~/benchmark/visualizer/log2.txt)&
+#r1_pid=$!
 sleep 1
-checkprocess $r1_pid
+#checkprocess $r1_pid
 
 echo "Executing $SETUPQUERY @ R1..."
 curl -X POST --data-urlencode "query@$SETUPQUERY" http://localhost:5001/jsonQuery
 
-
+#exit 1
 echo "starting dispatcher on port $DISPATCHPORT..."
 ($DISPATCHER $DISPATCHPORT)&
 d_pid=$!
