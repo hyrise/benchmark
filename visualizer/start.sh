@@ -27,7 +27,7 @@ pwd
 
 # start master
 echo "Starting master..."
-($BINARY --persistencyDirectory ~ --threads 1 > ~/benchmark/visualizer/log1.txt)&
+($BINARY --persistencyDirectory ~ -n 0 --threads 1 > ~/benchmark/visualizer/log1.txt)&
 master_pid=$!
 sleep 1
 checkprocess $master_pid
