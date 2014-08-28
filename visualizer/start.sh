@@ -27,11 +27,19 @@ echo "Binary file is $BINARY"
 pwd
 
 # start master
+<<<<<<< HEAD
 #echo "Starting master..."
 #($BINARY --persistencyDirectory ~ --threads 1 --corecount 1 > ~/benchmark/visualizer/log1.txt)&
 #master_pid=$!
 #sleep 1
 #checkprocess $master_pid
+=======
+echo "Starting master..."
+($BINARY --persistencyDirectory ~ -n 0 --threads 1 > ~/benchmark/visualizer/log1.txt)&
+master_pid=$!
+sleep 1
+checkprocess $master_pid
+>>>>>>> 2ed12ab4eef9a35d90684406ae84cb7614ea2e12
 
 # create table on master
 echo "Executing $SETUPQUERY @ Master..."
