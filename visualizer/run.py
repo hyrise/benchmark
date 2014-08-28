@@ -38,7 +38,7 @@ def create_json_from_ab(logfilename):
     fname = AB_LOGS[logfilename][0]
 
     if not os.path.isfile(fname):
-        print "ab log not found " + fname
+        # print "ab log not found " + fname
         return
 
     df = pd.read_csv(fname, sep="\t", engine='c', usecols=['seconds', 'status'], dtype={
@@ -47,10 +47,12 @@ def create_json_from_ab(logfilename):
     })
 
     df = df[df.status == 200]
-    df = df[df.seconds > 1008914214395976] # filter out the crap
-
+    if df.seconds.max() > 1008914214395976:
+        df = df[df.seconds > 1008914214395976] # filter out the crap
+    
     if math.isnan(df.seconds.max()):
         print "no valid data found " + fname
+        print "max seconds: ", df.seconds.max()
         return
 
     start_timestamp = int(df.seconds.min())
@@ -82,7 +84,7 @@ def create_json_from_ab(logfilename):
         jsonstring += '[]'
     jsonstring += '}'               
 
-    print str(time.time() - start_time) + " elapsed"
+    # print str(time.time() - start_time) + " elapsed"
     return jsonstring
 
 class MyServerHandler(object):
@@ -110,16 +112,12 @@ class MyServerHandler(object):
 
     @cherrypy.expose
     def delay(self):
-        # payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
-        # r = requests.post("http://localhost:5000/query/", data=payload)
-        # return r.text
-        return ""
+        payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
+        r = requests.post("http://localhost:5000/query/", data=payload)
+        return r.text
 
     @cherrypy.expose
     def load(self):
-        # payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
-        # r = requests.post("http://localhost:5000/query/", data=payload)
-        # return r.text
         l = psutil.cpu_percent(interval=0, percpu=True)
         return """{"0": [%d, %d], "1": [%d, %d], "2": [%d, %d], "3": [%d, %d] }""" % (l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], )
 
@@ -147,6 +145,30 @@ class MyServerHandler(object):
     def startserver(self):
         call(["bash", "start.sh"])
         return ""
+
+    @cherrypy.expose
+    def killmaster(self):
+        call(["bash", "killmaster.sh"])
+        return ""
+
+    @cherrypy.expose
+    def useonereplica(self):
+        payload = {"data":0}
+        r = requests.post("http://localhost:6666/number_of_slaves_1", data=payload)
+        return r.text
+
+    @cherrypy.expose
+    def usetworeplica(self):
+        payload = {"data":0}
+        r = requests.post("http://localhost:6666/number_of_slaves_2", data=payload)
+        return r.text
+
+    @cherrypy.expose
+    def usethreereplica(self):
+        payload = {"data":0}
+        r = requests.post("http://localhost:6666/number_of_slaves_3", data=payload)
+        return r.text
+
   
 if __name__ == '__main__':
 
@@ -155,4 +177,10 @@ if __name__ == '__main__':
         'server.socket_host': '192.168.30.177',
         'server.socket_port': 8080,
     })
+    cherrypy.config.update({ "server.logToScreen" : False })
+    cherrypy.config.update({'log.screen': False})
+    cherrypy.config.update({ "environment": "embedded" })
+    
     cherrypy.quickstart(MyServerHandler())
+
+    # print create_json_from_ab("Reads")

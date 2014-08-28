@@ -15,6 +15,7 @@ def write_request_to_file(_queryfile, query):
 	_queryfile.write("\r\n\r\n")
 
 filename = "/home/David.Schwalb/tpcc/queries_gen/revenue_reads_1M.txt"
+filename = "/home/David.Schwalb/tpcc/queries_gen/noop_1M.txt"
 _queryfile = open(filename, 'w+')
 
 count = 1000000
@@ -23,27 +24,51 @@ for i in range(count):
 		print i/(count/100), "percent"
 
 	query = """{"operators": {
-        "retrieve_revenue": {
-            "type" : "GetTable",
-            "name" : "revenue"
-        },
+				"retrieve_revenue": {
+						"type" : "GetTable",
+						"name" : "revenue"
+				},
 	"1": {
-            "type": "HashBuild",
-            "fields": ["year"],
-	     "key": "groupby"
-        },
-        "2": {
-            "type": "GroupByScan",
-            "fields": ["year"],
-            "functions": [
+						"type": "HashBuild",
+						"fields": ["year"],
+			 "key": "groupby"
+				},
+				"2": {
+						"type": "GroupByScan",
+						"fields": ["year"],
+						"functions": [
 		{"type": "COUNT", "field": "year", "distinct": false, "as": "count"}
-             ]
-        }
-     },
-    "edges" : [
-        ["retrieve_revenue", "1"], ["retrieve_revenue", "2"], ["1", "2"]
-    ]
+						 ]
+				}
+		 },
+		"edges" : [
+				["retrieve_revenue", "1"], ["retrieve_revenue", "2"], ["1", "2"]
+		]
 }"""
+
+
+	query = """{"operators": {
+				"retrieve_revenue": {
+						"type" : "GetTable",
+						"name" : "revenue"
+				},
+	"1": {
+						"type": "NoOp"
+				},
+
+		"query" : {
+      "type" : "SimpleTableScan",
+      "ofDelta" : true,
+      "predicates" : [
+        {"type" : "EQ_V", "in" : 0, "f" : 1, "value" : 2}        
+      ]
+    }
+		 },
+		"edges" : [
+				["retrieve_revenue", "query"]
+		]
+}"""
+
 	write_request_to_file(_queryfile, query)
 
 	# postdata = postdata.replace("\n", "")

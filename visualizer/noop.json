@@ -1,0 +1,14 @@
+{
+    "operators": {
+        "retrieve_revenue": {
+            "type" : "GetTable",
+            "name" : "revenue"
+        },
+	"1": {
+            "type": "NoOp"
+        }
+    },
+    "edges" : [
+        ["retrieve_revenue", "1"]
+    ]
+}

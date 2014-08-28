@@ -1,0 +1,622 @@
+<!DOCTYPE HTML><html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Highcharts Example</title>
+
+</head>
+
+<body>
+    <img src="http://hpi.de/fileadmin/templates/img/hpi_logo_srgb_wb_sl1_web80.png" style="float: left" />
+    <h1 style="margin-left: 200px; padding-top: 30px; color: rgb(89, 96, 101); font-family: Verdana, sans-serif; margin-bottom: 50px">HYRISE Live Throughput Visualizer</h1>
+    <div id="graphs"></div>
+
+    <div style=" overflow: auto; width:1500px; margin: 0 auto ">
+        <div id="delayContainer" style="border:1px;width: 500px; height: 300px; float:left; margin: 50px"></div>
+        <div id="heatMapContainer" style="width: 400px; height: 200px; float:left; margin: 50px"></div>
+        <div style=" width:100px; float:left; margin: 20px auto">
+            <button type="button" id="btn-one-replica" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto; margin-top:30px">
+              Use 1 Replica
+            </button>
+            <button type="button" id="btn-two-replica" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto">
+              Use 2 Replica
+            </button>
+            <button type="button" id="btn-three-replica" data-loading-text="Loading..." class="btn btn-primary" style="margin:5px auto">
+              Use 3 Replica
+            </button>
+            <button type="button" id="btn-kill-master" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto">
+              Kill Master
+            </button>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+
+    
+    
+    <!-- // <script type="text/javascript" src="http://code.highcharts.com/stock/highstock.js"></script> -->
+
+    <script src="http://github.highcharts.com/highcharts.js"></script>
+    <script src="http://github.highcharts.com/highcharts-more.js"></script>
+    <script src="http://github.highcharts.com/modules/heatmap.js"></script>
+    <script src="http://github.highcharts.com/modules/exporting.js"></script>
+
+    <!-- // <script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script> -->
+    <!-- // <script src="http://code.highcharts.com/highcharts-more.js"></script> -->
+    <!-- // <script src="http://code.highcharts.com/modules/heatmap.js"></script> -->
+    <!-- // <script type="text/javascript" src="http://code.highcharts.com/modules/exporting.js"></script>        -->
+
+    
+    <!-- // <script src="http://code.highcharts.com/modules/exporting.js"></script> -->
+
+    <!-- // <script type="text/javascript" src="http://github.highcharts.com/highstock.src.js"></script> -->
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.2.4/mootools-yui-compressed.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+    var SCALE = 10; // 10 points per second - needs to correlate with ab
+
+    $(document).ready(function () {
+
+        $('#heatMapContainer').highcharts({
+
+            chart: {
+                type: 'heatmap',
+                marginTop: 40,
+                marginBottom: 40,
+                events: {
+                    load: function () {
+                        // set up the updating of the chart each second
+                        var series = this.series[0], events = this.series[1];
+                        var inserted_data = [], inserted_events = [];
+                        var chart = this;
+                        var last_size = 0;
+                        setInterval(function () {
+                            new Request({
+                                method:"GET",
+                                url: "load",
+                                onSuccess:function(response){
+                                    json = $.parseJSON(response);
+                                    if(!json) return
+                                    chart.series[0].setData([[0, 0, json[0][0]], [0, 1, json[0][1]], [1, 0, json[1][0]], [1, 1, json[1][1]], [2, 0, json[2][0]], [2, 1, json[2][1]], [3, 0, json[3][0]], [3, 1, json[3][1]]]);
+                                }
+                            }).send(); //Don't forget to send our request!    
+                        }, 1000);
+                    }
+                }
+            },
+
+
+            title: {
+                text: 'Server Load'
+            },
+
+            xAxis: {
+                categories: ['Core 1', 'Core 2', 'Core 3', 'Core 4']
+            },
+
+            yAxis: {
+                categories: ['CPU1', 'CPU2'],
+                title: null
+            },
+
+            colorAxis: {
+                min: 0,
+                max: 100,
+                minColor: '#FFFFFF',
+                maxColor: '#FF0000',
+            },
+
+            legend: {
+                align: 'right',
+                layout: 'vertical',
+                margin: 0,
+                verticalAlign: 'top',
+                y: 50,
+                symbolHeight: 100
+            },
+
+            tooltip: {
+                formatter: function () {
+                    return this.point.value + '% load on <b>' + this.series.yAxis.categories[this.point.y] + '</b> of Node <b>' + this.series.xAxis.categories[this.point.x] + '</b>';
+                }
+            },
+
+            series: [{
+                name: 'Load',
+                borderColor: 'silver',
+                borderWidth: 0.4,
+                data: [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0], [3, 0, 0], [3, 1, 0]],
+                dataLabels: {
+                    enabled: true,
+                    color: 'black',
+                    style: {
+                        textShadow: 'none',
+                        HcTextStroke: null
+                    }
+                }
+            }]
+
+    });
+
+
+        $('#delayContainer').highcharts({
+
+        chart: {
+            type: 'gauge',
+            plotBorderWidth: 0,
+            plotBackgroundColor: {
+                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                stops: [
+                    [0, '#FFFFFF'],
+                    [0.3, '#FFFFFF'],
+                    [1, '#FFFFFF']
+                ]
+            },
+            plotBackgroundImage: null,
+            height: 200
+        },
+
+        title: {
+            text: 'Replication Delay'
+        },
+
+        pane: [{
+            startAngle: -45,
+            endAngle: 45,
+            background: null,
+            center: ['50%', '145%'],
+            size: 350
+        }
+        // , {
+        //     startAngle: -45,
+        //     endAngle: 45,
+        //     background: null,
+        //     center: ['50%', '145%'],
+        //     size: 250
+        // }, {
+        //     startAngle: -45,
+        //     endAngle: 45,
+        //     background: null,
+        //     center: ['85%', '145%'],
+        //     size: 250
+        // }
+        ],
+
+        yAxis: [{
+            min: 0,
+            max: 500,
+            minorTickPosition: 'outside',
+            tickPosition: 'outside',
+            labels: {
+                rotation: 'auto',
+                distance: 20
+            },
+            plotBands: [{
+                from: 400,
+                to: 500,
+                color: '#C02316',
+                innerRadius: '100%',
+                outerRadius: '105%'
+            }],
+            pane: 0,
+            title: {
+                text: 'Replica A<br/><span style="font-size:8px">#TX Behind</span>',
+                y: -40
+            }
+        }
+
+        // , {
+        //     min: 0,
+        //     max: 500,
+        //     minorTickPosition: 'outside',
+        //     tickPosition: 'outside',
+        //     labels: {
+        //         rotation: 'auto',
+        //         distance: 20
+        //     },
+        //     plotBands: [{
+        //         from: 400,
+        //         to: 500,
+        //         color: '#C02316',
+        //         innerRadius: '100%',
+        //         outerRadius: '105%'
+        //     }],
+        //     pane: 1,
+        //     title: {
+        //         text: 'Replica B<br/><span style="font-size:8px">#TX Behind</span>',
+        //         y: -40
+        //     }
+        // }, {
+        //     min: 0,
+        //     max: 500,
+        //     minorTickPosition: 'outside',
+        //     tickPosition: 'outside',
+        //     labels: {
+        //         rotation: 'auto',
+        //         distance: 20
+        //     },
+        //     plotBands: [{
+        //         from: 400,
+        //         to: 500,
+        //         color: '#C02316',
+        //         innerRadius: '100%',
+        //         outerRadius: '105%'
+        //     }],
+        //     pane: 2,
+        //     title: {
+        //         text: 'Replica C<br/><span style="font-size:8px">#TX Behind</span>',
+        //         y: -40
+        //     }
+        // }
+        ],
+
+        plotOptions: {
+            gauge: {
+                dataLabels: {
+                    enabled: false
+                },
+                dial: {
+                    radius: '100%'
+                }
+            }
+        },
+
+
+        series: [{
+            data: [0],
+            yAxis: 0
+        }
+        // , {
+        //     data: [0],
+        //     yAxis: 1
+        // }, {
+        //     data: [0],
+        //     yAxis: 2
+        // }
+        ]
+
+    },
+
+        // Let the music play
+        function (chart) {
+            setInterval(function () {
+                var r1 = chart.series[0].points[0],
+                    //r2 = chart.series[1].points[0],
+                    //r3 = chart.series[2].points[0];
+                
+                new Request({
+                    method:"GET",
+                    url:"delay",
+                    onSuccess:function(response){
+                        json = $.parseJSON(response);
+                        rows = json.rows
+                        if(!json) return
+
+                        lcid_replica = rows[0][2];
+                        lcid_master = rows[1][2];
+                        
+                        r = chart.series[0].points[0];
+                        r.update(lcid_master-lcid_replica, false);
+
+                        //r = chart.series[1].points[0];
+                        //r.update(lcid_master-lcid_replica, false);
+
+                        //r = chart.series[2].points[0];
+                        //r.update(lcid_master-lcid_replica, false);
+    
+                        chart.redraw()
+                    }
+                }).send(); //Don't forget to send our request! 
+            }, 1000);
+        });
+
+
+
+        
+        container = $("<div>").attr("style", "min-width: 310px; height: 300px; margin: 50px")
+        $("#graphs").append(container)
+
+
+            container.highcharts({
+                chart: {
+                    type: 'areaspline',
+                    animation: false,
+                    // animation: Highcharts.svg, // don't animate in old IE
+                    marginRight: 10,
+                    events: {
+                        load: function () {
+                            // set up the updating of the chart each second
+                            var series_write = this.series[1];
+                            var series_read = this.series[0];
+
+                             //, events = this.series[1];
+                            var inserted_data_write = [];
+                            var inserted_data_read = [];
+                            var chart = this;
+                            var last_size_read = 0;
+                            var last_size_write = 0;
+                            setInterval(function () {
+                                new Request({
+                                    method:"GET",
+                                    url: "Reads",
+                                    onSuccess:function(response){
+                                        json = $.parseJSON(response);
+                                        if(!json) return
+                                        var this_size = Object.keys(json).length
+                                        if(this_size < last_size_read) series_read.setData([])
+                                        last_size_read = this_size
+                                        $.each(json.data, function(e, i) {
+                                            if(inserted_data_read[e]) return;
+                                            inserted_data_read[e] = true;
+                                            series_read.addPoint([e*SCALE,i-0], false, false, false);
+                                        })
+
+                                        new Request({
+                                            method:"GET",
+                                            url: "MasterWrites",
+                                            onSuccess:function(response){
+                                                json = $.parseJSON(response);
+                                                if(!json) return
+                                                var this_size = Object.keys(json).length
+                                                if(this_size < last_size_write) series_read.setData([])
+                                                last_size_write = this_size
+                                                $.each(json.data, function(e, i) {
+                                                    if(inserted_data_write[e]) return;
+                                                    inserted_data_write[e] = true;
+                                                    series_write.addPoint([e*SCALE,i-0], false, false, false);
+                                                })
+                                                chart.redraw()
+                                            }
+                                        }).send();
+                                    }
+                                }).send(); //Don't forget to send our request!    
+                            }, 500);
+                        }
+                    }
+                },
+                title: {
+                    text: "Query Throughput"
+                },
+                xAxis: {
+                    type: 'linear',
+                    max: 600,
+                    min: 0
+                    // ,
+                    // labels: {
+                        // formatter: function() {return this.value/SCALE + "s"}
+                    // }
+                },
+                yAxis: {
+                    title: {
+                        text: '#Queries per Second'
+                    },
+                    // plotLines: [{
+                    //     value: 0,
+                    //     width: 1,
+                    //     color: '#808080'
+                    // }],
+                    min: 0,
+                    max: 6000
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    borderWidth: 0
+                },
+                exporting: {
+                    enabled: false
+                },
+                plotOptions: {
+                    areaspline: {
+                        marker: {
+                            enabled: false
+                        }
+                    }
+                },
+                // plotOptions: {
+                //     area: {
+                //         fillColor: {
+                //             linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1},
+                //             stops: [
+                //                 [0, Highcharts.getOptions().colors[0]],
+                //                 [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                //             ]
+                //         },
+                //         marker: {
+                //             radius: 2
+                //         },
+                //         lineWidth: 1,
+                //         states: {
+                //             hover: {
+                //                 lineWidth: 1
+                //             }
+                //         },
+                //         threshold: null
+                //     }
+                // },
+                series: [{
+                    id: 'read',
+                    name: "Read-Only Queries",
+                    data: [],
+                    allowPointSelect: false,
+                    }, {
+                    id: 'write',
+                    name: "Write Queries",
+                    data: [],
+                    allowPointSelect: false,
+                    }
+                    // , {
+                    //     type : 'flags',
+                    //     data : [],
+                    //     onSeries : 'data',  // Id of which series it should be placed on. If not defined 
+                    //                     // the flag series will be put on the X axis
+                    //     shape : 'flag'  // Defines the shape of the flags.
+                    // }
+                    ],
+            });
+
+    });
+    </script>
+
+<!-- 
+<button type="button" id="loading-example-btn" data-starting-text="Starting Server..." data-started-text="Server Running" data-stopping-text="Stopping Server..." class="btn btn-primary">
+  Start Server
+</button>
+<script>
+  $('#loading-example-btn').click(function () {
+    var btn = $(this)
+
+    btn.button('starting')
+    new Request({
+        method:"GET",
+        url:"startserver",
+        onSuccess:function(response){
+            btn.button('reset');
+            btn.button('Stop')
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+
+<div width="800px" height="300px">
+    <b>Logfile Master:</b>
+    <div id="log1"></div>
+</div>
+<div width="800px" height="300px">
+    <b>Logfile Replica1:</b>
+    <div id="log2"></div>
+</div>
+<div width="800px" height="300px">
+    <b>Logfile Replica2:</b>
+    <div id="log3"></div>
+</div>
+<div width="800px" height="300px">
+    <b>Logfile Replica3:</b>
+    <div id="log4"></div>
+</div>
+
+<button type="button" id="log-refresh-btn" data-loading-text="loading log..." class="btn btn-primary">Refresh Log</button>
+
+<script>
+  $('#log-refresh-btn').click(function () {
+    var btn = $(this)
+    
+    btn.button('loading')
+    
+    new Request({
+        method:"GET",
+        url:"log1",
+        onSuccess:function(response){
+            // btn.button('reset');
+            $('#log1').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+    new Request({
+        method:"GET",
+        url:"log2",
+        onSuccess:function(response){
+            // btn.button('reset');
+            $('#log2').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+    new Request({
+        method:"GET",
+        url:"log3",
+        onSuccess:function(response){
+            // btn.button('reset');
+            $('#log3').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+    new Request({
+        method:"GET",
+        url:"log4",
+        onSuccess:function(response){
+            btn.button('reset');
+            $('#log4').text(response);
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+ -->
+
+
+<script>
+  $('#btn-one-replica').click(function () {
+    var btn = $(this)
+
+    btn.button('loading')
+    new Request({
+        method:"GET",
+        url:"useonereplica",
+        onSuccess:function(response){
+            btn.button('reset');
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+
+<script>
+  $('#btn-two-replica').click(function () {
+    var btn = $(this)
+
+    btn.button('loading')
+    new Request({
+        method:"GET",
+        url:"usetworeplica",
+        onSuccess:function(response){
+            btn.button('reset');
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+
+<script>
+  $('#btn-three-replica').click(function () {
+    var btn = $(this)
+
+    btn.button('loading')
+    new Request({
+        method:"GET",
+        url:"usethreereplica",
+        onSuccess:function(response){
+            btn.button('reset');
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+
+<script>
+  $('#btn-kill-master').click(function () {
+    var btn = $(this)
+
+    btn.button('loading')
+    new Request({
+        method:"GET",
+        url:"killmaster",
+        onSuccess:function(response){
+            btn.button('reset');
+        }
+    }).send(); //Don't forget to send our request!
+  });
+</script>
+
+
+</body></html>
+
+
+
+
+
+
+
+
