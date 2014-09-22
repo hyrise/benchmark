@@ -340,7 +340,7 @@
 
 
         
-        container = $("<div>").attr("style", "min-width: 310px; height: 300px; margin: 50px")
+        container = $("<div id=main_graph>").attr("style", "min-width: 310px; height: 300px; margin: 50px")
         $("#graphs").append(container)
 
 
@@ -636,7 +636,15 @@
 
 <script>
   $('#btn-kill-master').click(function () {
-    var btn = $(this)
+    var btn = $(this), 
+        chart = $('#main_graph').highcharts();
+
+console.log(chart.series[0].data.length);
+console.log(chart.series[0].data[chart.series[0].data.length-1]);
+    chart.xAxis[0].addPlotLine( {
+        value: chart.series[0].data[chart.series[0].data.length-1].x,
+        color: 'red',
+        width: 4});
 
     btn.button('loading')
     new Request({
