@@ -1,0 +1,24 @@
+{
+    "operators": {
+        "setup_revenue" : {
+            "type": "TableLoad",
+            "table": "revenue",
+            "filename" : "test/tables/revenue.tbl"
+        },
+        "retrieve_revenue": {
+            "type" : "GetTable",
+            "name" : "revenue"
+        },
+        "commit" : {
+            "type" : "Commit"
+        },
+        "print": {
+            "type" : "Print"
+        }
+    },
+    "edges" : [
+        ["setup_revenue", "retrieve_revenue"],
+        ["retrieve_revenue", "commit"],
+        ["commit", "print"]
+    ]
+}
