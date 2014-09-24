@@ -16,7 +16,7 @@ rm ab_writes.log
 cwd=$(pwd)
 cd ~/hyrise_nvm
 
-BINARY=./build/hyrise-server_release
+BINARY=~/hyrise_nvm/build/hyrise-server_release
 DISPATCHER=~/dispatcher/dispatcher
 DISPATCHPORT=6666
 SETUPQUERY=$cwd/insert_test.json

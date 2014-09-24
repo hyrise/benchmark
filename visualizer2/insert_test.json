@@ -9,6 +9,24 @@
             "type" : "GetTable",
             "name" : "revenue"
         },
+        "setup_revenue2" : {
+            "type": "TableLoad",
+            "table": "revenue_rows",
+            "filename" : "test/tables/revenue.tbl"
+        },
+        "retrieve_revenue2": {
+            "type" : "GetTable",
+            "name" : "revenue_rows"
+        },
+        "setup_revenue3" : {
+            "type": "TableLoad",
+            "table": "revenue_1k",
+            "filename" : "test/tables/revenue_1k.tbl"
+        },
+        "retrieve_revenue3": {
+            "type" : "GetTable",
+            "name" : "revenue_1k"
+        },
         "commit" : {
             "type" : "Commit"
         },
@@ -18,7 +36,11 @@
     },
     "edges" : [
         ["setup_revenue", "retrieve_revenue"],
+        ["setup_revenue2", "retrieve_revenue2"],
+        ["setup_revenue3", "retrieve_revenue3"],
         ["retrieve_revenue", "commit"],
+        ["retrieve_revenue2", "commit"],
+        ["retrieve_revenue3", "commit"],
         ["commit", "print"]
     ]
 }
