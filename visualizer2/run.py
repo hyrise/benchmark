@@ -14,6 +14,7 @@ import random
 from subprocess import call
 import requests
 import psutil
+import commands
 
 #dict of tuples of result file and event file.
 #event file is None if no events should be displayed
@@ -113,13 +114,13 @@ class MyServerHandler(object):
     @cherrypy.expose
     def delay(self):
         payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
-        r = requests.post("http://192.168.30.112:5000/query/", data=payload)
+        r = requests.post("http://localhost:6666/delay", data=payload)
         return r.text
 
     @cherrypy.expose
     def load(self):
         l = psutil.cpu_percent(interval=0, percpu=True)
-        return """{"0": [%d, %d, %d, %d, %d, %d, %d, %d], "1": [%d, %d, %d, %d, %d, %d, %d, %d], "2": [%d, %d, %d, %d, %d, %d, %d, %d], "3": [%d, %d, %d, %d, %d, %d, %d, %d] }""" % (l[16], l[18], l[20], l[22], l[24], l[26], l[28], l[30], l[32], l[34], l[36], l[38], l[40], l[42], l[44], l[46], l[48], l[50], l[52], l[54], l[56], l[58], l[60], l[62], l[64], l[66], l[68], l[70], l[72], l[74], l[76], l[78] )
+        return """{"0": [%d, %d, %d, %d, %d, %d, %d, %d], "1": [%d, %d, %d, %d, %d, %d, %d, %d], "2": [%d, %d, %d, %d, %d, %d, %d, %d], "3": [%d, %d, %d, %d, %d, %d, %d, %d] }""" % (l[0], l[2], l[4], l[6], l[8], l[10], l[12], l[14], l[20], l[22], l[24], l[26], l[28], l[30], l[32], l[34], l[40], l[42], l[44], l[46], l[48], l[50], l[52], l[54], l[60], l[62], l[64], l[66], l[68], l[70], l[72], l[74] )
 
     # @cherrypy.expose
     # def MasterWrites(self):
@@ -163,13 +164,13 @@ class MyServerHandler(object):
         return ""
 
     @cherrypy.expose
-    def readworkload(self):
-        call(["bash", "workload_read.sh"])
+    def startworkload(self, num_write, num_read):
+        call(["bash", "workload_start.sh", num_write, num_read])
         return ""
 
     @cherrypy.expose
-    def writeworkload(self):
-        call(["bash", "workload_write.sh"])
+    def stopworkload(self):
+        call(["bash", "workload_end.sh"])
         return ""
 
     @cherrypy.expose
@@ -189,6 +190,48 @@ class MyServerHandler(object):
         payload = {"data":0}
         r = requests.post("http://localhost:6666/number_of_slaves_3", data=payload)
         return r.text
+
+    @cherrypy.expose
+    def statusInst1(self):
+        if commands.getstatusoutput('ps aux | grep [h]yrise-server_release | grep "5000" | wc -l')[1] == '1':
+            return "Running, Master"
+        else:
+            opensockets = commands.getstatusoutput("netstat | grep 6666 | wc -l")[1]
+            startsh = commands.getstatusoutput("ps aux | grep start.sh | grep -v grep | wc -l")[1]
+            if opensockets != '0' and startsh == '1':
+                return "Waiting " + opensockets + "..."
+            else:
+                return "Stopped"
+
+    @cherrypy.expose
+    def statusInst2(self):
+        if commands.getstatusoutput('ps aux | grep [h]yrise-server_release | grep "5000" | wc -l')[1] == '1' and commands.getstatusoutput('ps aux | grep [h]yrise-server_release | grep "5001" | wc -l')[1] == '1':
+            return "Running"
+        elif commands.getstatusoutput('ps aux | grep [h]yrise-server_release | grep "5000" | wc -l')[1] != '1' and commands.getstatusoutput('ps aux | grep [h]yrise-server_release | grep "5001" | wc -l')[1] == '1': 
+            return "Running, Master"
+        else:
+            return "Stopped"
+
+    @cherrypy.expose
+    def statusInst3(self):
+        if commands.getstatusoutput('ps aux | grep [h]yrise-server_release | grep "5002" | wc -l')[1] == '1':
+            return "Running"
+        else:
+            return "Stopped"
+
+    @cherrypy.expose
+    def statusInst4(self):
+        if commands.getstatusoutput('ps aux | grep [h]yrise-server_release | grep "5003" | wc -l')[1] == '1':
+            return "Running"
+        else:
+            return "Stopped"
+
+    @cherrypy.expose
+    def statusDisp(self):
+        if commands.getstatusoutput('ps aux | grep dispatcher | grep "6666" | grep -v grep | wc -l')[1] == '1':
+            return "Running"
+        else:
+            return "Stopped"
 
   
 if __name__ == '__main__':

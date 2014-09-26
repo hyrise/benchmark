@@ -31,7 +31,7 @@
             "type" : "Commit"
         },
         "print": {
-            "type" : "Print"
+            "type" : "NoOp"
         }
     },
     "edges" : [

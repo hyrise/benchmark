@@ -6,14 +6,16 @@
 </head>
 
 <body>
-    <img src="http://hpi.de/fileadmin/templates/img/hpi_logo_srgb_wb_sl1_web80.png" style="float: left" />
-    <h1 style="margin-left: 200px; padding-top: 30px; color: rgb(89, 96, 101); font-family: Verdana, sans-serif; margin-bottom: 50px">HYRISE Live Throughput Visualizer</h1>
+    <img src="http://hpi.de/fileadmin/templates/img/hpi_logo_srgb_wb_sl1_web80.png" style="float: right; width:100px; margin-right:20px;" />
+    <h3 style="margin-left: 30px; padding-top: 00px; color: rgb(89, 96, 101); margin-bottom: 20px">HYRISE Replication Demo</h3>
     <div id="graphs"></div>
 
-    <div style=" overflow: auto; width:1700px; margin: 0 auto ">
-        <div id="delayContainer" style="border:1px;width: 700px; height: 300px; float:left; margin: 20px"></div>
-        <div id="heatMapContainer" style="width: 400px; height: 200px; float:left; margin: 50px"></div>
-        <div style=" width:150px; float:left; margin: 20px auto">
+    <div style=" overflow: auto; width:100%; margin: auto; margin-left:50px;">
+        <div id="delayContainer" style="border:1px;width: 500px; height: 300px; float:left; margin: 20px"></div>
+        <div id="heatMapContainer" style="width: 350px; height: 200px; float:left; margin:20px; margin-left:40px;  margin-right:40px; "></div>
+      
+      <div style=" width:300px; float:left; margin: auto; margin-top:0px;">
+        <div style=" width:150px; float:left; margin: 20px auto; margin-top:0px;">
             <button type="button" id="btn-one-replica" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto; margin-top:30px">
               Use 1 Replica
             </button>
@@ -27,24 +29,54 @@
               Kill Master
             </button>
         </div>
-	<div style=" width:150px; float:left; margin: 20px auto">
+	   <div style=" width:150px; float:left; margin: 20px auto; margin-top:0px;">
             <button type="button" id="btn-startup" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto; margin-top:30px">
-              Start Instances
+              Start Cluster
             </button>
-            <button type="button" id="btn-read-workload" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto">
-              Start Read Workload
+             <button type="button" id="btn-kill-all" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto">
+              Stop Cluster
             </button>
-            <button type="button" id="btn-write-workload" data-loading-text="Loading..." class="btn btn-primary" style="margin:5px auto">
-              Start Write Workload
+            <button type="button" id="btn-start-workload" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto">
+              Start Workload
             </button>
-            <button type="button" id="btn-kill-all" data-loading-text="Loading..." class="btn btn-primary" style="margin: 5px auto">
-              Kill All Instances
-            </button>
+            <button type="button" id="btn-stop-workload" data-loading-text="Loading..." class="btn btn-primary" style="margin:5px auto">
+              Stop Workload
+            </button><br>
+          
+        </div>
+        <div style="width:280px">
+              <p>
+                #Uers writing: <input type="text" id="amount_write_user" readonly style="border:0; color:#f6931f; font-weight:bold;">
+              </p>
+                <div id="slider_write_user"></div>
+               <p>
+                #Users reading: <input type="text" id="amount_read_user" readonly style="border:0; color:#f6931f; font-weight:bold;">
+              </p>
+                <div id="slider_read_user"></div>
+            </div>
+        </div>
+
+        <div id="clusterStatus" style="width:250px; border:1px;float:left; margin:30px; margin-top:10px;">
+          <h4>Cluster Status</h2>
+          <h5>Instance 1
+          <div id="clusterStatusInst1"></div></h5>
+          <h5>Instance 2
+          <div id="clusterStatusInst2"></div></h5>
+          <h5>Instance 3
+          <div id="clusterStatusInst3"></div></h5>
+          <h5>Instance 4
+          <div id="clusterStatusInst4"></div></h5>
+          <h5>Dispatcher
+          <div id="clusterStatusDisp"></div></h5>
         </div>
     </div>
 
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    
 
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
     
     
     <!-- // <script type="text/javascript" src="http://code.highcharts.com/stock/highstock.js"></script> -->
@@ -77,11 +109,183 @@
 
     <script type="text/javascript">
     var SCALE = 10; // 10 points per second - needs to correlate with ab
+    var delay_max = 5000;
+    var delay_percent_red = 0.2;
+    var active_replica = 0;
+    var master_killed = false;
+    var inst1_running = false;
+    var workload_running = false;
+    var workload_stopped = false;
+    var write_users = 1;
+    var read_users = 1;
+
+
+    function start_workload(btn) {
+      new Request({
+          method:"POST",
+          url:"startworkload",
+          data:'num_write='+write_users+'&num_read='+read_users,
+          onSuccess:function(response){
+              btn.button('reset');
+              workload_running = true;
+              workload_stopped = false;
+          }
+      }).send(); //Don't forget to send our request!
+    }
+
+    function adjust_workload() {
+      if (workload_running == false)
+        return;
+
+      new Request({
+          method:"GET",
+          url:"stopworkload",
+          onSuccess:function(response){
+              new Request({
+                method:"POST",
+                url:"startworkload",
+                data:'num_write='+write_users+'&num_read='+read_users,
+                onSuccess:function(response){
+                    workload_running = true;
+                    workload_stopped = false;
+                }
+            }).send(); //Don't forget to send our request!
+          }
+      }).send(); //Don't forget to send our request!
+    }
+
+    function stop_workload(btn) {
+      new Request({
+          method:"GET",
+          url:"stopworkload",
+          onSuccess:function(response){
+              btn.button('reset');
+              workload_stopped = true;
+              workload_running = false;
+          }
+      }).send(); //Don't forget to send our request!
+    }
 
     $(document).ready(function () {
+      
+      $( "#slider_write_user" ).slider({
+        value:1,
+        min: 1,
+        max: 150,
+        step: 10,
+        slide: function( event, ui ) {
+          $( "#amount_write_user" ).val( ui.value );
+          write_users = ui.value;
+          adjust_workload();
+        }
+      });
+      $( "#amount_write_user" ).val( $( "#slider_write_user" ).slider( "value" ) );
 
-        $('#heatMapContainer').highcharts({
+       $( "#slider_read_user" ).slider({
+        value:1,
+        min: 1,
+        max: 150,
+        step: 10,
+        slide: function( event, ui ) {
+          $( "#amount_read_user" ).val( ui.value );
+          read_users = ui.value;
+          adjust_workload();
+        }
+      });
+      $( "#amount_read_user" ).val( $( "#slider_read_user" ).slider( "value" ) );
 
+        function updateInstance(objid, status) {
+          obj = jQuery(objid);
+          obj.text(status);
+
+          if (status.indexOf("unning") > -1) {
+            obj.css({'color': 'green'});
+          } else {
+            obj.css({'color': 'red'});
+          }
+        }
+
+        // cluster status
+        function updateStatus() {
+          new Request({
+            method:"GET",
+            url: "statusInst1",
+            onSuccess:function(response){
+              if (response.indexOf("unning") > -1) {
+                inst1_running = true;
+              } else {
+                inst1_running = false;
+              }
+              updateInstance("#clusterStatusInst1", response);
+            }
+          }).send();
+          new Request({
+            method:"GET",
+            url: "statusInst2",
+            onSuccess:function(response){
+              var postfix = ", repl. writes"
+              if (active_replica > 0) {
+                postfix += ", serving reads"
+              } else {
+                postfix += ", no reads"
+              }
+              if (!inst1_running || response.indexOf("unning") == -1) {
+                postfix = ""
+              }
+              updateInstance("#clusterStatusInst2", response+postfix);
+            }
+          }).send();
+          new Request({
+            method:"GET",
+            url: "statusInst3",
+            onSuccess:function(response){
+              var postfix = ", repl. writes"
+              if (active_replica > 1) {
+                postfix += ", serving reads"
+              } else {
+                postfix += ", no reads"
+              }              
+              if (response.indexOf("unning") == -1) {
+                postfix = ""
+              }
+              updateInstance("#clusterStatusInst3", response+postfix);
+            }
+          }).send();
+          new Request({
+            method:"GET",
+            url: "statusInst4",
+            onSuccess:function(response){
+              var postfix = ", repl. writes"
+              if (active_replica > 2) {
+                postfix += ", serving reads"
+              } else {
+                postfix += ", no reads"
+              }             
+              if (response.indexOf("unning") == -1) {
+                postfix = ""
+              }
+              updateInstance("#clusterStatusInst4", response+postfix);
+            }
+          }).send();
+          new Request({
+            method:"GET",
+            url: "statusDisp",
+            onSuccess:function(response){
+              if (response.indexOf("unning") > -1) {
+                updateInstance("#clusterStatusDisp", response+", Active Replica: " + active_replica);
+              } else {
+                updateInstance("#clusterStatusDisp", response);
+              }
+            }
+          }).send();
+        }
+        updateStatus();
+        setInterval(updateStatus, 1000); // 5 * 1000 miliseconds
+
+
+        container = $("<div id=heatmap_graph>").attr("style", "width: 350px; height: 150px;")
+        $("#heatMapContainer").append(container)
+          container.highcharts({
             chart: {
                 type: 'heatmap',
                 marginTop: 40,
@@ -115,33 +319,42 @@
             },
 
             xAxis: {
-                categories: ['Core 1', 'Core 2', 'Core 3', 'Core 4', 'Core 5', 'Core 6', 'Core 7', 'Core 8', 'Core 9', 'Core 10']
+                categories: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+                labels: {
+                style: {
+                    color: '#525151',
+                    font: '8px Helvetica'
+                },
+                formatter: function () {
+                    return this.value;
+                }
+            },
             },
 
             yAxis: {
-                categories: ['Instance 1', 'Instance 2', 'Instance 3', 'Instance 4'],
+                categories: ['Node 1', 'Node 2', 'Node 3', 'Node 4'],
                 title: null
             },
 
             colorAxis: {
                 min: 0,
                 max: 100,
-                minColor: '#fffbbc',
+                minColor: '#fffdde',
                 maxColor: '#c4463a',
             },
 
             legend: {
                 align: 'right',
                 layout: 'vertical',
-                margin: 0,
+                margin: 5,
                 verticalAlign: 'top',
-                y: 50,
-                symbolHeight: 100
+                y: 20,
+                symbolHeight: 80
             },
 
             tooltip: {
                 formatter: function () {
-                    return this.point.value + '% load on <b>' + this.series.yAxis.categories[this.point.y] + '</b> of Node <b>' + this.series.xAxis.categories[this.point.x] + '</b>';
+                    return this.point.value + '% load of <b>CPU ' + this.series.xAxis.categories[this.point.x] + '</b> on <b>' + this.series.yAxis.categories[this.point.y] + '</b>';
                 }
             },
 
@@ -179,39 +392,39 @@
                 ]
             },
             plotBackgroundImage: null,
-            height: 150
+            height: 120
          
         },
 
         title: {
             text: 'Replication Delay'
         },
-
+        tooltip: { enabled: false },
         pane: [{
             startAngle: -45,
             endAngle: 45,
             background: null,
             center: ['15%', '145%'],
-            size: 220
+            size: 150
         }
          , {
              startAngle: -45,
              endAngle: 45,
              background: null,
              center: ['50%', '145%'],
-             size: 220
+             size: 150
          }, {
              startAngle: -45,
              endAngle: 45,
              background: null,
              center: ['85%', '145%'],
-             size: 220
+             size: 150
          }
         ],
 
         yAxis: [{
             min: 0,
-            max: 200,
+            max: delay_max,
             minorTickPosition: 'outside',
             tickPosition: 'outside',
             labels: {
@@ -219,8 +432,8 @@
                 distance: 20
             },
             plotBands: [{
-                from: 180,
-                to: 200,
+                from: delay_max-(delay_max*delay_percent_red),
+                to: delay_max,
                 color: '#C02316',
                 innerRadius: '100%',
                 outerRadius: '105%'
@@ -228,13 +441,13 @@
             pane: 0,
             title: {
                 text: 'Replica A<br/><span style="font-size:8px">#TX Behind</span>',
-                y: -40
+                y: -10
             }
         }
 
          , {
              min: 0,
-             max: 200,
+             max: delay_max,
              minorTickPosition: 'outside',
              tickPosition: 'outside',
              labels: {
@@ -242,8 +455,8 @@
                  distance: 20
              },
              plotBands: [{
-                 from: 180,
-                 to: 200,
+                 from: delay_max-(delay_max*delay_percent_red),
+                 to: delay_max,
                  color: '#C02316',
                  innerRadius: '100%',
                  outerRadius: '105%'
@@ -251,11 +464,11 @@
              pane: 1,
              title: {
                  text: 'Replica B<br/><span style="font-size:8px">#TX Behind</span>',
-                 y: -40
+                 y: -10
              }
          }, {
              min: 0,
-             max: 200,
+             max: delay_max,
              minorTickPosition: 'outside',
              tickPosition: 'outside',
              labels: {
@@ -263,8 +476,8 @@
                  distance: 20
              },
              plotBands: [{
-                 from: 180,
-                 to: 200,
+                 from: delay_max-(delay_max*delay_percent_red),
+                 to: delay_max,
                  color: '#C02316',
                  innerRadius: '100%',
                  outerRadius: '105%'
@@ -272,7 +485,7 @@
              pane: 2,
              title: {
                  text: 'Replica C<br/><span style="font-size:8px">#TX Behind</span>',
-                 y: -40
+                 y: -10
              }
          }
         ],
@@ -314,26 +527,57 @@
                 new Request({
                     method:"GET",
                     url:"delay",
+                    onFailure:function(response){
+                        r = chart.series[0].points[0];
+                        r.update(0, false);
+                        r = chart.series[1].points[0];
+                        r.update(0, false);
+                        r = chart.series[2].points[0];
+                        r.update(0, false);
+                        chart.redraw();
+                    },
                     onSuccess:function(response){
                         json = $.parseJSON(response);
                         rows = json.rows
                         if(!json) return
 
-                        lcid_replica1 = rows[0][2];
-                        lcid_replica2 = rows[1][2];
-                        lcid_replica3 = rows[2][2];
-                        lcid_master = rows[3][2];
+                        if (master_killed) {
+                          lcid_replica1 = rows[2][2];
+                          lcid_replica2 = rows[0][2];
+                          lcid_replica3 = rows[1][2];
+                          lcid_master = rows[2][2];
+                        } else {
+                          lcid_replica1 = rows[0][2];
+                          lcid_replica2 = rows[1][2];
+                          lcid_replica3 = rows[2][2];
+                          lcid_master = rows[3][2];
+                        }
                         
+
+                        v1 = lcid_master-lcid_replica1;
+                        v2 = lcid_master-lcid_replica2;
+                        v3 = lcid_master-lcid_replica3;
+
+                        if (v1 > delay_max)
+                          v1 = delay_max;
+                        if (v2 > delay_max)
+                          v2 = delay_max;
+                        if (v3 > delay_max)
+                          v3 = delay_max;
+
+                        if (workload_stopped) {
+                          v1 = 0;
+                          v2 = 0;
+                          v3 = 0;
+                        }
+
                         r = chart.series[0].points[0];
-                        r.update(lcid_master-lcid_replica1, false);
-
+                        r.update(v1, false);
                         r = chart.series[1].points[0];
-                        r.update(lcid_master-lcid_replica2, false);
-
+                        r.update(v2, false);
                         r = chart.series[2].points[0];
-                        r.update(lcid_master-lcid_replica3, false);
-    
-                        chart.redraw()
+                        r.update(v3, false);
+                        chart.redraw();
                     }
                 }).send(); //Don't forget to send our request! 
             }, 1000);
@@ -342,7 +586,7 @@
 
 
         
-        container = $("<div id=main_graph>").attr("style", "min-width: 310px; height: 600px; margin: 50px")
+        container = $("<div id=main_graph>").attr("style", "min-width: 310px; height: 400px; margin: 50px")
         $("#graphs").append(container)
 
 
@@ -429,7 +673,7 @@
                 },
                 xAxis: {
                     type: 'linear',
-                    max: 600,
+                    max: 200,
                     min: 0
                     // ,
                     // labels: {
@@ -446,7 +690,7 @@
                     //     color: '#808080'
                     // }],
                     min: 0,
-                    max: 6000
+                    max: null
                 },
                 legend: {
                     layout: 'vertical',
@@ -463,7 +707,7 @@
                             enabled: false
                         }
                     }
-                },
+                }, tooltip: { enabled: false },
                 // plotOptions: {
                 //     area: {
                 //         fillColor: {
@@ -601,6 +845,7 @@
         url:"useonereplica",
         onSuccess:function(response){
             btn.button('reset');
+            active_replica = 1;
         }
     }).send(); //Don't forget to send our request!
   });
@@ -616,6 +861,7 @@
         url:"usetworeplica",
         onSuccess:function(response){
             btn.button('reset');
+            active_replica = 2;
         }
     }).send(); //Don't forget to send our request!
   });
@@ -631,6 +877,7 @@
         url:"usethreereplica",
         onSuccess:function(response){
             btn.button('reset');
+            active_replica = 3;
         }
     }).send(); //Don't forget to send our request!
   });
@@ -641,12 +888,12 @@
     var btn = $(this), 
         chart = $('#main_graph').highcharts();
 
-console.log(chart.series[0].data.length);
-console.log(chart.series[0].data[chart.series[0].data.length-1]);
-    chart.xAxis[0].addPlotLine( {
-        value: chart.series[0].data[chart.series[0].data.length-1].x,
+        console.log(chart.series[0].data.length);
+        console.log(chart.series[0].data[chart.series[0].data.length-1]);
+        chart.xAxis[0].addPlotLine( {
+        value: chart.series[0].data[chart.series[0].data.length-1].x+1,
         color: 'red',
-        width: 4});
+        width: 20});
 
     btn.button('loading')
     new Request({
@@ -654,6 +901,7 @@ console.log(chart.series[0].data[chart.series[0].data.length-1]);
         url:"killmaster",
         onSuccess:function(response){
             btn.button('reset');
+            master_killed = true;
         }
     }).send(); //Don't forget to send our request!
   });
@@ -688,32 +936,18 @@ console.log(chart.series[0].data[chart.series[0].data.length-1]);
   });
 </script>
 <script>
-  $('#btn-read-workload').click(function () {
+  $('#btn-start-workload').click(function () {
     var btn = $(this)
-
     btn.button('loading')
-    new Request({
-        method:"GET",
-        url:"readworkload",
-        onSuccess:function(response){
-            btn.button('reset');
-        }
-    }).send(); //Don't forget to send our request!
+    start_workload(btn);
   });
 </script>
 
 <script>
-  $('#btn-write-workload').click(function () {
+  $('#btn-stop-workload').click(function () {
     var btn = $(this)
-
     btn.button('loading')
-    new Request({
-        method:"GET",
-        url:"writeworkload",
-        onSuccess:function(response){
-            btn.button('reset');
-        }
-    }).send(); //Don't forget to send our request!
+    stop_workload(btn);
   });
 </script>
 
