@@ -151,6 +151,8 @@
 #include "ap_release.h"
 #include <sched.h>
 #include <errno.h>
+#include <stdbool.h>
+ #include <math.h>
 
 #define APR_WANT_STRFUNC
 #include <apr_want.h>
@@ -240,6 +242,7 @@ typedef enum {
 } connect_state_e;
 
 #define CBUFFSIZE (2048)
+#define THINKTIME_USEC 1000000
 
 struct connection {
     apr_pool_t *ctx;
@@ -263,6 +266,9 @@ struct connection {
                done;            /* Connection closed */
 
     int socknum;
+    
+    apr_time_t sleep_start;
+    bool sleeping;
 #ifdef USE_SSL
     SSL *ssl;
 #endif
@@ -326,6 +332,7 @@ char *csvperc;          /* CSV Percentile file */
 char url[1024];
 char * fullurl, * colonhost;
 int isproxy = 0;
+unsigned long long thinktime = 0;
 apr_interval_time_t aprtimeout = apr_time_from_sec(30); /* timeout value */
 
 /* overrides for ab-generated common headers */
@@ -1232,6 +1239,8 @@ static void start_connect(struct connection * c)
     c->cbx = 0;
     c->gotheader = 0;
     c->rwrite = 0;
+    c->sleep_start = apr_time_now();
+
     if (c->ctx)
         apr_pool_clear(c->ctx);
     else
@@ -1824,7 +1833,13 @@ static void test(void)
             const apr_pollfd_t *next_fd = &(pollresults[i]);
             struct connection *c;
 
+            // get next connection with thinktime = 0
+            // david
             c = next_fd->client_data;
+            printf("%lld\n", (apr_time_now() - c->sleep_start));
+            while ((apr_time_now() - c->sleep_start) < thinktime) {
+              c = next_fd->client_data;
+            }
 
             /*
              * If the connection isn't connected how can we check it?
@@ -1897,6 +1912,9 @@ static void test(void)
                     write_request(c);
                 }
             }
+
+            // reset connection sleep time
+            c->sleep_start = apr_time_now();
         }
 
         if (gnuplotflush && done % gnuplotflush_threshold == 0) {
@@ -1967,6 +1985,7 @@ static void usage(const char *progname)
     fprintf(stderr, "    -t timelimit           Seconds to max. wait for responses\n");
     fprintf(stderr, "    -b windowsize          Size of TCP send/receive buffer, in bytes\n");
     fprintf(stderr, "    -p postfile            File containing data to POST. Remember also to set -T\n");
+    fprintf(stderr, "    -u userthinktime       User Thinktime per connection in usec.\n");
     fprintf(stderr, "    -T content-type        Content-type header for POSTing, eg.\n");
     fprintf(stderr, "                           'application/x-www-form-urlencoded'\n");
     fprintf(stderr, "                           Default is 'text/plain'\n");
@@ -2206,7 +2225,7 @@ int main(int argc, const char * const argv[])
 #endif
 
     apr_getopt_init(&opt, cntxt, argc, argv);
-    while ((status = apr_getopt(opt, "n:c:t:b:T:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:G:Q:X:de:Sq"
+    while ((status = apr_getopt(opt, "n:c:u:t:b:T:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:G:Q:X:de:Sq"
 #ifdef USE_SSL
             "Z:f:"
 #endif
@@ -2282,6 +2301,9 @@ int main(int argc, const char * const argv[])
                 break;
             case 'r':
                 recverrok = 1;
+                break;
+            case 'u':
+                thinktime = atoi(optarg);
                 break;
             case 'v':
                 verbosity = atoi(optarg);
