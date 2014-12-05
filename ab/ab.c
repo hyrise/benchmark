@@ -152,7 +152,8 @@
 #include <sched.h>
 #include <errno.h>
 #include <stdbool.h>
- #include <math.h>
+#include <math.h>
+#include <gsl/gsl_randist.h>
 
 #define APR_WANT_STRFUNC
 #include <apr_want.h>
@@ -268,7 +269,7 @@ struct connection {
     int socknum;
     
     apr_time_t sleep_start;
-    bool sleeping;
+    long sleep_time;
 #ifdef USE_SSL
     SSL *ssl;
 #endif
@@ -332,7 +333,13 @@ char *csvperc;          /* CSV Percentile file */
 char url[1024];
 char * fullurl, * colonhost;
 int isproxy = 0;
-unsigned long long thinktime = 0;
+long thinktime = 0;
+long thinktime_skew = 1;
+long thinktime_wavelength = 500000; // 500 ms
+const gsl_rng_type * random_number_generator_type;
+gsl_rng * random_number_generator;
+char *thinktime_type = "constant";
+
 apr_interval_time_t aprtimeout = apr_time_from_sec(30); /* timeout value */
 
 /* overrides for ab-generated common headers */
@@ -401,6 +408,21 @@ apr_xlate_t *from_ascii, *to_ascii;
 static void write_request(struct connection * c);
 static void close_connection(struct connection * c);
 
+long generate_sleep_time() {
+
+  if (thinktime_type[0] == 'n') {
+    // use normal distribution
+    // calculate random sleep time based on normal distribution
+    return abs(thinktime + gsl_ran_gaussian (random_number_generator, thinktime_skew));
+  }
+  else if (thinktime_type[0] == 's') {
+    // use sinus
+    return sin((M_PI * (double)apr_time_now()) / thinktime_wavelength) * thinktime_skew + thinktime;
+  } else {
+    // use constant thinktime
+    return thinktime;
+  }
+}
 
 void print_memory(char* data, int length) {
   int i=0;
@@ -1240,6 +1262,7 @@ static void start_connect(struct connection * c)
     c->gotheader = 0;
     c->rwrite = 0;
     c->sleep_start = apr_time_now();
+    c->sleep_time = generate_sleep_time();
 
     if (c->ctx)
         apr_pool_clear(c->ctx);
@@ -1834,12 +1857,12 @@ static void test(void)
             struct connection *c;
 
             // get next connection with thinktime = 0
-            // david
             c = next_fd->client_data;
-            printf("%lld\n", (apr_time_now() - c->sleep_start));
-            while ((apr_time_now() - c->sleep_start) < thinktime) {
+            while ((apr_time_now() - c->sleep_start) < c->sleep_time) {
               c = next_fd->client_data;
             }
+
+            printf("%lld\n", apr_time_now());
 
             /*
              * If the connection isn't connected how can we check it?
@@ -1915,6 +1938,7 @@ static void test(void)
 
             // reset connection sleep time
             c->sleep_start = apr_time_now();
+            c->sleep_time = generate_sleep_time();
         }
 
         if (gnuplotflush && done % gnuplotflush_threshold == 0) {
@@ -1986,6 +2010,8 @@ static void usage(const char *progname)
     fprintf(stderr, "    -b windowsize          Size of TCP send/receive buffer, in bytes\n");
     fprintf(stderr, "    -p postfile            File containing data to POST. Remember also to set -T\n");
     fprintf(stderr, "    -u userthinktime       User Thinktime per connection in usec.\n");
+    fprintf(stderr, "    -s thinktimeskew       Skew for the user thinktime in usec. default = 1usec.\n");
+    fprintf(stderr, "    -K thinktimekind       Kind/type of thinktime mechanism. values: sinus/normal/constant.\n");
     fprintf(stderr, "    -T content-type        Content-type header for POSTing, eg.\n");
     fprintf(stderr, "                           'application/x-www-form-urlencoded'\n");
     fprintf(stderr, "                           Default is 'text/plain'\n");
@@ -2179,6 +2205,10 @@ static int open_prepared_postfile(const char *pfile)
 /* sort out command-line args and call test */
 int main(int argc, const char * const argv[])
 {
+    gsl_rng_env_setup ();
+    random_number_generator_type = gsl_rng_default;
+    random_number_generator = gsl_rng_alloc (random_number_generator_type);
+
     int r, l;
     char tmp[1024];
     apr_status_t status;
@@ -2225,7 +2255,7 @@ int main(int argc, const char * const argv[])
 #endif
 
     apr_getopt_init(&opt, cntxt, argc, argv);
-    while ((status = apr_getopt(opt, "n:c:u:t:b:T:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:G:Q:X:de:Sq"
+    while ((status = apr_getopt(opt, "n:c:u:s:t:b:T:K:W:l:p:m:v:rkVhwix:y:z:C:H:P:A:g:G:Q:X:de:Sq"
 #ifdef USE_SSL
             "Z:f:"
 #endif
@@ -2302,8 +2332,26 @@ int main(int argc, const char * const argv[])
             case 'r':
                 recverrok = 1;
                 break;
+            case 'K':
+                if (strcmp(optarg,"normal") == 0) {
+                  thinktime_type = "normal";
+                } else if (strcmp(optarg,"sinus") == 0) {
+                  thinktime_type = "sinus";
+                } else if (strcmp(optarg,"constant") == 0) {
+                  thinktime_type = "constant";
+                } else {
+                    err("Invalid thinktime kind/type.\n");
+                    exit(1);
+                }
+                break;
             case 'u':
                 thinktime = atoi(optarg);
+                break;
+            case 'W':
+                thinktime_wavelength = atoi(optarg);
+                break;
+            case 's':
+                thinktime_skew = atoi(optarg);
                 break;
             case 'v':
                 verbosity = atoi(optarg);
