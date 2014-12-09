@@ -269,7 +269,9 @@ struct connection {
     int socknum;
     
     apr_time_t sleep_start;
+    apr_time_t sleep_stop;
     long sleep_time;
+    int first;
 #ifdef USE_SSL
     SSL *ssl;
 #endif
@@ -339,7 +341,6 @@ long thinktime_wavelength = 500000; // 500 ms
 const gsl_rng_type * random_number_generator_type;
 gsl_rng * random_number_generator;
 char *thinktime_type = "constant";
-
 apr_interval_time_t aprtimeout = apr_time_from_sec(30); /* timeout value */
 
 /* overrides for ab-generated common headers */
@@ -726,7 +727,10 @@ static void ssl_proceed_handshake(struct connection *c)
 #endif /* USE_SSL */
 
 static void write_request(struct connection * c)
-{
+{ 
+  /* zero connect time with keep-alive */
+  c->start = c->connect = lasttime = apr_time_now();
+  
     if (prepared_posting == 1) {
 
       if (postdata_cursor >= postdata_buffer + postdata_buffer_size) {
@@ -1100,11 +1104,13 @@ static void output_results(int sig)
                 fprintf(out, "%s\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
                                "\t%" APR_TIME_T_FMT "\t%" APR_TIME_T_FMT
                                "\t%" APR_TIME_T_FMT "\t%s\t%s\n", tmstring,
-                        apr_time_sec(stats[i].starttime),
-                        ap_round_ms(stats[i].ctime),
-                        ap_round_ms(stats[i].time - stats[i].ctime),
-                        ap_round_ms(stats[i].time),
-                        ap_round_ms(stats[i].waittime), stats[i].txname, stats[i].respcode);
+                        stats[i].starttime,
+                        stats[i].ctime,
+                        stats[i].time - stats[i].ctime,
+                        stats[i].time,
+                        stats[i].waittime,
+                        stats[i].txname,
+                        stats[i].respcode);
             }
             fclose(out);
         }
@@ -1261,9 +1267,10 @@ static void start_connect(struct connection * c)
     c->cbx = 0;
     c->gotheader = 0;
     c->rwrite = 0;
-    c->sleep_start = apr_time_now();
+    c->sleep_start = 0;
+    c->sleep_stop = 0;
     c->sleep_time = generate_sleep_time();
-
+    c->first = 0;
     if (c->ctx)
         apr_pool_clear(c->ctx);
     else
@@ -1297,7 +1304,7 @@ static void start_connect(struct connection * c)
         }
     }
 
-    c->start = lasttime = apr_time_now();
+    // c->start = lasttime = apr_time_now();
 #ifdef USE_SSL
     if (is_ssl) {
         BIO *bio;
@@ -1380,6 +1387,13 @@ static void close_connection(struct connection * c)
         /* save out time */
         if (done < requests) {
             struct data *s = &stats[done++];
+            long sleeptime = ap_max(0, c->sleep_stop - c->sleep_start);
+            
+            if (c->first == 0) {
+              sleeptime = 0;
+              c->first = 1;
+            }
+
             c->done      = lasttime = apr_time_now();
             s->starttime = c->start;
             s->ctime     = ap_max(0, c->connect - c->start);
@@ -1389,6 +1403,12 @@ static void close_connection(struct connection * c)
                 fprintf(stderr, "Completed %d requests\n", done);
                 fflush(stderr);
             }
+
+            // david 
+            // reset connection sleep time
+            c->sleep_start = 0;
+            c->sleep_stop = 0;
+            c->sleep_time = generate_sleep_time();
         }
     }
 
@@ -1616,14 +1636,28 @@ static void read_connection(struct connection * c)
             err_length++;
         }
         if (done < requests) {
+            
+            long sleeptime = ap_max(0, c->sleep_stop - c->sleep_start);
+
+            if (c->first == 0) {
+              sleeptime = 0;
+              c->first = 1;
+            }
+
             struct data *s = &stats[done++];
             doneka++;
             c->done      = apr_time_now();
             s->starttime = c->start;
             s->ctime     = ap_max(0, c->connect - c->start);
-            s->time      = ap_max(0, c->done - c->start);
+            s->time      = ap_max(0, c->done - c->start - sleeptime);
             s->waittime  = ap_max(0, c->beginread - c->endwrite);
             strcpy(s->respcode, respcode);
+
+            // david 
+            // reset connection sleep time
+            c->sleep_start = 0;
+            c->sleep_stop = 0;
+            c->sleep_time = generate_sleep_time();
 
             if (respcode[0] == '2') {
               // find and cpy tx name from buffer
@@ -1666,8 +1700,7 @@ static void read_connection(struct connection * c)
         c->gotheader = 0;
         c->cbx = 0;
         c->read = c->bread = 0;
-        /* zero connect time with keep-alive */
-        c->start = c->connect = lasttime = apr_time_now();
+
         write_request(c);
     }
 }
@@ -1856,13 +1889,25 @@ static void test(void)
             const apr_pollfd_t *next_fd = &(pollresults[i]);
             struct connection *c;
 
+            // david
             // get next connection with thinktime = 0
             c = next_fd->client_data;
-            while ((apr_time_now() - c->sleep_start) < c->sleep_time) {
-              c = next_fd->client_data;
+            
+            if (c->sleep_start == 0) {
+              // start sleeping...
+              c->sleep_start = apr_time_now();
             }
 
-            printf("%lld\n", apr_time_now());
+            if ((apr_time_now() - c->sleep_start) < c->sleep_time) {
+              // printf("now: %ld, start: %ld, diff: %ld, sleep: %ld\n", apr_time_now(), c->sleep_start, apr_time_now()-c->sleep_start, c->sleep_time);
+              continue;
+            }
+
+            if (c->sleep_stop == 0) {
+              // stopt sleeping...
+              c->sleep_stop = apr_time_now();
+
+            }
 
             /*
              * If the connection isn't connected how can we check it?
@@ -1934,11 +1979,7 @@ static void test(void)
                 else {
                     write_request(c);
                 }
-            }
-
-            // reset connection sleep time
-            c->sleep_start = apr_time_now();
-            c->sleep_time = generate_sleep_time();
+            }            
         }
 
         if (gnuplotflush && done % gnuplotflush_threshold == 0) {
