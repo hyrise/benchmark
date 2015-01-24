@@ -3,7 +3,7 @@ import time
 import re
 
 
-NUMBER_OF_MAX_REPLICAS = 3
+NUMBER_OF_MAX_REPLICAS = 4
 differences = [[]] * NUMBER_OF_MAX_REPLICAS
 shouldLeave = False
 
@@ -16,12 +16,12 @@ while True:
 	allNodes = allNodes.split("],")[:-1]
 
 	currentMasterCID = int(re.sub("\D", "", allNodes[-1].split(",")[2]))
-	print "CommitID of Master: %i" % (currentMasterCID)
+	# print "CommitID of Master: %i" % (currentMasterCID)
 
 	nodeNumber = 1
 	for node in allNodes[:-1]:
 		currentReplicaCID = int(node.split(",")[2])
-		print "CommitID of Replica %s: %i" % (nodeNumber, currentReplicaCID)
+		# print "CommitID of Replica %s: %i" % (nodeNumber, currentReplicaCID)
 
 		differences[nodeNumber - 1].append(currentMasterCID - currentReplicaCID)
 
@@ -30,7 +30,7 @@ while True:
 	nOfNodes = nodeNumber - 1
 
 	# if there are enough measurements check if test case is over
-	if len(differences[nodeNumber - 2]) > 10:
+	if len(differences[nodeNumber - 2]) > 50:
 		shouldLeave = True
 		while nodeNumber <> 0:
 			if differences[nodeNumber - 2][-1] <> 0:
@@ -39,6 +39,7 @@ while True:
 			nodeNumber -= 1
 
 	if shouldLeave:
+		print "CommitID of Master: %i" % (currentMasterCID)
 		break
 
 	time.sleep(0.1)

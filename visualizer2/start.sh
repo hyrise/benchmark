@@ -33,7 +33,7 @@ echo "waiting for dispatcher port..."
 n=1
 while [ $n -gt 0 ] 
 do
- n=$(netstat | grep \"$DISPATCHPORT\" | wc -l)
+ n=$(netstat | grep $DISPATCHPORT | wc -l)
  echo $n
  sleep 1
 done
@@ -118,7 +118,7 @@ curl -X POST --data-urlencode "query@$SETUPQUERY" http://localhost:5003/jsonQuer
 # curl -X POST --data-urlencode "query@$SETUPQUERY" http://localhost:5007/jsonQuery
 
 echo "starting dispatcher on port $DISPATCHPORT..."
-(taskset -c 0,1 $DISPATCHER $DISPATCHPORT > ~/benchmarkNew/benchmark/visualizer2/log_disp.txt)&
+(taskset -c 39,40 $DISPATCHER $DISPATCHPORT > ~/benchmarkNew/benchmark/visualizer2/log_disp.txt)&
 d_pid=$!
 sleep 1
 checkprocess $d_pid
