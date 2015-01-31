@@ -1,0 +1,39 @@
+{
+    "operators": {
+        "setupItemValue" : {
+            "type": "TableLoad",
+            "table": "itemValue",
+            "filename" : "test/tables/itemValue.tbl"
+        },
+        "retrieveItemValue": {
+            "type" : "GetTable",
+            "name" : "itemValue"
+        },
+        "commit" : {
+            "type" : "Commit"
+        },
+	"setupItemValueShort" : {
+            "type": "TableLoad",
+            "table": "itemValueShort",
+            "filename" : "test/tables/itemValueShort.tbl"
+        },
+        "retrieveItemValueShort": {
+            "type" : "GetTable",
+            "name" : "itemValueShort"
+        },
+	 "commit2" : {
+            "type" : "Commit"
+        },
+        "NoOp": {
+            "type" : "NoOp"
+        }
+    },
+    "edges" : [
+        ["setupItemValue", "retrieveItemValue"],
+        ["retrieveItemValue", "commit"],
+        ["commit", "setupItemValueShort"],
+	["setupItemValueShort", "retrieveItemValueShort"],
+	["retrieveItemValueShort", "commit2"],
+	["commit2", "NoOp"]
+    ]
+}

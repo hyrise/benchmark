@@ -1,0 +1,22 @@
+query={"operators": {
+        "retrieve_revenue": {
+            "type" : "GetTable",
+            "name" : "itemValue"
+        },
+	"1": {
+            "type": "HashBuild",
+            "fields": ["item_value"],
+	     "key": "groupby"
+        },
+        "2": {
+            "type": "GroupByScan",
+            "fields": ["item_value"],
+            "functions": [
+		{"type": "COUNT", "field": "item_value", "distinct": false, "as": "count"}
+             ]
+        }
+     },
+    "edges" : [
+        ["retrieve_revenue", "1"], ["retrieve_revenue", "2"], ["1", "2"]
+    ]
+}

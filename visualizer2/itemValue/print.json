@@ -1,0 +1,14 @@
+{
+    "operators": {
+        "retrieve_revenue3": {
+            "type" : "GetTable",
+            "name" : "itemValue"
+        },
+        "print" : {
+            "type" : "Print"
+        }
+    },
+    "edges" : [
+        ["retrieve_revenue3", "print"]
+    ]
+}
