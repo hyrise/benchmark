@@ -1,0 +1,22 @@
+{"operators": {
+				"retrieve_revenue": {
+						"type" : "GetTable",
+						"name" : "itemValueShort"
+				},
+				"insert" : {
+						"type" : "InsertScan",
+						"data_table" : "itemValueInsert"
+				},
+				"commit" : {
+						"type" : "Commit"
+				},
+				"NoOp" : {
+						"type" : "NoOp"
+				}
+		},
+		"edges" : [
+				["retrieve_revenue", "insert"],
+				["insert", "commit"],
+				["commit", "NoOp"]
+		]
+}

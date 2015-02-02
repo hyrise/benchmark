@@ -1,0 +1,54 @@
+{
+    "operators": {
+        "setupItemValue" : {
+            "type": "TableLoad",
+            "table": "itemValue",
+            "filename" : "test/tables/itemValue.tbl"
+        },
+        "retrieveItemValue": {
+            "type" : "GetTable",
+            "name" : "itemValue"
+        },
+        "commit" : {
+            "type" : "Commit"
+        },
+        "setupItemValueShort" : {
+            "type": "TableLoad",
+            "table": "itemValueShort",
+            "filename" : "test/tables/itemValueShort.tbl"
+        },
+        "retrieveItemValueShort": {
+            "type" : "GetTable",
+            "name" : "itemValueShort"
+        },
+         "commit2" : {
+            "type" : "Commit"
+        },
+        "setupItemValueInsert" : {
+            "type": "TableLoad",
+            "table": "itemValueInsert",
+            "filename" : "test/tables/itemValueInsert.tbl"
+        },
+        "retrieveItemValueInsert": {
+            "type" : "GetTable",
+            "name" : "itemValueInsert"
+        },
+         "commit3" : {
+            "type" : "Commit"
+        },
+        "NoOp": {
+            "type" : "NoOp"
+        }
+    },
+    "edges" : [
+        ["setupItemValue", "retrieveItemValue"],
+        ["retrieveItemValue", "commit"],
+        ["commit", "setupItemValueShort"],
+        ["setupItemValueShort", "retrieveItemValueShort"],
+        ["retrieveItemValueShort", "commit2"],
+        ["commit2", "setupItemValueInsert"],
+        ["setupItemValueInsert", "retrieveItemValueInsert"],
+        ["retrieveItemValueInsert", "commit3"],
+        ["commit3", "NoOp"]
+    ]
+}
