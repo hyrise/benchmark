@@ -3,7 +3,7 @@ import time
 import re
 
 
-NUMBER_OF_MAX_REPLICAS = 4
+NUMBER_OF_MAX_REPLICAS = 3
 differences = [[]] * NUMBER_OF_MAX_REPLICAS
 shouldLeave = False
 
@@ -12,6 +12,8 @@ nOfNodes = 0
 while True:
 	payload = {'query': '{"operators": {"0": {"type": "ClusterMetaData"} } }'}
 	r = requests.post("http://localhost:6666/delay", data=payload)
+	if not "rows" in r.text:
+		continue
 	allNodes = r.text.split("rows")[1]
 	allNodes = allNodes.split("],")[:-1]
 

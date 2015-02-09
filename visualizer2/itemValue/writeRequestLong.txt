@@ -1,4 +1,4 @@
-{"operators": {
+query={"operators": {
 				"retrieve_revenue": {
 						"type" : "GetTable",
 						"name" : "itemValueShort"

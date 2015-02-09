@@ -7,8 +7,8 @@
 #include <chrono>
 #include <ctime>
  
-std::string primaryNode = "http://192.168.30.112:5000";
-std::string dispatcher = "http://192.168.30.112:6666";
+std::string primaryNode = "http://172.31.27.23:5000";
+std::string dispatcher = "http://172.31.24.158:6666";
 
 std::chrono::time_point<std::chrono::high_resolution_clock> shutdownPrimaryNode() {
   CURL *curl;

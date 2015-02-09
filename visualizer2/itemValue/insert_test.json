@@ -2,12 +2,12 @@
     "operators": {
         "setupItemValue" : {
             "type": "TableLoad",
-            "table": "itemValue",
-            "filename" : "test/tables/itemValue.tbl"
+            "table": "itemValueBig",
+            "filename" : "test/tables/itemValueBig.tbl"
         },
         "retrieveItemValue": {
             "type" : "GetTable",
-            "name" : "itemValue"
+            "name" : "itemValueBig"
         },
         "commit" : {
             "type" : "Commit"

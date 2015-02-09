@@ -1,7 +1,7 @@
 query={"operators": {
         "retrieve_revenue": {
             "type" : "GetTable",
-            "name" : "itemValue"
+            "name" : "itemValueBig"
         },
 	"1": {
             "type": "HashBuild",
