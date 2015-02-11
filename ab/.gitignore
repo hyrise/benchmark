@@ -1,0 +1,5 @@
+hyrise_server.pid
+hyrise_server.port
+query.log
+ab
+apr-skeleton

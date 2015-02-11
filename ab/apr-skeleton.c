@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <apr-1/apr_general.h>
+#include <apr-1.0/apr_general.h>
 
 /**
  * apr skeleton code
